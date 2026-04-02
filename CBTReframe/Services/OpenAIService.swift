@@ -64,15 +64,58 @@ struct OpenAIService: AIServiceProtocol {
 }
 
 func parseJSONContent(_ content: String) throws -> AnalysisResult {
-    let cleaned = content
+    var text = content
         .replacingOccurrences(of: "```json", with: "")
         .replacingOccurrences(of: "```", with: "")
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
-    guard let data = cleaned.data(using: .utf8) else {
+    if let startIdx = text.firstIndex(of: "{"),
+       let endIdx = text.lastIndex(of: "}") {
+        text = String(text[startIdx...endIdx])
+    }
+
+    guard let data = text.data(using: .utf8) else {
         throw AIServiceError.parseError("无法转换响应文本")
     }
 
-    let decoded = try JSONDecoder().decode(AnalysisResult.self, from: data)
-    return decoded
+    if let decoded = try? JSONDecoder().decode(AnalysisResult.self, from: data) {
+        return decoded
+    }
+
+    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+        let distortion = json["distortion"] as? String
+            ?? json["认知扭曲"] as? String
+            ?? json["cognitive_distortion"] as? String
+            ?? "未识别"
+        let alternative = json["alternative"] as? String
+            ?? json["替代想法"] as? String
+            ?? json["alternative_thought"] as? String
+            ?? "暂无替代想法"
+        let action = json["action"] as? String
+            ?? json["建议行动"] as? String
+            ?? json["小行动"] as? String
+            ?? json["suggested_action"] as? String
+            ?? "暂无建议行动"
+
+        return AnalysisResult(
+            distortion: distortion,
+            alternative: alternative,
+            action: action
+        )
+    }
+
+    let lines = content.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    if lines.count >= 3 {
+        return AnalysisResult(
+            distortion: lines[0].trimmingCharacters(in: .whitespacesAndNewlines),
+            alternative: lines[1].trimmingCharacters(in: .whitespacesAndNewlines),
+            action: lines[2].trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    return AnalysisResult(
+        distortion: "AI 分析",
+        alternative: content,
+        action: "请尝试重新分析"
+    )
 }

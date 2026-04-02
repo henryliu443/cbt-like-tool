@@ -78,8 +78,14 @@ final class ReframeViewModel {
 
         } catch let error as AIServiceError {
             errorMessage = error.errorDescription
+        } catch is CancellationError {
+            errorMessage = nil
+        } catch let error as DecodingError {
+            errorMessage = "AI 响应格式异常，请重试"
+            print("[CBTReframe] DecodingError: \(error)")
         } catch {
             errorMessage = "发生了未知错误：\(error.localizedDescription)"
+            print("[CBTReframe] Error: \(error)")
         }
 
         isLoading = false
