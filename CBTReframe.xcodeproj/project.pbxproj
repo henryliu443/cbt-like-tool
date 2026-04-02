@@ -34,6 +34,9 @@
 		A1100021 /* MoodTagPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100021 /* MoodTagPicker.swift */; };
 		A1100022 /* SafetyBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100022 /* SafetyBannerView.swift */; };
 		A1100023 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100023 /* TemplatePickerView.swift */; };
+		A1100024 /* ThoughtEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100024 /* ThoughtEntry.swift */; };
+		A1100025 /* ThoughtJournalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100025 /* ThoughtJournalViewModel.swift */; };
+		A1100026 /* ThoughtJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100026 /* ThoughtJournalView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +68,9 @@
 		A2100021 /* MoodTagPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTagPicker.swift; sourceTree = "<group>"; };
 		A2100022 /* SafetyBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyBannerView.swift; sourceTree = "<group>"; };
 		A2100023 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
+		A2100024 /* ThoughtEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtEntry.swift; sourceTree = "<group>"; };
+		A2100025 /* ThoughtJournalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtJournalViewModel.swift; sourceTree = "<group>"; };
+		A2100026 /* ThoughtJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtJournalView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +130,7 @@
 				A2100002 /* AIProvider.swift */,
 				A2100003 /* ReframeMode.swift */,
 				A2100004 /* HistoryEntry.swift */,
+				A2100024 /* ThoughtEntry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -148,6 +155,7 @@
 				A2100012 /* ReframeViewModel.swift */,
 				A2100013 /* SettingsViewModel.swift */,
 				A2100014 /* HistoryViewModel.swift */,
+				A2100025 /* ThoughtJournalViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -160,6 +168,7 @@
 				A2100017 /* HistoryView.swift */,
 				A2100018 /* ResultCardView.swift */,
 				A2100019 /* OnboardingView.swift */,
+				A2100026 /* ThoughtJournalView.swift */,
 				A4100005 /* Components */,
 			);
 			path = Views;
@@ -271,6 +280,9 @@
 				A1100021 /* MoodTagPicker.swift in Sources */,
 				A1100022 /* SafetyBannerView.swift in Sources */,
 				A1100023 /* TemplatePickerView.swift in Sources */,
+				A1100024 /* ThoughtEntry.swift in Sources */,
+				A1100025 /* ThoughtJournalViewModel.swift in Sources */,
+				A1100026 /* ThoughtJournalView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

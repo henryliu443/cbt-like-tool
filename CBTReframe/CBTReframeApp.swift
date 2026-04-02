@@ -17,7 +17,7 @@ struct CBTReframeApp: App {
                 )
             }
         }
-        .modelContainer(for: HistoryEntry.self)
+        .modelContainer(for: [HistoryEntry.self, ThoughtEntry.self])
     }
 }
 
@@ -25,11 +25,13 @@ struct MainTabView: View {
     @Bindable var settingsViewModel: SettingsViewModel
     @State private var reframeViewModel: ReframeViewModel
     @State private var historyViewModel = HistoryViewModel()
+    @State private var journalViewModel: ThoughtJournalViewModel
     @State private var selectedTab = 0
 
     init(settingsViewModel: SettingsViewModel) {
         self.settingsViewModel = settingsViewModel
         self._reframeViewModel = State(initialValue: ReframeViewModel(settings: settingsViewModel))
+        self._journalViewModel = State(initialValue: ThoughtJournalViewModel(settings: settingsViewModel))
     }
 
     var body: some View {
@@ -40,17 +42,23 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
+            ThoughtJournalView(viewModel: journalViewModel)
+                .tabItem {
+                    Label("记录", systemImage: "thought.bubble")
+                }
+                .tag(1)
+
             HistoryView(viewModel: historyViewModel)
                 .tabItem {
                     Label("历史", systemImage: "clock.arrow.circlepath")
                 }
-                .tag(1)
+                .tag(2)
 
             SettingsView(viewModel: settingsViewModel)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
-                .tag(2)
+                .tag(3)
         }
         .tint(Color("AccentColor"))
     }
