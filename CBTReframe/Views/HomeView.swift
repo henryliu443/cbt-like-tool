@@ -17,6 +17,7 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     headerSection
                     ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
+                    templatePicker
                     MoodTagPicker(selectedMood: $selectedMood)
                     analyzeButton
 
@@ -84,6 +85,16 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
+    private var templatePicker: some View {
+        TemplatePickerView(
+            selectedTemplate: Binding(
+                get: { viewModel.activeTemplate },
+                set: { viewModel.quickTemplate = $0 }
+            ),
+            suggestedTemplate: viewModel.suggestedTemplate
+        )
+    }
+
     private var analyzeButton: some View {
         Button {
             isInputFocused = false
@@ -106,7 +117,7 @@ struct HomeView: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.headline)
                 }
-                Text(viewModel.isLoading ? "正在分析..." : "重构我的想法")
+                Text(viewModel.isLoading ? "正在分析..." : viewModel.activeTemplate.shortLabel)
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)

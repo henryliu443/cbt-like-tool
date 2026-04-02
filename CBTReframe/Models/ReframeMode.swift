@@ -47,6 +47,14 @@ enum PromptTemplate: String, CaseIterable, Codable, Identifiable {
 
     var id: String { rawValue }
 
+    var shortLabel: String {
+        switch self {
+        case .cbtReframe: return "重构想法"
+        case .socratic: return "引导反思"
+        case .behavioral: return "行动起来"
+        }
+    }
+
     var description: String {
         switch self {
         case .cbtReframe: return "识别认知扭曲，提供替代想法"
@@ -61,5 +69,27 @@ enum PromptTemplate: String, CaseIterable, Codable, Identifiable {
         case .socratic: return "questionmark.bubble"
         case .behavioral: return "figure.walk"
         }
+    }
+
+    static func suggest(for text: String) -> PromptTemplate? {
+        let t = text.lowercased()
+
+        let questionWords = ["为什么", "怎么", "是不是", "难道", "凭什么", "到底"]
+        if questionWords.contains(where: { t.contains($0) }) {
+            return .socratic
+        }
+
+        let stuckWords = ["不想动", "没有动力", "拖延", "懒", "躺平", "提不起", "什么都不想做", "没精力", "累"]
+        if stuckWords.contains(where: { t.contains($0) }) {
+            return .behavioral
+        }
+
+        let distortionWords = ["总是", "永远", "一定", "肯定", "全都", "没人", "所有人", "不可能",
+                               "觉得自己", "我不行", "我太", "完蛋", "糟糕", "失败"]
+        if distortionWords.contains(where: { t.contains($0) }) {
+            return .cbtReframe
+        }
+
+        return nil
     }
 }

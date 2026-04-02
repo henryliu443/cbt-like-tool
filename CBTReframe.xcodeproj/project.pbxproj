@@ -33,6 +33,7 @@
 		A1100020 /* ThoughtInputCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100020 /* ThoughtInputCard.swift */; };
 		A1100021 /* MoodTagPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100021 /* MoodTagPicker.swift */; };
 		A1100022 /* SafetyBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100022 /* SafetyBannerView.swift */; };
+		A1100023 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100023 /* TemplatePickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		A2100020 /* ThoughtInputCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtInputCard.swift; sourceTree = "<group>"; };
 		A2100021 /* MoodTagPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTagPicker.swift; sourceTree = "<group>"; };
 		A2100022 /* SafetyBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyBannerView.swift; sourceTree = "<group>"; };
+		A2100023 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +171,7 @@
 				A2100020 /* ThoughtInputCard.swift */,
 				A2100021 /* MoodTagPicker.swift */,
 				A2100022 /* SafetyBannerView.swift */,
+				A2100023 /* TemplatePickerView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -267,6 +270,7 @@
 				A1100020 /* ThoughtInputCard.swift in Sources */,
 				A1100021 /* MoodTagPicker.swift in Sources */,
 				A1100022 /* SafetyBannerView.swift in Sources */,
+				A1100023 /* TemplatePickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

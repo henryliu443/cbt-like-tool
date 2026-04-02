@@ -10,8 +10,17 @@ final class ReframeViewModel {
     var errorMessage: String?
     var showCrisisBanner: Bool = false
     var isButtonPressed: Bool = false
+    var quickTemplate: PromptTemplate?
 
-    private var settings: SettingsViewModel
+    var settings: SettingsViewModel
+
+    var suggestedTemplate: PromptTemplate? {
+        PromptTemplate.suggest(for: inputText)
+    }
+
+    var activeTemplate: PromptTemplate {
+        quickTemplate ?? settings.promptTemplate
+    }
 
     init(settings: SettingsViewModel) {
         self.settings = settings
@@ -55,12 +64,13 @@ final class ReframeViewModel {
 
         do {
             let service = AIServiceFactory.service(for: settings.selectedProvider)
+            let template = activeTemplate
             let analysisResult = try await service.reframe(
                 thought: thought,
                 model: settings.selectedModel,
                 mode: settings.reframeMode,
                 style: settings.responseStyle,
-                template: settings.promptTemplate
+                template: template
             )
 
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {

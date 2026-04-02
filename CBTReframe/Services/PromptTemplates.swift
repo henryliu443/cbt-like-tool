@@ -50,12 +50,10 @@ struct PromptBuilder {
         }
 
         let outputFormat = """
-        请严格按照以下 JSON 格式输出，不要包含其他内容：
-        {
-            "distortion": "认知扭曲类型的名称",
-            "alternative": "替代想法或引导性问题",
-            "action": "建议的小行动"
-        }
+        【输出要求】请严格按照以下 JSON 格式输出。
+        不要输出任何解释、前言、markdown标记或其他文字，只输出一个纯 JSON 对象：
+        {"distortion": "认知扭曲类型的名称", "alternative": "替代想法或引导性问题", "action": "建议的小行动"}
+        注意：键名必须是英文 distortion, alternative, action。值用中文。不要用 ```json 包裹。
         """
 
         return """
