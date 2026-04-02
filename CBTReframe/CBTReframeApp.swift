@@ -44,7 +44,7 @@ struct MainTabView: View {
 
             ThoughtJournalView(viewModel: journalViewModel)
                 .tabItem {
-                    Label("记录", systemImage: "thought.bubble")
+                    Label("记录", systemImage: "square.and.pencil")
                 }
                 .tag(1)
 

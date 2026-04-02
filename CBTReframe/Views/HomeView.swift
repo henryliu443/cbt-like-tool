@@ -34,7 +34,7 @@ struct HomeView: View {
                     }
 
                     if let result = viewModel.result {
-                        ResultCardView(result: result)
+                        ResultCardView(result: result, inputThought: viewModel.inputText)
                             .transition(.asymmetric(
                                 insertion: .opacity
                                     .combined(with: .move(edge: .bottom))

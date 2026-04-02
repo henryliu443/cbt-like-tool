@@ -23,6 +23,13 @@ struct ThoughtJournalView: View {
             }
             .toolbar {
                 if !entries.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            sendAllToChatGPT()
+                        } label: {
+                            Label("ChatGPT", systemImage: "paperplane.fill")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             Task {
@@ -44,7 +51,7 @@ struct ThoughtJournalView: View {
 
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "thought.bubble")
+            Image(systemName: "square.and.pencil")
                 .font(.system(size: 48))
                 .foregroundStyle(Color("TextSecondary").opacity(0.4))
             Text("记录你的自动想法")
@@ -194,6 +201,39 @@ struct ThoughtJournalView: View {
         .padding(.bottom, 20)
     }
 
+    private func sendAllToChatGPT() {
+        let unprocessed = entries.filter { !$0.isProcessed }
+        let target = unprocessed.isEmpty ? entries : unprocessed
+
+        let thoughtsList = target.enumerated().map { idx, entry in
+            var line = "\(idx + 1). \(entry.content)"
+            if !entry.emotion.isEmpty { line += "（\(entry.emotion)）" }
+            return line
+        }.joined(separator: "\n")
+
+        let prompt = """
+        我最近记录了一些自动想法，请帮我分析其中的认知扭曲模式，并给出整体建议：
+
+        \(thoughtsList)
+
+        请分别识别每条想法的认知扭曲类型，然后总结我的整体思维倾向，给出改善建议。
+        """
+
+        UIPasteboard.general.string = prompt
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if let url = URL(string: "chatgpt://") {
+                if UIApplication.shared.canOpenURL(url) {
+                    UIApplication.shared.open(url)
+                } else if let webURL = URL(string: "https://chat.openai.com") {
+                    UIApplication.shared.open(webURL)
+                }
+            }
+        }
+    }
+
     private func deleteEntries(from list: [ThoughtEntry], at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(list[index])
@@ -256,7 +296,7 @@ struct AddThoughtSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("脑海中闪过的想法", systemImage: "thought.bubble")
+                        Label("脑海中闪过的想法", systemImage: "bubble.left.and.text.bubble.right")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(Color("TextSecondary"))
 
