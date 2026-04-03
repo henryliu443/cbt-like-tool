@@ -21,17 +21,32 @@ struct MoodTagPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("现在的心情")
-                .font(.caption)
-                .foregroundStyle(Color("TextSecondary"))
-                .padding(.horizontal)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("选择心情")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color("TextPrimary"))
+                    Text("必选")
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color("AccentColor").opacity(0.12))
+                        .foregroundStyle(Color("AccentColor"))
+                        .clipShape(Capsule())
+                }
+                Text("便于结合你当下的情绪，更好地解读和改善自动想法与感受。")
+                    .font(.caption)
+                    .foregroundStyle(Color("TextSecondary"))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(moods) { mood in
                         Button {
                             withAnimation(.spring(response: 0.3)) {
-                                selectedMood = selectedMood == mood.label ? "" : mood.label
+                                selectedMood = mood.label
                             }
                         } label: {
                             HStack(spacing: 4) {

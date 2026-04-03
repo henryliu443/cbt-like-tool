@@ -5,6 +5,7 @@ struct DeepSeekService: AIServiceProtocol {
 
     func reframe(
         thought: String,
+        mood: String,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
@@ -20,7 +21,7 @@ struct DeepSeekService: AIServiceProtocol {
         let useJSON = isJSONMode(strategy)
 
         let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought)
+        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood)
 
         var body: [String: Any] = [
             "model": model.id,

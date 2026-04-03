@@ -1,11 +1,12 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var viewModel: ReframeViewModel
-    @State private var selectedMood: String = ""
     @State private var isButtonPressed = false
+    @State private var showExternalAppChoices = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -18,8 +19,9 @@ struct HomeView: View {
                     headerSection
                     ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
                     templatePicker
-                    MoodTagPicker(selectedMood: $selectedMood)
+                    MoodTagPicker(selectedMood: $viewModel.selectedMood)
                     analyzeButton
+                    externalMoneySaverSection
 
                     if viewModel.isLoading && viewModel.isLongThinkingModel {
                         thinkingProgressBanner
@@ -60,6 +62,92 @@ struct HomeView: View {
         .onTapGesture {
             isInputFocused = false
         }
+        .onChange(of: viewModel.selectedMood) { _, newValue in
+            if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                viewModel.errorMessage = nil
+            }
+        }
+        .confirmationDialog("已复制到剪贴板", isPresented: $showExternalAppChoices, titleVisibility: .visible) {
+            Button("打开 DeepSeek Chat（网页）") {
+                openDeepSeekChatInBrowser()
+            }
+            Button("打开 ChatGPT") {
+                openChatGPTAppOrWeb()
+            }
+            Button("完成", role: .cancel) {}
+        } message: {
+            Text("在新建对话里粘贴刚才复制的全部内容即可。")
+        }
+    }
+
+    private var externalMoneySaverSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "yensign.circle")
+                    .font(.caption)
+                    .foregroundStyle(Color("AccentColor"))
+                Text("省钱 / 无 API")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color("TextSecondary"))
+            }
+            Text("生成与站内一致的完整提示词并复制，再在外站免费或按次使用。")
+                .font(.caption2)
+                .foregroundStyle(Color("TextSecondary").opacity(0.95))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                copyExternalPromptAndShowLinks()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.on.doc.fill")
+                    Text("复制提示词并选择外站")
+                        .font(.subheadline.weight(.medium))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color("CardBackground"))
+                .foregroundStyle(Color("AccentColor"))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color("AccentColor").opacity(0.25), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmitAnalysis)
+            .opacity(canSubmitAnalysis ? 1 : 0.55)
+        }
+        .padding(14)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+        .padding(.horizontal)
+    }
+
+    private func copyExternalPromptAndShowLinks() {
+        guard let text = viewModel.buildExternalManualPromptText() else { return }
+        UIPasteboard.general.string = text
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        showExternalAppChoices = true
+    }
+
+    private func openDeepSeekChatInBrowser() {
+        guard let url = URL(string: "https://chat.deepseek.com") else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func openChatGPTAppOrWeb() {
+        if let appURL = URL(string: "chatgpt://"), UIApplication.shared.canOpenURL(appURL) {
+            UIApplication.shared.open(appURL)
+        } else if let web = URL(string: "https://chat.openai.com") {
+            UIApplication.shared.open(web)
+        }
+    }
+
+    private var canSubmitAnalysis: Bool {
+        let hasText = !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasMood = !viewModel.selectedMood.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasText && hasMood && !viewModel.isLoading
     }
 
     private var headerSection: some View {
@@ -140,8 +228,8 @@ struct HomeView: View {
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
-        .disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
-        .opacity(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.6 : 1)
+        .disabled(!canSubmitAnalysis)
+        .opacity(canSubmitAnalysis ? 1 : 0.6)
         .scaleEffect(isButtonPressed ? 0.96 : 1)
         .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
             withAnimation(.easeInOut(duration: 0.15)) {

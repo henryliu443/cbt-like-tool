@@ -123,7 +123,44 @@ struct PromptBuilder {
     }
 
     static func buildUserPrompt(thought: String) -> String {
-        return "我的想法是：\(thought)"
+        buildUserPrompt(thought: thought, mood: "")
+    }
+
+    /// `mood` 为用户必选的心情标签，便于模型结合情绪语境解读自动想法。
+    static func buildUserPrompt(thought: String, mood: String) -> String {
+        let m = mood.trimmingCharacters(in: .whitespacesAndNewlines)
+        if m.isEmpty {
+            return "我的想法是：\(thought)"
+        }
+        return """
+        用户选择的心情：\(m)
+        我的想法是：\(thought)
+        """
+    }
+
+    /// 与 App 内请求一致，供用户复制到 DeepSeek / ChatGPT 网页或 App，无需消耗本应用 API。
+    static func buildExternalPasteboardText(
+        thought: String,
+        mood: String,
+        mode: ReframeMode,
+        style: ResponseStyle,
+        template: PromptTemplate,
+        strategy: ResponseStrategy
+    ) -> String {
+        let system = buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
+        let user = buildUserPrompt(thought: thought, mood: mood)
+        return """
+        —— CBT Reframe · 外站使用 ——
+        在网页/App 中新建对话后：可将「系统提示」设为自定义说明，再发送「用户消息」；或整段一次性粘贴（视平台支持而定）。
+
+        【系统提示】
+        \(system)
+
+        【用户消息】
+        \(user)
+
+        —— 结束 ——
+        """
     }
 
     static let thoughtPatternSystemPrompt = """

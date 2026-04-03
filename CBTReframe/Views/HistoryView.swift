@@ -272,6 +272,17 @@ struct HistoryRowView: View {
                     .foregroundStyle(Color("AccentColor"))
                     .clipShape(Capsule())
 
+                if !entry.moodTag.isEmpty {
+                    Text(entry.moodTag)
+                        .font(.caption2.weight(.medium))
+                        .lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color("TextSecondary").opacity(0.08))
+                        .foregroundStyle(Color("TextSecondary"))
+                        .clipShape(Capsule())
+                }
+
                 if !entry.providerName.isEmpty {
                     Text(entry.providerName)
                         .font(.caption2)
@@ -360,8 +371,9 @@ struct HistoryRowView: View {
     }
 
     private func buildText() -> String {
-        """
-        我的想法：\(entry.inputThought)
+        let moodLine = entry.moodTag.isEmpty ? "" : "心情：\(entry.moodTag)\n"
+        return """
+        \(moodLine)我的想法：\(entry.inputThought)
         认知扭曲：\(entry.distortion)
         替代想法：\(entry.alternative)
         建议行动：\(entry.action)

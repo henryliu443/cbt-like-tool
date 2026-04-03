@@ -12,12 +12,15 @@ final class HistoryEntry {
     var createdAt: Date
     var providerName: String
     var modelName: String
+    /// 用户选择的心情标签（如「焦虑」），用于解读语境；旧数据可能为空。
+    var moodTag: String = ""
 
     init(
         inputThought: String,
         result: AnalysisResult,
         providerName: String = "",
-        modelName: String = ""
+        modelName: String = "",
+        moodTag: String = ""
     ) {
         self.id = UUID()
         self.inputThought = inputThought
@@ -28,6 +31,7 @@ final class HistoryEntry {
         self.createdAt = Date()
         self.providerName = providerName
         self.modelName = modelName
+        self.moodTag = moodTag
     }
 
     var analysisResult: AnalysisResult {

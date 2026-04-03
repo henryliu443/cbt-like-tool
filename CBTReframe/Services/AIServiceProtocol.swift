@@ -31,6 +31,7 @@ protocol AIServiceProtocol {
 
     func reframe(
         thought: String,
+        mood: String,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,

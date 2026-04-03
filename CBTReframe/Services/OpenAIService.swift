@@ -5,6 +5,7 @@ struct OpenAIService: AIServiceProtocol {
 
     func reframe(
         thought: String,
+        mood: String,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
@@ -17,7 +18,7 @@ struct OpenAIService: AIServiceProtocol {
         }
 
         let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought)
+        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood)
 
         let body: [String: Any] = [
             "model": model.id,
