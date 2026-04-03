@@ -12,7 +12,31 @@ final class ReframeViewModel {
     var isButtonPressed: Bool = false
     var quickTemplate: PromptTemplate?
 
+    /// 深度思考类模型：请求耗时长，展示阶段性提示与计时（不向用户展示模型原始思考全文）
+    var analysisElapsedSeconds: Int = 0
+    var thinkingPhraseIndex: Int = 0
+    private var thinkingTickerTask: Task<Void, Never>?
+
     var settings: SettingsViewModel
+
+    /// OpenAI o‑系列 / DeepSeek Reasoner 等
+    var isLongThinkingModel: Bool {
+        let id = settings.selectedModel.id.lowercased()
+        return id.contains("reasoner")
+            || id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4")
+            || id.contains("reason")
+    }
+
+    static let thinkingPhrases: [String] = [
+        "理解中",
+        "梳理中",
+        "提炼中",
+        "整理回复",
+    ]
+
+    var currentThinkingPhrase: String {
+        Self.thinkingPhrases[thinkingPhraseIndex % Self.thinkingPhrases.count]
+    }
 
     var suggestedTemplate: PromptTemplate? {
         PromptTemplate.suggest(for: inputText)
@@ -61,6 +85,13 @@ final class ReframeViewModel {
 
         isLoading = true
         errorMessage = nil
+        if isLongThinkingModel {
+            startThinkingProgress()
+        }
+        defer {
+            stopThinkingProgress()
+            isLoading = false
+        }
 
         do {
             let service = AIServiceFactory.service(for: settings.selectedProvider)
@@ -97,8 +128,6 @@ final class ReframeViewModel {
             errorMessage = "发生了未知错误：\(error.localizedDescription)"
             print("[CBTReframe] Error: \(error)")
         }
-
-        isLoading = false
     }
 
     func reset() {
@@ -106,5 +135,33 @@ final class ReframeViewModel {
         result = nil
         errorMessage = nil
         showCrisisBanner = false
+        stopThinkingProgress()
+    }
+
+    @MainActor
+    private func startThinkingProgress() {
+        analysisElapsedSeconds = 0
+        thinkingPhraseIndex = 0
+        thinkingTickerTask?.cancel()
+        thinkingTickerTask = Task { @MainActor in
+            var ticks = 0
+            while !Task.isCancelled && isLoading {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled, isLoading else { break }
+                ticks += 1
+                analysisElapsedSeconds = ticks
+                if ticks % 2 == 0 {
+                    thinkingPhraseIndex = (thinkingPhraseIndex + 1) % Self.thinkingPhrases.count
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func stopThinkingProgress() {
+        thinkingTickerTask?.cancel()
+        thinkingTickerTask = nil
+        analysisElapsedSeconds = 0
+        thinkingPhraseIndex = 0
     }
 }

@@ -90,11 +90,16 @@ struct SettingsView: View {
             Button {
                 viewModel.saveAPIKey()
             } label: {
-                HStack {
-                    Image(systemName: "key.fill")
-                    Text("保存 Key")
+                HStack(spacing: 8) {
+                    if viewModel.isSavingAPIKey {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "key.fill")
+                    }
+                    Text(viewModel.isSavingAPIKey ? "保存中…" : "保存 Key")
                 }
             }
+            .disabled(viewModel.isSavingAPIKey)
 
             if viewModel.hasAPIKey {
                 HStack(spacing: 6) {

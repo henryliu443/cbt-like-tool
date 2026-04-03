@@ -21,6 +21,11 @@ struct HomeView: View {
                     MoodTagPicker(selectedMood: $selectedMood)
                     analyzeButton
 
+                    if viewModel.isLoading && viewModel.isLongThinkingModel {
+                        thinkingProgressBanner
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
                     if viewModel.showCrisisBanner {
                         SafetyBannerView()
                             .transition(.asymmetric(
@@ -117,7 +122,7 @@ struct HomeView: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.headline)
                 }
-                Text(viewModel.isLoading ? "正在分析..." : viewModel.activeTemplate.shortLabel)
+                Text(analyzeButtonTitle)
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)
@@ -140,6 +145,42 @@ struct HomeView: View {
                 isButtonPressed = pressing
             }
         }, perform: {})
+        .padding(.horizontal)
+    }
+
+    private var analyzeButtonTitle: String {
+        if viewModel.isLoading {
+            return viewModel.isLongThinkingModel ? "深度思考中…" : "正在分析…"
+        }
+        return viewModel.activeTemplate.shortLabel
+    }
+
+    private var thinkingProgressBanner: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ProgressView()
+                .tint(Color("AccentColor"))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(viewModel.currentThinkingPhrase)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color("TextPrimary"))
+                    Spacer(minLength: 8)
+                    Text("\(viewModel.analysisElapsedSeconds) 秒")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(Color("TextSecondary"))
+                }
+                Text("以下为概括提示，非完整推理过程")
+                    .font(.caption2)
+                    .foregroundStyle(Color("TextSecondary").opacity(0.9))
+            }
+        }
+        .padding(14)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
+        )
         .padding(.horizontal)
     }
 

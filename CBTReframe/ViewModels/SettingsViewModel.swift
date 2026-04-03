@@ -40,6 +40,7 @@ final class SettingsViewModel {
     }
 
     var apiKeyInput: String = ""
+    var isSavingAPIKey = false
     var useFaceID: Bool {
         didSet {
             UserDefaults.standard.set(useFaceID, forKey: "useFaceID")
@@ -76,12 +77,21 @@ final class SettingsViewModel {
         apiKeyInput = KeychainManager.shared.load(key: selectedProvider.rawValue) ?? ""
     }
 
+    @MainActor
     func saveAPIKey() {
         let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            KeychainManager.shared.delete(key: selectedProvider.rawValue)
-        } else {
-            KeychainManager.shared.save(key: selectedProvider.rawValue, value: trimmed)
+        let providerKey = selectedProvider.rawValue
+        guard !isSavingAPIKey else { return }
+        isSavingAPIKey = true
+        Task { @MainActor in
+            await Task.detached {
+                if trimmed.isEmpty {
+                    KeychainManager.shared.delete(key: providerKey)
+                } else {
+                    KeychainManager.shared.save(key: providerKey, value: trimmed)
+                }
+            }.value
+            isSavingAPIKey = false
         }
     }
 
