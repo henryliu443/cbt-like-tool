@@ -5,6 +5,7 @@ import SwiftData
 struct CBTReframeApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var settingsViewModel = SettingsViewModel()
+    @StateObject private var globalSettings = GlobalSettings()
 
     let container: ModelContainer
 
@@ -30,12 +31,14 @@ struct CBTReframeApp: App {
     var body: some Scene {
         WindowGroup {
             if hasCompletedOnboarding {
-                MainTabView(settingsViewModel: settingsViewModel)
+                MainTabView(settingsViewModel: settingsViewModel, globalSettings: globalSettings)
+                    .environmentObject(globalSettings)
             } else {
                 OnboardingView(
                     settingsViewModel: settingsViewModel,
                     hasCompletedOnboarding: $hasCompletedOnboarding
                 )
+                .environmentObject(globalSettings)
             }
         }
         .modelContainer(container)
@@ -44,26 +47,27 @@ struct CBTReframeApp: App {
 
 struct MainTabView: View {
     @Bindable var settingsViewModel: SettingsViewModel
-    @State private var reframeViewModel: ReframeViewModel
+    @ObservedObject var globalSettings: GlobalSettings
+    @StateObject private var session: AppSession
     @State private var historyViewModel = HistoryViewModel()
-    @State private var journalViewModel: ThoughtJournalViewModel
     @State private var selectedTab = 0
 
-    init(settingsViewModel: SettingsViewModel) {
+    init(settingsViewModel: SettingsViewModel, globalSettings: GlobalSettings) {
         self.settingsViewModel = settingsViewModel
-        self._reframeViewModel = State(initialValue: ReframeViewModel(settings: settingsViewModel))
-        self._journalViewModel = State(initialValue: ThoughtJournalViewModel(settings: settingsViewModel))
+        self.globalSettings = globalSettings
+        _session = StateObject(wrappedValue: AppSession(settings: settingsViewModel, globalSettings: globalSettings))
     }
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView(viewModel: reframeViewModel)
+            HomeView(viewModel: session.reframeViewModel)
+                .environmentObject(globalSettings)
                 .tabItem {
                     Label("首页", systemImage: "brain.head.profile")
                 }
                 .tag(0)
 
-            ThoughtJournalView(viewModel: journalViewModel)
+            ThoughtJournalView(viewModel: session.journalViewModel)
                 .tabItem {
                     Label("记录", systemImage: "square.and.pencil")
                 }
@@ -76,6 +80,7 @@ struct MainTabView: View {
                 .tag(2)
 
             SettingsView(viewModel: settingsViewModel)
+                .environmentObject(globalSettings)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }

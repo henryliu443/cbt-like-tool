@@ -11,7 +11,6 @@ final class ReframeViewModel {
     var errorMessage: String?
     var showCrisisBanner: Bool = false
     var isButtonPressed: Bool = false
-    var quickTemplate: PromptTemplate?
 
     /// 分析前必选，供模型结合情绪解读想法。
     var selectedMood: String = ""
@@ -22,6 +21,9 @@ final class ReframeViewModel {
     private var thinkingTickerTask: Task<Void, Never>?
 
     var settings: SettingsViewModel
+    var globalSettings: GlobalSettings
+
+    private let pipeline: AnalysisPipeline
 
     /// OpenAI o‑系列 / DeepSeek Reasoner 等
     var isLongThinkingModel: Bool {
@@ -43,16 +45,18 @@ final class ReframeViewModel {
         Self.thinkingPhrases[thinkingPhraseIndex % Self.thinkingPhrases.count]
     }
 
-    var suggestedTemplate: PromptTemplate? {
-        PromptTemplate.suggest(for: inputText)
+    var suggestedThinkingTemplate: ThinkingTemplate? {
+        ThinkingTemplate.suggest(for: inputText)
     }
 
     var activeTemplate: PromptTemplate {
-        quickTemplate ?? settings.promptTemplate
+        globalSettings.thinkingTemplate.promptTemplate
     }
 
-    init(settings: SettingsViewModel) {
+    init(settings: SettingsViewModel, globalSettings: GlobalSettings, pipeline: AnalysisPipeline) {
         self.settings = settings
+        self.globalSettings = globalSettings
+        self.pipeline = pipeline
     }
 
     var greeting: String {
@@ -91,9 +95,9 @@ final class ReframeViewModel {
         return PromptBuilder.buildExternalPasteboardText(
             thought: thought,
             mood: mood,
-            mode: settings.reframeMode,
-            style: settings.responseStyle,
-            template: activeTemplate,
+            mode: globalSettings.analysisDepth.reframeMode,
+            style: globalSettings.responseStyle.legacyResponseStyle,
+            template: globalSettings.thinkingTemplate.promptTemplate,
             strategy: strategy
         )
     }
@@ -114,6 +118,8 @@ final class ReframeViewModel {
         let responseStrategy = routeStrategy(level: riskLevel)
         showCrisisBanner = (riskLevel == .high)
 
+        let template = globalSettings.thinkingTemplate
+
         // 高风险：本地关键词已判定，不调用远端 API（避免安全策略无有效输出且产生费用）
         if shouldUseLocalCrisisOnly(thought) {
             isLoading = true
@@ -121,6 +127,7 @@ final class ReframeViewModel {
             defer { isLoading = false }
 
             let analysisResult = CrisisLocalSupport.analysisResult
+                .normalized(for: template)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 self.result = analysisResult
             }
@@ -129,7 +136,10 @@ final class ReframeViewModel {
                 result: analysisResult,
                 providerName: CrisisLocalSupport.historyProviderName,
                 modelName: CrisisLocalSupport.historyModelName,
-                moodTag: moodTrimmed
+                moodTag: moodTrimmed,
+                therapyTemplate: template,
+                analysisDepth: globalSettings.analysisDepth,
+                responseStyle: globalSettings.responseStyle
             )
             modelContext.insert(entry)
             try? modelContext.save()
@@ -146,44 +156,42 @@ final class ReframeViewModel {
             isLoading = false
         }
 
-        do {
-            let service = AIServiceFactory.service(for: settings.selectedProvider)
-            let template = activeTemplate
-            let analysisResult = try await service.reframe(
-                thought: thought,
-                mood: moodTrimmed,
-                model: settings.selectedModel,
-                mode: settings.reframeMode,
-                style: settings.responseStyle,
-                template: template,
-                strategy: responseStrategy
-            )
-
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                self.result = analysisResult
-            }
-
-            let entry = HistoryEntry(
-                inputThought: thought,
-                result: analysisResult,
-                providerName: settings.selectedProvider.displayName,
-                modelName: settings.selectedModel.name,
-                moodTag: moodTrimmed
-            )
-            modelContext.insert(entry)
-            try? modelContext.save()
-
-        } catch let error as AIServiceError {
-            errorMessage = error.errorDescription
-        } catch is CancellationError {
-            errorMessage = nil
-        } catch let error as DecodingError {
-            errorMessage = "AI 响应格式异常，请重试"
-            print("[CBTReframe] DecodingError: \(error)")
-        } catch {
-            errorMessage = "发生了未知错误：\(error.localizedDescription)"
-            print("[CBTReframe] Error: \(error)")
+        let envelope = AnalysisInputEnvelope(
+            thought: thought,
+            mood: moodTrimmed,
+            strategy: responseStrategy
+        )
+        guard let payload = try? JSONEncoder().encode(envelope),
+              let input = String(data: payload, encoding: .utf8) else {
+            errorMessage = "分析失败，请稍后重试"
+            return
         }
+
+        let rawResult = await pipeline.run(input: input, settings: globalSettings)
+
+        if rawResult.distortion == "error", rawResult.alternative == "analysis failed" {
+            errorMessage = "分析失败，请稍后重试"
+            return
+        }
+
+        let analysisResult = rawResult.normalized(for: template)
+
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            self.result = analysisResult
+        }
+
+        let entry = HistoryEntry(
+            inputThought: thought,
+            result: analysisResult,
+            providerName: settings.selectedProvider.displayName,
+            modelName: settings.selectedModel.name,
+            moodTag: moodTrimmed,
+            therapyTemplate: template,
+            analysisDepth: globalSettings.analysisDepth,
+            responseStyle: globalSettings.responseStyle
+        )
+        modelContext.insert(entry)
+        try? modelContext.save()
     }
 
     @MainActor

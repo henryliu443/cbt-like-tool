@@ -11,7 +11,7 @@ enum RiskLevel: Equatable {
 
 // MARK: - Strategy
 
-enum ResponseStrategy: Equatable {
+enum ResponseStrategy: Equatable, Codable {
     case cbtNormal
     case cbtGentle
     case crisis

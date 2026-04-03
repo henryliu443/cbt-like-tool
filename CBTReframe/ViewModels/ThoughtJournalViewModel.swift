@@ -15,9 +15,11 @@ final class ThoughtJournalViewModel {
     var errorMessage: String?
 
     var settings: SettingsViewModel
+    private let pipeline: AnalysisPipeline
 
-    init(settings: SettingsViewModel) {
+    init(settings: SettingsViewModel, pipeline: AnalysisPipeline) {
         self.settings = settings
+        self.pipeline = pipeline
     }
 
     @MainActor
@@ -56,11 +58,7 @@ final class ThoughtJournalViewModel {
         errorMessage = nil
 
         do {
-            let service = AIServiceFactory.service(for: settings.selectedProvider)
-            patternReport = try await service.analyzeThoughtPatterns(
-                thoughts: unprocessed,
-                model: settings.selectedModel
-            )
+            patternReport = try await pipeline.analyzeThoughtPatterns(entries: unprocessed)
 
             for entry in unprocessed {
                 entry.isProcessed = true

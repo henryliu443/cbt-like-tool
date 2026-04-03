@@ -140,15 +140,7 @@ func parsePlainTextCrisisResponse(_ content: String) -> AnalysisResult {
 }
 
 func parseJSONContent(_ content: String) throws -> AnalysisResult {
-    var text = content
-        .replacingOccurrences(of: "```json", with: "")
-        .replacingOccurrences(of: "```", with: "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-
-    if let startIdx = text.firstIndex(of: "{"),
-       let endIdx = text.lastIndex(of: "}") {
-        text = String(text[startIdx...endIdx])
-    }
+    let text = LLMJSONSanitizer.sanitizeForJSONObject(content)
 
     guard let data = text.data(using: .utf8) else {
         throw AIServiceError.parseError("无法转换响应文本")
@@ -166,17 +158,29 @@ func parseJSONContent(_ content: String) throws -> AnalysisResult {
         let alternative = json["alternative"] as? String
             ?? json["替代想法"] as? String
             ?? json["alternative_thought"] as? String
-            ?? "暂无替代想法"
+            ?? ""
         let action = json["action"] as? String
             ?? json["建议行动"] as? String
             ?? json["小行动"] as? String
             ?? json["suggested_action"] as? String
-            ?? "暂无建议行动"
+            ?? json["nextStep"] as? String
+            ?? json["next_step"] as? String
+            ?? ""
+
+        let questions = parseStringArray(json, keys: ["questions", "引导问题", "socratic_questions", "question_list"])
+        let actions = parseStringArray(json, keys: ["actions", "行动建议", "action_steps"])
+        let stateAssessment = json["stateAssessment"] as? String
+            ?? json["state_assessment"] as? String
+            ?? json["当前状态"] as? String
+            ?? json["状态评估"] as? String
 
         return AnalysisResult(
             distortion: distortion,
             alternative: alternative,
-            action: action
+            action: action,
+            questions: questions,
+            actions: actions,
+            stateAssessment: stateAssessment
         )
     }
 
@@ -194,6 +198,20 @@ func parseJSONContent(_ content: String) throws -> AnalysisResult {
         alternative: content,
         action: "请尝试重新分析"
     )
+}
+
+private func parseStringArray(_ json: [String: Any], keys: [String]) -> [String]? {
+    for key in keys {
+        if let arr = json[key] as? [String] {
+            let cleaned = arr.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if !cleaned.isEmpty { return cleaned }
+        }
+        if let str = json[key] as? String {
+            let parts = str.split(separator: "\n").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            if !parts.isEmpty { return parts }
+        }
+    }
+    return nil
 }
 
 func parseThoughtPatternContent(_ content: String) throws -> ThoughtPatternReport {

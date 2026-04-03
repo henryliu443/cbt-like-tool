@@ -49,12 +49,7 @@ struct PromptBuilder {
             styleInstructions = "风格要求：温暖、充满同理心。先认可用户的感受，再温柔地提供新视角。使用「我理解...」「这很正常...」等共情语言。"
         }
 
-        let outputFormat = """
-        【输出要求】请严格按照以下 JSON 格式输出。
-        不要输出任何解释、前言、markdown标记或其他文字，只输出一个纯 JSON 对象：
-        {"distortion": "认知扭曲类型的名称", "alternative": "替代想法或引导性问题", "action": "建议的小行动"}
-        注意：键名必须是英文 distortion, alternative, action。值用中文。不要用 ```json 包裹。
-        """
+        let outputFormat = outputFormatJSON(for: template)
 
         return """
         \(roleIntro)
@@ -66,6 +61,32 @@ struct PromptBuilder {
 
         \(outputFormat)
         """
+    }
+
+    /// 各疗法使用不同 JSON 结构，便于解析与分开展示。
+    private static func outputFormatJSON(for template: PromptTemplate) -> String {
+        switch template {
+        case .cbtReframe:
+            return """
+            【输出要求】请严格按照以下 JSON 格式输出。
+            不要输出任何解释、前言、markdown标记或其他文字，只输出一个纯 JSON 对象：
+            {"distortion":"自动想法中的认知扭曲类型或简要描述","alternative":"更平衡的替代想法","action":"一条可执行的小行动","actions":["可选的更多行动建议"]}
+            注意：键名必须是英文 distortion, alternative, action。actions 可选。值用中文。不要用 ```json 包裹。
+            """
+        case .socratic:
+            return """
+            【输出要求】请只输出一个纯 JSON 对象，不要直接给「答案」或替用户下结论。
+            格式：
+            {"distortion":"与想法相关的简短视角提示（非评判）","questions":["分步引导问题1","问题2","问题3"],"alternative":"一句总结：为何用提问而非直接答案","action":"反思练习或记录方式"}
+            键名必须是英文。questions 至少 2 个字符串。不要用 ```json 包裹。
+            """
+        case .behavioral:
+            return """
+            【输出要求】强调行为与下一步，弱化长篇认知分析。只输出一个纯 JSON 对象：
+            {"stateAssessment":"当前状态与精力/情绪的简短评估","distortion":"一句话点出想法对行动的影响（若有）","alternative":"转向行为的一句鼓励","action":"唯一、可立即执行的下一步小行动（仅一步）"}
+            可选键 "actions" 不要用于长篇列举；优先填满 action 字段。不要用 ```json 包裹。
+            """
+        }
     }
 
     /// 根据风险路由选择系统提示：高风险走危机支持（纯文本），中风险在 CBT 上叠加温和约束。

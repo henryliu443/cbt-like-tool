@@ -123,7 +123,8 @@ struct GeminiService: AIServiceProtocol {
 
     private func parseGeminiGenerateResponse(_ data: Data, strategy: ResponseStrategy) throws -> AnalysisResult {
         let text = try extractGeminiText(from: data)
-        return try parseReframeOutput(text, strategy: strategy)
+        let sanitized = LLMJSONSanitizer.sanitizeForJSONObject(text)
+        return try parseReframeOutput(sanitized, strategy: strategy)
     }
 
     private func extractGeminiText(from data: Data) throws -> String {

@@ -241,6 +241,10 @@ struct HistoryRowView: View {
     @State private var isExpanded = false
     @State private var copiedToast = false
 
+    private var displayTemplate: ThinkingTemplate {
+        entry.thinkingTemplate ?? .cbt
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
@@ -262,18 +266,17 @@ struct HistoryRowView: View {
             }
 
             HStack(spacing: 6) {
-                Text(entry.distortion)
-                    .font(.caption2.weight(.medium))
+                Text("[\(displayTemplate.historyTag)]")
+                    .font(.caption2.weight(.semibold))
                     .lineLimit(1)
-                    .truncationMode(.tail)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(Color("AccentColor").opacity(0.1))
+                    .background(Color("AccentColor").opacity(0.12))
                     .foregroundStyle(Color("AccentColor"))
                     .clipShape(Capsule())
 
                 if !entry.moodTag.isEmpty {
-                    Text(entry.moodTag)
+                    Text("[\(entry.moodTag)]")
                         .font(.caption2.weight(.medium))
                         .lineLimit(1)
                         .padding(.horizontal, 7)
@@ -282,6 +285,27 @@ struct HistoryRowView: View {
                         .foregroundStyle(Color("TextSecondary"))
                         .clipShape(Capsule())
                 }
+
+                if let depth = entry.analysisDepth {
+                    Text("[\(depth.displayName)]")
+                        .font(.caption2.weight(.medium))
+                        .lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color("TextSecondary").opacity(0.06))
+                        .foregroundStyle(Color("TextSecondary"))
+                        .clipShape(Capsule())
+                }
+
+                Text(entry.distortion)
+                    .font(.caption2.weight(.medium))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color("AccentColor").opacity(0.06))
+                    .foregroundStyle(Color("AccentColor"))
+                    .clipShape(Capsule())
 
                 if !entry.providerName.isEmpty {
                     Text(entry.providerName)
@@ -300,19 +324,11 @@ struct HistoryRowView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Divider()
 
-                    Text("替代想法")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color("TextSecondary"))
-                    Text(entry.alternative)
-                        .font(.subheadline)
-                        .foregroundStyle(Color("TextPrimary"))
-
-                    Text("建议行动")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color("TextSecondary"))
-                    Text(entry.action)
-                        .font(.subheadline)
-                        .foregroundStyle(Color("TextPrimary"))
+                    ResultCardView(
+                        result: entry.analysisResult,
+                        template: displayTemplate,
+                        inputThought: entry.inputThought
+                    )
 
                     Divider()
 
@@ -367,9 +383,12 @@ struct HistoryRowView: View {
 
     private func buildText() -> String {
         let moodLine = entry.moodTag.isEmpty ? "" : "心情：\(entry.moodTag)\n"
+        let depthLine = entry.analysisDepth.map { "深度：\($0.displayName)\n" } ?? ""
+
         return """
         \(moodLine)我的想法：\(entry.inputThought)
-        认知扭曲：\(entry.distortion)
+        模式：\(displayTemplate.historyTag)
+        \(depthLine)认知扭曲：\(entry.distortion)
         替代想法：\(entry.alternative)
         建议行动：\(entry.action)
         """

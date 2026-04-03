@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var globalSettings: GlobalSettings
     @Bindable var viewModel: SettingsViewModel
     @State private var showClearConfirmation = false
     @State private var showKeyField = false
@@ -38,6 +39,7 @@ struct SettingsView: View {
             .alert("确认清除", isPresented: $showClearConfirmation) {
                 Button("清除所有数据", role: .destructive) {
                     viewModel.clearAllData(modelContext: modelContext)
+                    globalSettings.resetToDefaults()
                 }
                 Button("取消", role: .cancel) {}
             } message: {
@@ -205,27 +207,27 @@ struct SettingsView: View {
 
     private var reframeModeSection: some View {
         Section {
-            ForEach(ReframeMode.allCases) { mode in
+            ForEach(ThinkingTemplate.AnalysisDepth.allCases) { mode in
                 HStack {
                     Image(systemName: mode.icon)
                         .frame(width: 24)
                         .foregroundStyle(Color("AccentColor"))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(mode.rawValue)
+                        Text(mode.displayName)
                             .font(.body)
                         Text(mode.description)
                             .font(.caption)
                             .foregroundStyle(Color("TextSecondary"))
                     }
                     Spacer()
-                    if viewModel.reframeMode == mode {
+                    if globalSettings.analysisDepth == mode {
                         Image(systemName: "checkmark")
                             .foregroundStyle(Color("AccentColor"))
                     }
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    viewModel.reframeMode = mode
+                    globalSettings.analysisDepth = mode
                 }
             }
         } header: {
@@ -235,14 +237,14 @@ struct SettingsView: View {
 
     private var responseStyleSection: some View {
         Section {
-            Picker("回应风格", selection: $viewModel.responseStyle) {
-                ForEach(ResponseStyle.allCases) { style in
-                    Text(style.rawValue).tag(style)
+            Picker("回应风格", selection: $globalSettings.responseStyle) {
+                ForEach(ThinkingTemplate.AppResponseStyle.allCases) { style in
+                    Text(style.displayName).tag(style)
                 }
             }
             .pickerStyle(.segmented)
 
-            Text(viewModel.responseStyle.description)
+            Text(globalSettings.responseStyle.description)
                 .font(.caption)
                 .foregroundStyle(Color("TextSecondary"))
         } header: {
@@ -252,27 +254,27 @@ struct SettingsView: View {
 
     private var promptTemplateSection: some View {
         Section {
-            ForEach(PromptTemplate.allCases) { tmpl in
+            ForEach(ThinkingTemplate.allCases) { tmpl in
                 HStack {
                     Image(systemName: tmpl.icon)
                         .frame(width: 24)
                         .foregroundStyle(Color("AccentColor"))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(tmpl.rawValue)
+                        Text(tmpl.displayName)
                             .font(.body)
                         Text(tmpl.description)
                             .font(.caption)
                             .foregroundStyle(Color("TextSecondary"))
                     }
                     Spacer()
-                    if viewModel.promptTemplate == tmpl {
+                    if globalSettings.thinkingTemplate == tmpl {
                         Image(systemName: "checkmark")
                             .foregroundStyle(Color("AccentColor"))
                     }
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    viewModel.promptTemplate = tmpl
+                    globalSettings.thinkingTemplate = tmpl
                 }
             }
         } header: {

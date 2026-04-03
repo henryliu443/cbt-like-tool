@@ -42,6 +42,17 @@
 		A1100029 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100029 /* GeminiService.swift */; };
 		A1100030 /* ExternalAIAppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100030 /* ExternalAIAppLauncher.swift */; };
 		A1100031 /* AIModelListService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100031 /* AIModelListService.swift */; };
+		A1100032 /* GlobalSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100032 /* GlobalSettings.swift */; };
+		A1100033 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100033 /* AppSession.swift */; };
+		A1100034 /* LLMJSONSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100034 /* LLMJSONSanitizer.swift */; };
+		A1100035 /* AnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100035 /* AnalysisEngine.swift */; };
+		A1100036 /* LLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100036 /* LLMProvider.swift */; };
+		A1100037 /* AIServiceLLMProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100037 /* AIServiceLLMProvider.swift */; };
+		A1100038 /* EngineRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100038 /* EngineRouter.swift */; };
+		A1100039 /* CBTEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100039 /* CBTEngine.swift */; };
+		A1100040 /* SocraticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100040 /* SocraticEngine.swift */; };
+		A1100041 /* BehavioralEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100041 /* BehavioralEngine.swift */; };
+		A1100042 /* AnalysisPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* AnalysisPipeline.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +92,17 @@
 		A2100029 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
 		A2100030 /* ExternalAIAppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAIAppLauncher.swift; sourceTree = "<group>"; };
 		A2100031 /* AIModelListService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIModelListService.swift; sourceTree = "<group>"; };
+		A2100032 /* GlobalSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSettings.swift; sourceTree = "<group>"; };
+		A2100033 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		A2100034 /* LLMJSONSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMJSONSanitizer.swift; sourceTree = "<group>"; };
+		A2100035 /* AnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngine.swift; sourceTree = "<group>"; };
+		A2100036 /* LLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMProvider.swift; sourceTree = "<group>"; };
+		A2100037 /* AIServiceLLMProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceLLMProvider.swift; sourceTree = "<group>"; };
+		A2100038 /* EngineRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineRouter.swift; sourceTree = "<group>"; };
+		A2100039 /* CBTEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBTEngine.swift; sourceTree = "<group>"; };
+		A2100040 /* SocraticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocraticEngine.swift; sourceTree = "<group>"; };
+		A2100041 /* BehavioralEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehavioralEngine.swift; sourceTree = "<group>"; };
+		A2100042 /* AnalysisPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisPipeline.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +128,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000001 /* CBTReframeApp.swift */,
+				A2100033 /* AppSession.swift */,
 				A2000002 /* ContentView.swift */,
 				A4100001 /* Models */,
 				A4100002 /* Services */,
@@ -139,6 +162,7 @@
 				A2100001 /* AnalysisResult.swift */,
 				A2100002 /* AIProvider.swift */,
 				A2100003 /* ReframeMode.swift */,
+				A2100032 /* GlobalSettings.swift */,
 				A2100004 /* HistoryEntry.swift */,
 				A2100024 /* ThoughtEntry.swift */,
 				A2100027 /* RiskRouting.swift */,
@@ -156,10 +180,19 @@
 				A2100009 /* LocalAnalysisService.swift */,
 				A2100010 /* KeychainManager.swift */,
 				A2100011 /* PromptTemplates.swift */,
+				A2100035 /* AnalysisEngine.swift */,
+				A2100036 /* LLMProvider.swift */,
+				A2100034 /* LLMJSONSanitizer.swift */,
 				A2100028 /* MoonshotService.swift */,
 				A2100029 /* GeminiService.swift */,
 				A2100030 /* ExternalAIAppLauncher.swift */,
 				A2100031 /* AIModelListService.swift */,
+				A2100042 /* AnalysisPipeline.swift */,
+				A2100038 /* EngineRouter.swift */,
+				A2100039 /* CBTEngine.swift */,
+				A2100040 /* SocraticEngine.swift */,
+				A2100041 /* BehavioralEngine.swift */,
+				A2100037 /* AIServiceLLMProvider.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -303,6 +336,17 @@
 				A1100029 /* GeminiService.swift in Sources */,
 				A1100030 /* ExternalAIAppLauncher.swift in Sources */,
 				A1100031 /* AIModelListService.swift in Sources */,
+				A1100032 /* GlobalSettings.swift in Sources */,
+				A1100033 /* AppSession.swift in Sources */,
+				A1100034 /* LLMJSONSanitizer.swift in Sources */,
+				A1100035 /* AnalysisEngine.swift in Sources */,
+				A1100036 /* LLMProvider.swift in Sources */,
+				A1100037 /* AIServiceLLMProvider.swift in Sources */,
+				A1100038 /* EngineRouter.swift in Sources */,
+				A1100039 /* CBTEngine.swift in Sources */,
+				A1100040 /* SocraticEngine.swift in Sources */,
+				A1100041 /* BehavioralEngine.swift in Sources */,
+				A1100042 /* AnalysisPipeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

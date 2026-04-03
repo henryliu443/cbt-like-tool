@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct TemplatePickerView: View {
-    @Binding var selectedTemplate: PromptTemplate
-    var suggestedTemplate: PromptTemplate?
+    @Binding var selectedTemplate: ThinkingTemplate
+    var suggestedTemplate: ThinkingTemplate?
     var onTemplateTapped: (() -> Void)?
 
     var body: some View {
@@ -43,7 +43,7 @@ struct TemplatePickerView: View {
             }
 
             HStack(spacing: 0) {
-                ForEach(PromptTemplate.allCases) { template in
+                ForEach(ThinkingTemplate.allCases) { template in
                     templateButton(template)
                 }
             }
@@ -54,7 +54,7 @@ struct TemplatePickerView: View {
         .padding(.horizontal)
     }
 
-    private func templateButton(_ template: PromptTemplate) -> some View {
+    private func templateButton(_ template: ThinkingTemplate) -> some View {
         let isSelected = selectedTemplate == template
         let isSuggested = suggestedTemplate == template && !isSelected
 

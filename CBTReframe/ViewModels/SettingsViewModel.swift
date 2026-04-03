@@ -32,24 +32,6 @@ final class SettingsViewModel {
         }
     }
 
-    var reframeMode: ReframeMode {
-        didSet {
-            UserDefaults.standard.set(reframeMode.rawValue, forKey: "reframeMode")
-        }
-    }
-
-    var responseStyle: ResponseStyle {
-        didSet {
-            UserDefaults.standard.set(responseStyle.rawValue, forKey: "responseStyle")
-        }
-    }
-
-    var promptTemplate: PromptTemplate {
-        didSet {
-            UserDefaults.standard.set(promptTemplate.rawValue, forKey: "promptTemplate")
-        }
-    }
-
     var apiKeyInput: String = ""
     var isSavingAPIKey = false
     var useFaceID: Bool {
@@ -79,15 +61,6 @@ final class SettingsViewModel {
 
         let modelId = UserDefaults.standard.string(forKey: "selectedModelId") ?? ""
         self.selectedModelId = modelId.isEmpty ? provider.defaultModel.id : modelId
-
-        let modeRaw = UserDefaults.standard.string(forKey: "reframeMode") ?? ReframeMode.balanced.rawValue
-        self.reframeMode = ReframeMode(rawValue: modeRaw) ?? .balanced
-
-        let styleRaw = UserDefaults.standard.string(forKey: "responseStyle") ?? ResponseStyle.warm.rawValue
-        self.responseStyle = ResponseStyle(rawValue: styleRaw) ?? .warm
-
-        let templateRaw = UserDefaults.standard.string(forKey: "promptTemplate") ?? PromptTemplate.cbtReframe.rawValue
-        self.promptTemplate = PromptTemplate(rawValue: templateRaw) ?? .cbtReframe
 
         self.useFaceID = UserDefaults.standard.bool(forKey: "useFaceID")
 
@@ -198,9 +171,6 @@ final class SettingsViewModel {
         UserDefaults.standard.removePersistentDomain(forName: domain)
         selectedProvider = .local
         selectedModelId = AIProvider.local.defaultModel.id
-        reframeMode = .balanced
-        responseStyle = .warm
-        promptTemplate = .cbtReframe
         useFaceID = false
     }
 

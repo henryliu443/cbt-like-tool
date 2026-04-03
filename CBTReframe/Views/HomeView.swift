@@ -4,6 +4,7 @@ import UIKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var globalSettings: GlobalSettings
     @Bindable var viewModel: ReframeViewModel
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
@@ -44,7 +45,11 @@ struct HomeView: View {
                     }
 
                     if let result = viewModel.result {
-                        ResultCardView(result: result, inputThought: viewModel.inputText)
+                        ResultCardView(
+                            result: result,
+                            template: globalSettings.thinkingTemplate,
+                            inputThought: viewModel.inputText
+                        )
                             .transition(.asymmetric(
                                 insertion: .opacity
                                     .combined(with: .move(edge: .bottom))
@@ -176,11 +181,8 @@ struct HomeView: View {
 
     private var templatePicker: some View {
         TemplatePickerView(
-            selectedTemplate: Binding(
-                get: { viewModel.activeTemplate },
-                set: { viewModel.quickTemplate = $0 }
-            ),
-            suggestedTemplate: viewModel.suggestedTemplate
+            selectedTemplate: $globalSettings.thinkingTemplate,
+            suggestedTemplate: viewModel.suggestedThinkingTemplate
         )
     }
 
@@ -236,7 +238,7 @@ struct HomeView: View {
         if viewModel.isLoading {
             return viewModel.isLongThinkingModel ? "深度思考中…" : "正在分析…"
         }
-        return viewModel.activeTemplate.shortLabel
+        return globalSettings.thinkingTemplate.shortLabel
     }
 
     @State private var spinnerRotation: Double = 0
