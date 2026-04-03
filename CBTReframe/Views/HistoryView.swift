@@ -10,11 +10,16 @@ struct HistoryView: View {
     @Bindable var settingsViewModel: SettingsViewModel
     @State private var isUnlocked = false
     @State private var authErrorMessage: String?
+    @State private var hasAttemptedAuth = false
+
+    private var needsAuth: Bool {
+        settingsViewModel.useFaceID && !isUnlocked
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if settingsViewModel.useFaceID && !isUnlocked {
+                if needsAuth {
                     lockedState
                 } else if allEntries.isEmpty {
                     emptyState
@@ -25,7 +30,7 @@ struct HistoryView: View {
             .navigationTitle("历史记录")
             .searchable(text: $viewModel.searchText, prompt: "搜索想法...")
             .toolbar {
-                if !settingsViewModel.useFaceID || isUnlocked {
+                if !needsAuth {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             withAnimation { viewModel.showFavoritesOnly.toggle() }
@@ -37,21 +42,27 @@ struct HistoryView: View {
                 }
             }
         }
-        .task(id: settingsViewModel.useFaceID) {
-            await refreshLockState()
+        .onAppear {
+            if settingsViewModel.useFaceID && !hasAttemptedAuth {
+                hasAttemptedAuth = true
+                Task { await authenticateIfNeeded() }
+            } else if !settingsViewModel.useFaceID {
+                isUnlocked = true
+            }
+        }
+        .onChange(of: settingsViewModel.useFaceID) { _, newValue in
+            if !newValue {
+                isUnlocked = true
+                authErrorMessage = nil
+            } else {
+                isUnlocked = false
+                hasAttemptedAuth = false
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard settingsViewModel.useFaceID else {
-                isUnlocked = true
-                return
-            }
-
-            if newPhase != .active {
+            if settingsViewModel.useFaceID && newPhase == .background {
                 isUnlocked = false
-            } else {
-                Task {
-                    await authenticateIfNeeded()
-                }
+                hasAttemptedAuth = false
             }
         }
     }
@@ -66,7 +77,7 @@ struct HistoryView: View {
                 .font(.headline)
                 .foregroundStyle(Color("TextPrimary"))
 
-            Text("启用 Face ID 后，进入历史页需要先验证身份。")
+            Text("点击下方按钮使用 Face ID 解锁")
                 .font(.subheadline)
                 .foregroundStyle(Color("TextSecondary"))
                 .multilineTextAlignment(.center)
@@ -76,14 +87,32 @@ struct HistoryView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
-            Button("使用 Face ID 解锁") {
-                Task {
-                    await authenticateIfNeeded()
+            Button {
+                Task { await authenticateIfNeeded() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "faceid")
+                    Text("Face ID 解锁")
                 }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 14)
+                .background(Color("AccentColor"))
+                .clipShape(Capsule())
             }
-            .buttonStyle(.borderedProminent)
+            .padding(.top, 8)
+
+            Button("跳过，暂时关闭 Face ID") {
+                settingsViewModel.useFaceID = false
+                isUnlocked = true
+            }
+            .font(.caption)
+            .foregroundStyle(Color("TextSecondary"))
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)
@@ -132,11 +161,9 @@ struct HistoryView: View {
             let stats = viewModel.weeklyStats(allEntries)
             HStack(spacing: 24) {
                 statItem(value: "\(stats.count)", label: "本周分析", icon: "brain.head.profile", color: Color("AccentColor"))
-                Divider()
-                    .frame(height: 40)
+                Divider().frame(height: 40)
                 statItem(value: "\(stats.favoriteCount)", label: "收藏洞察", icon: "star.fill", color: .yellow)
-                Divider()
-                    .frame(height: 40)
+                Divider().frame(height: 40)
                 statItem(value: "\(allEntries.count)", label: "总记录", icon: "clock", color: Color("TextSecondary"))
             }
             .frame(maxWidth: .infinity)
@@ -169,17 +196,6 @@ struct HistoryView: View {
     }
 
     @MainActor
-    private func refreshLockState() async {
-        if settingsViewModel.useFaceID {
-            isUnlocked = false
-            await authenticateIfNeeded()
-        } else {
-            isUnlocked = true
-            authErrorMessage = nil
-        }
-    }
-
-    @MainActor
     private func authenticateIfNeeded() async {
         guard settingsViewModel.useFaceID, !isUnlocked else { return }
 
@@ -187,7 +203,7 @@ struct HistoryView: View {
         var authError: NSError?
 
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) else {
-            authErrorMessage = authError?.localizedDescription ?? "当前设备不可用 Face ID。"
+            authErrorMessage = "当前设备不支持 Face ID，可在设置中关闭此选项。"
             return
         }
 
@@ -201,7 +217,7 @@ struct HistoryView: View {
                 authErrorMessage = nil
             }
         } catch {
-            authErrorMessage = error.localizedDescription
+            authErrorMessage = "验证失败，请再试一次"
         }
     }
 }
