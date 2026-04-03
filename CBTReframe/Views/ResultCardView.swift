@@ -121,19 +121,10 @@ struct ResultCardView: View {
         impact.impactOccurred()
         withAnimation(.spring(response: 0.3)) { copiedToast = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            openChatGPT()
+            ExternalAIAppLauncher.openChatGPT()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation { copiedToast = false }
             }
-        }
-    }
-
-    private func openChatGPT() {
-        let chatgptURL = URL(string: "chatgpt://")!
-        if UIApplication.shared.canOpenURL(chatgptURL) {
-            UIApplication.shared.open(chatgptURL)
-        } else {
-            UIApplication.shared.open(URL(string: "https://chat.openai.com")!)
         }
     }
 

@@ -28,6 +28,7 @@ final class ReframeViewModel {
         return id.contains("reasoner")
             || id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4")
             || id.contains("reason")
+            || id.contains("thinking")
     }
 
     static let thinkingPhrases: [String] = [

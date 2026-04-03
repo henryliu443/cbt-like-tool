@@ -338,12 +338,7 @@ struct HistoryRowView: View {
                             UIPasteboard.general.string = buildText() + "\n\n请帮我进一步分析这个想法。"
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                let url = URL(string: "chatgpt://")!
-                                if UIApplication.shared.canOpenURL(url) {
-                                    UIApplication.shared.open(url)
-                                } else {
-                                    UIApplication.shared.open(URL(string: "https://chat.openai.com")!)
-                                }
+                                ExternalAIAppLauncher.openChatGPT()
                             }
                         } label: {
                             HStack(spacing: 4) {

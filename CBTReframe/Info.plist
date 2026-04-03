@@ -5,6 +5,12 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>chatgpt</string>
+		<string>deepseek</string>
+		<string>googlegemini</string>
+		<string>gemini</string>
+		<string>googleapp</string>
+		<string>kimi</string>
+		<string>moonshot</string>
 	</array>
 </dict>
 </plist>

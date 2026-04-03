@@ -4,6 +4,8 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
     case openai = "OpenAI"
     case anthropic = "Anthropic"
     case deepseek = "DeepSeek"
+    case gemini = "Google Gemini"
+    case kimi = "Kimi (Moonshot)"
     case local = "本地（离线）"
 
     var id: String { rawValue }
@@ -34,6 +36,20 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
                 AIModel(id: "deepseek-chat", name: "DeepSeek Chat"),
                 AIModel(id: "deepseek-reasoner", name: "DeepSeek Reasoner"),
             ]
+        case .gemini:
+            return [
+                AIModel(id: "gemini-2.0-flash", name: "Gemini 2.0 Flash"),
+                AIModel(id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash-Lite"),
+                AIModel(id: "gemini-1.5-flash", name: "Gemini 1.5 Flash"),
+                AIModel(id: "gemini-1.5-pro", name: "Gemini 1.5 Pro"),
+            ]
+        case .kimi:
+            return [
+                AIModel(id: "moonshot-v1-8k", name: "Moonshot v1 8K"),
+                AIModel(id: "moonshot-v1-32k", name: "Moonshot v1 32K"),
+                AIModel(id: "kimi-k2-turbo-preview", name: "Kimi K2 Turbo"),
+                AIModel(id: "kimi-k2-thinking-preview", name: "Kimi K2 Thinking"),
+            ]
         case .local:
             return [
                 AIModel(id: "local", name: "内置分析"),
@@ -53,6 +69,10 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
             return "https://api.anthropic.com/v1/messages"
         case .deepseek:
             return "https://api.deepseek.com/v1/chat/completions"
+        case .gemini:
+            return "https://generativelanguage.googleapis.com/v1beta"
+        case .kimi:
+            return "https://api.moonshot.cn/v1/chat/completions"
         case .local:
             return ""
         }

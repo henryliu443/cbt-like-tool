@@ -54,6 +54,10 @@ struct AIServiceFactory {
             return AnthropicService()
         case .deepseek:
             return DeepSeekService()
+        case .gemini:
+            return GeminiService()
+        case .kimi:
+            return MoonshotService()
         case .local:
             return LocalAnalysisService()
         }

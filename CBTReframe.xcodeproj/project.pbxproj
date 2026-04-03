@@ -38,6 +38,9 @@
 		A1100025 /* ThoughtJournalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100025 /* ThoughtJournalViewModel.swift */; };
 		A1100026 /* ThoughtJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100026 /* ThoughtJournalView.swift */; };
 		A1100027 /* RiskRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100027 /* RiskRouting.swift */; };
+		A1100028 /* MoonshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100028 /* MoonshotService.swift */; };
+		A1100029 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100029 /* GeminiService.swift */; };
+		A1100030 /* ExternalAIAppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100030 /* ExternalAIAppLauncher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +76,9 @@
 		A2100025 /* ThoughtJournalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtJournalViewModel.swift; sourceTree = "<group>"; };
 		A2100026 /* ThoughtJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtJournalView.swift; sourceTree = "<group>"; };
 		A2100027 /* RiskRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskRouting.swift; sourceTree = "<group>"; };
+		A2100028 /* MoonshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshotService.swift; sourceTree = "<group>"; };
+		A2100029 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		A2100030 /* ExternalAIAppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAIAppLauncher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +154,9 @@
 				A2100009 /* LocalAnalysisService.swift */,
 				A2100010 /* KeychainManager.swift */,
 				A2100011 /* PromptTemplates.swift */,
+				A2100028 /* MoonshotService.swift */,
+				A2100029 /* GeminiService.swift */,
+				A2100030 /* ExternalAIAppLauncher.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -287,6 +296,9 @@
 				A1100025 /* ThoughtJournalViewModel.swift in Sources */,
 				A1100026 /* ThoughtJournalView.swift in Sources */,
 				A1100027 /* RiskRouting.swift in Sources */,
+				A1100028 /* MoonshotService.swift in Sources */,
+				A1100029 /* GeminiService.swift in Sources */,
+				A1100030 /* ExternalAIAppLauncher.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -68,11 +68,17 @@ struct HomeView: View {
             }
         }
         .confirmationDialog("已复制到剪贴板", isPresented: $showExternalAppChoices, titleVisibility: .visible) {
-            Button("打开 DeepSeek Chat（网页）") {
-                openDeepSeekChatInBrowser()
+            Button("打开 DeepSeek") {
+                ExternalAIAppLauncher.openDeepSeek()
             }
             Button("打开 ChatGPT") {
-                openChatGPTAppOrWeb()
+                ExternalAIAppLauncher.openChatGPT()
+            }
+            Button("打开 Gemini") {
+                ExternalAIAppLauncher.openGemini()
+            }
+            Button("打开 Kimi") {
+                ExternalAIAppLauncher.openKimi()
             }
             Button("完成", role: .cancel) {}
         } message: {
@@ -129,19 +135,6 @@ struct HomeView: View {
         UIPasteboard.general.string = text
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         showExternalAppChoices = true
-    }
-
-    private func openDeepSeekChatInBrowser() {
-        guard let url = URL(string: "https://chat.deepseek.com") else { return }
-        UIApplication.shared.open(url)
-    }
-
-    private func openChatGPTAppOrWeb() {
-        if let appURL = URL(string: "chatgpt://"), UIApplication.shared.canOpenURL(appURL) {
-            UIApplication.shared.open(appURL)
-        } else if let web = URL(string: "https://chat.openai.com") {
-            UIApplication.shared.open(web)
-        }
     }
 
     private var canSubmitAnalysis: Bool {
