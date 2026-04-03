@@ -25,7 +25,6 @@ struct HistoryView: View {
                     emptyState
                 } else {
                     listContent
-                        .searchable(text: $viewModel.searchText, prompt: "搜索想法...")
                 }
             }
             .navigationTitle("历史记录")
@@ -139,37 +138,50 @@ struct HistoryView: View {
     }
 
     private var listContent: some View {
-        List {
-            weeklyReviewSection
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                weeklyReviewCard
 
-            ForEach(groupedEntries, id: \.0) { pair in
-                Section(pair.0) {
-                    ForEach(pair.1, id: \.id) { entry in
-                        HistoryRowView(entry: entry, viewModel: viewModel)
-                    }
-                    .onDelete { offsets in
-                        deleteEntries(entries: pair.1, at: offsets)
+                ForEach(groupedEntries, id: \.0) { pair in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(pair.0)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color("TextSecondary"))
+                            .padding(.horizontal, 4)
+
+                        ForEach(pair.1, id: \.id) { entry in
+                            HistoryRowView(entry: entry, viewModel: viewModel)
+                                .padding(14)
+                                .background(Color("CardBackground"))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .shadow(color: .black.opacity(0.03), radius: 4, y: 2)
+                        }
                     }
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 40)
         }
-        .listStyle(.insetGrouped)
     }
 
-    private var weeklyReviewSection: some View {
-        Section {
-            let stats = viewModel.weeklyStats(allEntries)
-            HStack(spacing: 24) {
+    private var weeklyReviewCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("本周回顾")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color("TextSecondary"))
+                .padding(.horizontal, 4)
+
+            HStack(spacing: 0) {
+                let stats = viewModel.weeklyStats(allEntries)
                 statItem(value: "\(stats.count)", label: "本周分析", icon: "brain.head.profile", color: Color("AccentColor"))
-                Divider().frame(height: 40)
-                statItem(value: "\(stats.favoriteCount)", label: "收藏洞察", icon: "star.fill", color: .yellow)
-                Divider().frame(height: 40)
+                statItem(value: "\(stats.favoriteCount)", label: "收藏", icon: "star.fill", color: .yellow)
                 statItem(value: "\(allEntries.count)", label: "总记录", icon: "clock", color: Color("TextSecondary"))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        } header: {
-            Text("本周回顾")
+            .padding(.vertical, 12)
+            .background(Color("CardBackground"))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .black.opacity(0.03), radius: 4, y: 2)
         }
     }
 
@@ -227,15 +239,15 @@ struct HistoryRowView: View {
     let entry: HistoryEntry
     @Bindable var viewModel: HistoryViewModel
     @State private var isExpanded = false
+    @State private var copiedToast = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
                 Text(entry.inputThought)
                     .font(.subheadline)
                     .lineLimit(isExpanded ? nil : 2)
                     .foregroundStyle(Color("TextPrimary"))
-                    .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 12)
 
@@ -272,22 +284,67 @@ struct HistoryRowView: View {
             }
 
             if isExpanded {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
                     Divider()
-                    expandedSection(
-                        icon: "lightbulb",
-                        iconColor: Color("AccentColor"),
-                        label: "替代想法",
-                        value: entry.alternative
-                    )
-                    expandedSection(
-                        icon: "figure.walk",
-                        iconColor: .green,
-                        label: "建议行动",
-                        value: entry.action
-                    )
+
+                    Text("替代想法")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color("TextSecondary"))
+                    Text(entry.alternative)
+                        .font(.subheadline)
+                        .foregroundStyle(Color("TextPrimary"))
+
+                    Text("建议行动")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color("TextSecondary"))
+                    Text(entry.action)
+                        .font(.subheadline)
+                        .foregroundStyle(Color("TextPrimary"))
+
+                    Divider()
+
+                    HStack(spacing: 16) {
+                        Button {
+                            UIPasteboard.general.string = buildText()
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation { copiedToast = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation { copiedToast = false }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: copiedToast ? "checkmark" : "doc.on.doc")
+                                Text(copiedToast ? "已复制" : "复制")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(Color("AccentColor"))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            UIPasteboard.general.string = buildText() + "\n\n请帮我进一步分析这个想法。"
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                let url = URL(string: "chatgpt://")!
+                                if UIApplication.shared.canOpenURL(url) {
+                                    UIApplication.shared.open(url)
+                                } else {
+                                    UIApplication.shared.open(URL(string: "https://chat.openai.com")!)
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "paperplane.fill")
+                                Text("发到 ChatGPT")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(Color("AccentColor"))
+                        }
+                        .buttonStyle(.plain)
+
+                        Spacer()
+                    }
                 }
-                .padding(.top, 2)
                 .transition(.opacity)
             }
         }
@@ -300,24 +357,12 @@ struct HistoryRowView: View {
         }
     }
 
-    private func expandedSection(icon: String, iconColor: Color, label: String, value: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundStyle(iconColor)
-                .frame(width: 20, height: 20)
-                .background(iconColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(label)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Color("TextSecondary"))
-                Text(value)
-                    .font(.subheadline)
-                    .foregroundStyle(Color("TextPrimary"))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
+    private func buildText() -> String {
+        """
+        我的想法：\(entry.inputThought)
+        认知扭曲：\(entry.distortion)
+        替代想法：\(entry.alternative)
+        建议行动：\(entry.action)
+        """
     }
 }
