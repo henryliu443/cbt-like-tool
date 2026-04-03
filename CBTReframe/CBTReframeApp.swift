@@ -6,6 +6,27 @@ struct CBTReframeApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var settingsViewModel = SettingsViewModel()
 
+    let container: ModelContainer
+
+    init() {
+        let schema = Schema([HistoryEntry.self, ThoughtEntry.self])
+        let config = ModelConfiguration(isStoredInMemoryOnly: false)
+        do {
+            container = try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            print("[CBTReframe] SwiftData schema error, resetting database: \(error)")
+            let urls = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            if let appSupport = urls.first {
+                let storeURL = appSupport.appendingPathComponent("default.store")
+                for suffix in ["", "-shm", "-wal"] {
+                    let fileURL = storeURL.deletingLastPathComponent().appendingPathComponent(storeURL.lastPathComponent + suffix)
+                    try? FileManager.default.removeItem(at: fileURL)
+                }
+            }
+            container = try! ModelContainer(for: schema, configurations: [config])
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             if hasCompletedOnboarding {
@@ -17,7 +38,7 @@ struct CBTReframeApp: App {
                 )
             }
         }
-        .modelContainer(for: [HistoryEntry.self, ThoughtEntry.self])
+        .modelContainer(container)
     }
 }
 
