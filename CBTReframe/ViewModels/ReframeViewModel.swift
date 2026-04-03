@@ -85,9 +85,7 @@ final class ReframeViewModel {
 
         isLoading = true
         errorMessage = nil
-        if isLongThinkingModel {
-            startThinkingProgress()
-        }
+        startThinkingProgress()
         defer {
             stopThinkingProgress()
             isLoading = false

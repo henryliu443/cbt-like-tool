@@ -92,6 +92,8 @@ final class SettingsViewModel {
                 }
             }.value
             isSavingAPIKey = false
+            let feedback = UINotificationFeedbackGenerator()
+            feedback.notificationOccurred(.success)
         }
     }
 

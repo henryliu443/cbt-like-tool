@@ -21,9 +21,12 @@ struct HomeView: View {
                     MoodTagPicker(selectedMood: $selectedMood)
                     analyzeButton
 
-                    if viewModel.isLoading && viewModel.isLongThinkingModel {
+                    if viewModel.isLoading {
                         thinkingProgressBanner
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                                removal: .opacity
+                            ))
                     }
 
                     if viewModel.showCrisisBanner {
@@ -157,30 +160,46 @@ struct HomeView: View {
 
     private var thinkingProgressBanner: some View {
         HStack(alignment: .center, spacing: 12) {
-            ProgressView()
-                .tint(Color("AccentColor"))
+            ZStack {
+                Circle()
+                    .stroke(Color("AccentColor").opacity(0.15), lineWidth: 3)
+                    .frame(width: 40, height: 40)
+                Circle()
+                    .trim(from: 0, to: 0.7)
+                    .stroke(Color("AccentColor"), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .frame(width: 40, height: 40)
+                    .rotationEffect(.degrees(Double(viewModel.analysisElapsedSeconds * 90)))
+                    .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: viewModel.analysisElapsedSeconds)
+
+                Text("\(viewModel.analysisElapsedSeconds)")
+                    .font(.caption2.bold().monospacedDigit())
+                    .foregroundStyle(Color("AccentColor"))
+            }
+
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(viewModel.currentThinkingPhrase)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color("TextPrimary"))
-                    Spacer(minLength: 8)
-                    Text("\(viewModel.analysisElapsedSeconds) 秒")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(Color("TextSecondary"))
+                        .contentTransition(.numericText())
+                    Spacer()
                 }
-                Text("以下为概括提示，非完整推理过程")
-                    .font(.caption2)
-                    .foregroundStyle(Color("TextSecondary").opacity(0.9))
+                if viewModel.isLongThinkingModel {
+                    Text("深度思考模式 · 概括提示")
+                        .font(.caption2)
+                        .foregroundStyle(Color("TextSecondary").opacity(0.8))
+                }
             }
+
+            Image(systemName: "sparkles")
+                .font(.body)
+                .foregroundStyle(Color("AccentColor").opacity(0.6))
+                .symbolEffect(.pulse, isActive: true)
         }
         .padding(14)
         .background(Color("CardBackground"))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
-        )
+        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
         .padding(.horizontal)
     }
 
