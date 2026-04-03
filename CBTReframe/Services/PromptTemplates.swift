@@ -68,6 +68,16 @@ struct PromptBuilder {
         """
     }
 
+    /// 仅用于 DeepSeek Reasoner 等「先推理再作答」的模型：避免把推理过程写入 JSON 或拉长字段。
+    static func reasonerAdditionalInstructions() -> String {
+        """
+        【推理模型专用】你的思考过程用户看不到，也不要写出来。
+        对用户可见的输出只能是：上面要求的那一个 JSON 对象，且不要有任何其它字符（不要前言、不要 markdown、不要复述推理）。
+        字段必须简短：distortion 只写扭曲类型名称，不超过 12 个字；alternative、action 各不超过 3 句短句，每句尽量不超过 40 字。
+        不要把分析过程、举例或长段解释写进任一 JSON 字段。
+        """
+    }
+
     static func buildUserPrompt(thought: String) -> String {
         return "我的想法是：\(thought)"
     }

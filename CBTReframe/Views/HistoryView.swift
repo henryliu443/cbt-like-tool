@@ -264,6 +264,8 @@ struct HistoryRowView: View {
             HStack(spacing: 6) {
                 Text(entry.distortion)
                     .font(.caption2.weight(.medium))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
                     .background(Color("AccentColor").opacity(0.1))

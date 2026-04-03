@@ -22,12 +22,14 @@ struct DeepSeekService: AIServiceProtocol {
 
         var body: [String: Any] = [
             "model": model.id,
-            "max_tokens": isReasoner ? 4096 : 1024,
+            // Reasoner：最终只需短 JSON；token 过大易鼓励冗长输出并撑爆 UI
+            "max_tokens": isReasoner ? 768 : 1024,
         ]
 
         if isReasoner {
+            let combined = "\(systemPrompt)\n\n\(PromptBuilder.reasonerAdditionalInstructions())\n\n\(userPrompt)"
             body["messages"] = [
-                ["role": "user", "content": "\(systemPrompt)\n\n\(userPrompt)"],
+                ["role": "user", "content": combined],
             ]
         } else {
             body["messages"] = [
@@ -122,20 +124,15 @@ struct DeepSeekService: AIServiceProtocol {
             throw AIServiceError.invalidResponse
         }
 
-        let content = message["content"] as? String
-        let reasoningContent = message["reasoning_content"] as? String
-
-        let textToParse: String
-        if let content = content, !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            textToParse = content
-        } else if let reasoning = reasoningContent, !reasoning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            textToParse = reasoning
-        } else {
-            print("[CBTReframe][DeepSeek] message fields: \(message.keys)")
-            throw AIServiceError.invalidResponse
+        // 仅解析最终 content。reasoning_content 为模型内部链式推理，绝不能当作用户可见结果或写入历史。
+        guard let content = message["content"] as? String,
+              !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            let hasReasoning = (message["reasoning_content"] as? String)?.isEmpty == false
+            print("[CBTReframe][DeepSeek] empty content (has reasoning_content: \(hasReasoning)), keys: \(message.keys)")
+            throw AIServiceError.parseError("模型未返回最终回复，请重试；若持续出现可改用 DeepSeek Chat")
         }
 
-        return try parseJSONContent(textToParse)
+        return try parseJSONContent(content)
     }
 
     private func parseDeepSeekThoughtPatternResponse(_ data: Data) throws -> ThoughtPatternReport {
