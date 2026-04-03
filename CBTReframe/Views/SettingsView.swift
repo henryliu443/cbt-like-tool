@@ -21,6 +21,20 @@ struct SettingsView: View {
                 aboutSection
             }
             .navigationTitle("设置")
+            .toolbar {
+                if viewModel.isRefreshingModels {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack(spacing: 6) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("获取模型中")
+                                .font(.caption)
+                                .foregroundStyle(Color("TextSecondary"))
+                        }
+                        .accessibilityLabel("正在获取模型列表")
+                    }
+                }
+            }
             .alert("确认清除", isPresented: $showClearConfirmation) {
                 Button("清除所有数据", role: .destructive) {
                     viewModel.clearAllData(modelContext: modelContext)
@@ -114,19 +128,78 @@ struct SettingsView: View {
         } header: {
             Label("API Key", systemImage: "key")
         } footer: {
-            Text("Key 仅存储在你设备的 Keychain 中，不会上传到任何服务器。")
+            VStack(alignment: .leading, spacing: 6) {
+                if viewModel.isRefreshingModels && viewModel.hasAPIKey {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("正在从服务商获取可用模型…")
+                            .font(.caption)
+                            .foregroundStyle(Color("AccentColor"))
+                    }
+                }
+                Text("Key 仅存储在你设备的 Keychain 中，不会上传到任何服务器。")
+            }
         }
     }
 
     private var modelSection: some View {
         Section {
+            if viewModel.isRefreshingModels {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("正在获取模型列表")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color("TextPrimary"))
+                        Text("请稍候，完成后可在此选择模型")
+                            .font(.caption)
+                            .foregroundStyle(Color("TextSecondary"))
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 4)
+                .accessibilityElement(children: .combine)
+            }
             Picker("模型", selection: $viewModel.selectedModelId) {
-                ForEach(viewModel.selectedProvider.availableModels) { model in
+                ForEach(viewModel.resolvedModels(for: viewModel.selectedProvider)) { model in
                     Text(model.name).tag(model.id)
                 }
             }
+            .disabled(viewModel.isRefreshingModels && viewModel.selectedProvider.requiresAPIKey)
+
+            if viewModel.selectedProvider.requiresAPIKey {
+                Button {
+                    Task { await viewModel.refreshModels() }
+                } label: {
+                    Label("刷新模型列表", systemImage: "arrow.clockwise")
+                }
+                .disabled(viewModel.isRefreshingModels || !viewModel.hasAPIKey)
+            }
         } header: {
-            Label("模型选择", systemImage: "cube")
+            HStack {
+                Label("模型选择", systemImage: "cube")
+                if viewModel.isRefreshingModels {
+                    Spacer()
+                    Text("获取中…")
+                        .font(.caption)
+                        .foregroundStyle(Color("AccentColor"))
+                }
+            }
+        } footer: {
+            Group {
+                if viewModel.isRefreshingModels {
+                    Text("正在连接服务商并拉取当前账号可用的模型，完成后列表会自动更新。")
+                        .font(.caption)
+                } else if let err = viewModel.modelsListError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if viewModel.selectedProvider.requiresAPIKey {
+                    Text("保存 API Key 后会自动从服务商拉取最新可用模型并缓存在本机；也可手动刷新。拉取失败时使用内置备选列表。")
+                        .font(.caption)
+                }
+            }
         }
     }
 

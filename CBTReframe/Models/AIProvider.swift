@@ -16,7 +16,8 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
         self != .local
     }
 
-    var availableModels: [AIModel] {
+    /// 网络拉取失败或未配置 Key 时的兜底列表。
+    var fallbackModels: [AIModel] {
         switch self {
         case .openai:
             return [
@@ -58,7 +59,7 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
     }
 
     var defaultModel: AIModel {
-        availableModels[0]
+        fallbackModels[0]
     }
 
     var baseURL: String {

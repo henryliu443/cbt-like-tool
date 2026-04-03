@@ -41,6 +41,7 @@
 		A1100028 /* MoonshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100028 /* MoonshotService.swift */; };
 		A1100029 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100029 /* GeminiService.swift */; };
 		A1100030 /* ExternalAIAppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100030 /* ExternalAIAppLauncher.swift */; };
+		A1100031 /* AIModelListService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100031 /* AIModelListService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -79,6 +80,7 @@
 		A2100028 /* MoonshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshotService.swift; sourceTree = "<group>"; };
 		A2100029 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
 		A2100030 /* ExternalAIAppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAIAppLauncher.swift; sourceTree = "<group>"; };
+		A2100031 /* AIModelListService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIModelListService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +159,7 @@
 				A2100028 /* MoonshotService.swift */,
 				A2100029 /* GeminiService.swift */,
 				A2100030 /* ExternalAIAppLauncher.swift */,
+				A2100031 /* AIModelListService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -299,6 +302,7 @@
 				A1100028 /* MoonshotService.swift in Sources */,
 				A1100029 /* GeminiService.swift in Sources */,
 				A1100030 /* ExternalAIAppLauncher.swift in Sources */,
+				A1100031 /* AIModelListService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
