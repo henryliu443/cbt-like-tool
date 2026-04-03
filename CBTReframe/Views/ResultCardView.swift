@@ -4,6 +4,9 @@ struct ResultCardView: View {
     let result: AnalysisResult
     var template: ThinkingTemplate = .cbt
     var inputThought: String = ""
+    /// 历史记录等场景：复制到剪贴板时附在文首（首页留空即可）。
+    var moodTag: String = ""
+    var analysisDepthLabel: String = ""
     @State private var copiedToast = false
 
     var body: some View {
@@ -20,7 +23,7 @@ struct ResultCardView: View {
             actionBar
         }
         .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
         .overlay(alignment: .top) {
             if copiedToast {
@@ -38,7 +41,6 @@ struct ResultCardView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.horizontal)
     }
 
     private var cbtContent: some View {
@@ -209,6 +211,14 @@ struct ResultCardView: View {
 
     private func buildClipboardText() -> String {
         var text = ""
+        let mood = moodTag.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !mood.isEmpty {
+            text += "心情：\(mood)\n"
+        }
+        let depth = analysisDepthLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !depth.isEmpty {
+            text += "深度：\(depth)\n"
+        }
         if !inputThought.isEmpty {
             text += "我的想法：\(inputThought)\n\n"
         }

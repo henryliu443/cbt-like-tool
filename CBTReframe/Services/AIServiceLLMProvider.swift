@@ -26,8 +26,9 @@ final class AIServiceLLMProvider: LLMProvider {
         let req = try JSONDecoder().decode(ReframeLLMRequest.self, from: data)
         let service = AIServiceFactory.service(for: settingsViewModel.selectedProvider)
 
-        let retried = try await ReframeRetryExecutor.run {
-            try await service.reframe(
+        let maxAttempts = (req.template == .socratic && req.strategy != .crisis) ? 3 : 2
+        let retried = try await ReframeRetryExecutor.run(maxAttempts: maxAttempts) {
+            var result = try await service.reframe(
                 thought: req.thought,
                 mood: req.mood,
                 model: settingsViewModel.selectedModel,
@@ -36,6 +37,10 @@ final class AIServiceLLMProvider: LLMProvider {
                 template: req.template,
                 strategy: req.strategy
             )
+            if req.template == .socratic && req.strategy != .crisis {
+                result = try SocraticPipelineValidation.applyingSanitizedQuestions(result)
+            }
+            return result
         }
 
         let out = try JSONEncoder().encode(retried.value)

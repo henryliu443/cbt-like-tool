@@ -1,6 +1,9 @@
 import Foundation
 
 struct AnalysisResult: Codable, Identifiable, Equatable {
+    /// 苏格拉底模式：模型未返回有效 `questions` 时的占位句（与 UI 一致，勿与用户真实问题混淆）。
+    static let socraticPlaceholderQuestion = "模型未返回有效问题，请重试或换用其他服务商。"
+
     var id: UUID
     let distortion: String
     let alternative: String
@@ -80,13 +83,22 @@ struct AnalysisResult: Codable, Identifiable, Equatable {
                 qs = alternative.split(separator: "\n").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
             }
             if qs.isEmpty {
-                qs = ["模型未返回有效问题，请重试或换用其他服务商。"]
+                qs = [Self.socraticPlaceholderQuestion]
+            }
+            let onlyPlaceholderQuestion = qs.count == 1 && qs[0] == Self.socraticPlaceholderQuestion
+            let resolvedAction: String
+            if action.isEmpty {
+                resolvedAction = onlyPlaceholderQuestion
+                    ? "暂无有效引导问题，请先重试或换用其他服务商后再记录反思。"
+                    : "写下你对第一个问题的回答。"
+            } else {
+                resolvedAction = action
             }
             return AnalysisResult(
                 id: tid,
                 distortion: dist == "未识别" ? "苏格拉底提问" : dist,
                 alternative: alternative.isEmpty ? "请结合下列问题逐步反思（无标准答案）。" : alternative,
-                action: action.isEmpty ? "写下你对第一个问题的回答。" : action,
+                action: resolvedAction,
                 questions: qs,
                 actions: actions,
                 stateAssessment: stateAssessment

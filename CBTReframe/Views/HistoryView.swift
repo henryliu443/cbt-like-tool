@@ -239,7 +239,6 @@ struct HistoryRowView: View {
     let entry: HistoryEntry
     @Bindable var viewModel: HistoryViewModel
     @State private var isExpanded = false
-    @State private var copiedToast = false
 
     private var displayTemplate: ThinkingTemplate {
         entry.thinkingTemplate ?? .cbt
@@ -327,47 +326,10 @@ struct HistoryRowView: View {
                     ResultCardView(
                         result: entry.analysisResult,
                         template: displayTemplate,
-                        inputThought: entry.inputThought
+                        inputThought: entry.inputThought,
+                        moodTag: entry.moodTag,
+                        analysisDepthLabel: entry.analysisDepth?.displayName ?? ""
                     )
-
-                    Divider()
-
-                    HStack(spacing: 16) {
-                        Button {
-                            UIPasteboard.general.string = buildText()
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation { copiedToast = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation { copiedToast = false }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: copiedToast ? "checkmark" : "doc.on.doc")
-                                Text(copiedToast ? "已复制" : "复制")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(Color("AccentColor"))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            UIPasteboard.general.string = buildText() + "\n\n请帮我进一步分析这个想法。"
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                ExternalAIAppLauncher.openChatGPT()
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "paperplane.fill")
-                                Text("发到 ChatGPT")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(Color("AccentColor"))
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-                    }
                 }
                 .transition(.opacity)
             }
@@ -379,18 +341,5 @@ struct HistoryRowView: View {
                 isExpanded.toggle()
             }
         }
-    }
-
-    private func buildText() -> String {
-        let moodLine = entry.moodTag.isEmpty ? "" : "心情：\(entry.moodTag)\n"
-        let depthLine = entry.analysisDepth.map { "深度：\($0.displayName)\n" } ?? ""
-
-        return """
-        \(moodLine)我的想法：\(entry.inputThought)
-        模式：\(displayTemplate.historyTag)
-        \(depthLine)认知扭曲：\(entry.distortion)
-        替代想法：\(entry.alternative)
-        建议行动：\(entry.action)
-        """
     }
 }

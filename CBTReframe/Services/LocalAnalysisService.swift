@@ -151,18 +151,30 @@ struct LocalAnalysisService: AIServiceProtocol {
     private static let socraticPool: [AnalysisResult] = [
         AnalysisResult(
             distortion: "值得深入探索的想法",
-            alternative: "这个想法有什么证据支持？有什么证据不支持？如果你的好朋友有这个想法，你会怎么跟TA说？",
-            action: "花5分钟用纸笔分别写下「支持」和「不支持」这个想法的证据"
+            alternative: "通过提问检验证据与视角，而不是直接下结论。",
+            action: "花5分钟用纸笔分别写下「支持」和「不支持」这个想法的证据",
+            questions: [
+                "这个想法有什么证据支持？有什么证据不支持？",
+                "如果你的好朋友有这个想法，你会怎么跟TA说？",
+            ]
         ),
         AnalysisResult(
             distortion: "可能存在认知偏差",
-            alternative: "你这个想法的确定程度有多高（0-100%）？如果降低到50%，事情会有什么不同？一年后你会怎么看这件事？",
-            action: "给这个想法打一个确信度分数，明天再打一次，对比一下"
+            alternative: "用评分与时间距离松动「绝对肯定」的感觉。",
+            action: "给这个想法打一个确信度分数，明天再打一次，对比一下",
+            questions: [
+                "你这个想法的确定程度有多高（0-100%）？如果降低到50%，事情会有什么不同？",
+                "一年后你会怎么看这件事？",
+            ]
         ),
         AnalysisResult(
             distortion: "情绪驱动的判断",
-            alternative: "这是一个事实还是一种感觉？如果你心情很好的时候，会怎么看这件事？你有没有忽略什么信息？",
-            action: "把这个想法写下来，然后假装是别人写的，客观地分析它"
+            alternative: "区分事实与感受，并检查是否遗漏信息。",
+            action: "把这个想法写下来，然后假装是别人写的，客观地分析它",
+            questions: [
+                "这是一个事实还是一种感觉？",
+                "如果你心情很好的时候，会怎么看这件事？你有没有忽略什么信息？",
+            ]
         ),
     ]
 

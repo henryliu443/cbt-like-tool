@@ -20,16 +20,21 @@ struct MoodTagPicker: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "heart.text.square.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color("AccentColor"))
                     Text("选择心情")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color("TextPrimary"))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color("TextSecondary"))
+                        .textCase(.uppercase)
+                        .tracking(0.4)
                     Text("必选")
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
                         .background(Color("AccentColor").opacity(0.12))
                         .foregroundStyle(Color("AccentColor"))
                         .clipShape(Capsule())
@@ -39,7 +44,6 @@ struct MoodTagPicker: View {
                     .foregroundStyle(Color("TextSecondary"))
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -49,31 +53,31 @@ struct MoodTagPicker: View {
                                 selectedMood = mood.label
                             }
                         } label: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: 6) {
                                 Text(mood.emoji)
-                                    .font(.callout)
+                                    .font(.body)
                                 Text(mood.label)
-                                    .font(.caption)
+                                    .font(.subheadline.weight(.medium))
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                             .background(
                                 selectedMood == mood.label
-                                    ? Color("AccentColor").opacity(0.15)
-                                    : Color("CardBackground")
+                                    ? Color("AccentColor").opacity(0.18)
+                                    : Color(.secondarySystemGroupedBackground)
                             )
                             .foregroundStyle(
                                 selectedMood == mood.label
                                     ? Color("AccentColor")
-                                    : Color("TextSecondary")
+                                    : Color("TextPrimary")
                             )
                             .clipShape(Capsule())
                             .overlay(
                                 Capsule()
                                     .stroke(
                                         selectedMood == mood.label
-                                            ? Color("AccentColor").opacity(0.3)
-                                            : Color(.separator).opacity(0.3),
+                                            ? Color("AccentColor").opacity(0.35)
+                                            : Color(.separator).opacity(0.35),
                                         lineWidth: 1
                                     )
                             )
@@ -81,8 +85,14 @@ struct MoodTagPicker: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.trailing, 2)
             }
         }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.06), radius: 12, y: 5)
+        )
     }
 }

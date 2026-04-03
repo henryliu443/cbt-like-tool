@@ -50,8 +50,24 @@ final class AnalysisPipeline {
                 settings: settings,
                 provider: provider
             )
+            var result = safeDecode(raw.text, strategy: envelope.strategy)
+            if settings.thinkingTemplate == .socratic && envelope.strategy != .crisis {
+                do {
+                    result = try SocraticPipelineValidation.applyingSanitizedQuestions(result)
+                } catch {
+                    let serviceError = AIServiceError.classify(error)
+                    return AnalysisPipelineOutput(
+                        result: nil,
+                        metadata: AnalysisRunMetadata(
+                            attemptCount: raw.attemptCount,
+                            recoveredByRetry: raw.recoveredByRetry
+                        ),
+                        errorMessage: serviceError.userFacingMessage
+                    )
+                }
+            }
             return AnalysisPipelineOutput(
-                result: safeDecode(raw.text, strategy: envelope.strategy),
+                result: result,
                 metadata: AnalysisRunMetadata(
                     attemptCount: raw.attemptCount,
                     recoveredByRetry: raw.recoveredByRetry

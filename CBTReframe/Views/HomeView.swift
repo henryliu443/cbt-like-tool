@@ -13,16 +13,20 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground)
+            homeBackground
                 .ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 20) {
                     headerSection
-                    ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
-                    templatePicker
-                    MoodTagPicker(selectedMood: $viewModel.selectedMood)
-                    analyzeButton
+
+                    VStack(spacing: 20) {
+                        ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
+                        templatePicker
+                        MoodTagPicker(selectedMood: $viewModel.selectedMood)
+                        analyzeButton
+                    }
+
                     externalMoneySaverSection
 
                     if viewModel.isLoading && viewModel.isLongThinkingModel {
@@ -69,9 +73,11 @@ struct HomeView: View {
                             ))
                     }
 
-                    Spacer(minLength: 60)
+                    Spacer(minLength: 72)
                 }
-                .padding(.top, 16)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
             }
             .scrollDismissesKeyboard(.interactively)
         }
@@ -127,23 +133,28 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color("CardBackground"))
+                .background(Color("AccentColor").opacity(0.08))
                 .foregroundStyle(Color("AccentColor"))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color("AccentColor").opacity(0.25), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color("AccentColor").opacity(0.22), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
             .disabled(!canSubmitAnalysis)
             .opacity(canSubmitAnalysis ? 1 : 0.55)
         }
-        .padding(14)
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
-        .padding(.horizontal)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color("CardBackground").opacity(0.92))
+                .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color("AccentColor").opacity(0.08), lineWidth: 1)
+        )
     }
 
     private func copyExternalPromptAndShowLinks() {
@@ -159,35 +170,50 @@ struct HomeView: View {
         return hasText && hasMood && !viewModel.isLoading
     }
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.greeting)
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(Color("TextPrimary"))
-
-                    Text(viewModel.todayQuote)
-                        .font(.subheadline)
-                        .foregroundStyle(Color("TextSecondary"))
-                        .lineLimit(2)
-                }
-
-                Spacer()
-
-                Image(systemName: "brain.head.profile")
-                    .font(.system(size: 36))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color("GradientStart"), Color("GradientEnd")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
+    private var homeBackground: some View {
+        ZStack {
+            Color(.systemGroupedBackground)
+            LinearGradient(
+                colors: [
+                    Color("AccentColor").opacity(0.07),
+                    Color.clear,
+                    Color(.systemGroupedBackground)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
-        .padding(.horizontal)
-        .padding(.top, 8)
+    }
+
+    private var headerSection: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(viewModel.greeting)
+                    .font(.title.weight(.bold))
+                    .foregroundStyle(Color("TextPrimary"))
+                    .minimumScaleFactor(0.85)
+                    .lineLimit(2)
+
+                Text(viewModel.todayQuote)
+                    .font(.subheadline)
+                    .foregroundStyle(Color("TextSecondary"))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Image(systemName: "brain.head.profile")
+                .font(.system(size: 40, weight: .light))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color("GradientStart"), Color("GradientEnd")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .accessibilityHidden(true)
+        }
     }
 
     private var templatePicker: some View {
@@ -232,17 +258,17 @@ struct HomeView: View {
                 )
             )
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .shadow(color: Color("GradientEnd").opacity(0.38), radius: 16, y: 8)
         }
         .disabled(!canSubmitAnalysis)
         .opacity(canSubmitAnalysis ? 1 : 0.6)
-        .scaleEffect(isButtonPressed ? 0.96 : 1)
+        .scaleEffect(isButtonPressed ? 0.98 : 1)
         .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isButtonPressed = pressing
             }
         }, perform: {})
-        .padding(.horizontal)
     }
 
     private var analyzeButtonTitle: String {
@@ -310,10 +336,11 @@ struct HomeView: View {
             Spacer()
         }
         .padding(14)
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
-        .padding(.horizontal)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+        )
     }
 
     private func errorBanner(_ message: String) -> some View {
@@ -333,8 +360,7 @@ struct HomeView: View {
         }
         .padding(14)
         .background(Color.red.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -349,8 +375,7 @@ struct HomeView: View {
         }
         .padding(14)
         .background(Color("AccentColor").opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(.horizontal)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var geminiProLoadingBanner: some View {
@@ -377,12 +402,11 @@ struct HomeView: View {
         }
         .padding(12)
         .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
         )
-        .padding(.horizontal)
         .onAppear {
             geminiPulse = true
         }

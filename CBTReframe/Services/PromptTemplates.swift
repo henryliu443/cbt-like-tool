@@ -78,7 +78,7 @@ struct PromptBuilder {
             【输出要求】请只输出一个纯 JSON 对象，不要直接给「答案」或替用户下结论。
             格式：
             {"distortion":"与想法相关的简短视角提示（非评判）","questions":["分步引导问题1","问题2","问题3"],"alternative":"一句总结：为何用提问而非直接答案","action":"反思练习或记录方式"}
-            键名必须是英文。questions 至少 2 个字符串。不要用 ```json 包裹。
+            键名必须是英文。questions 为必填：至少 2 条、每条至少 3 个字符，须为完整问句或引导句。不要用 ```json 包裹。
             """
         case .behavioral:
             return """
