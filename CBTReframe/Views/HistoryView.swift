@@ -229,77 +229,94 @@ struct HistoryRowView: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.inputThought)
-                        .font(.subheadline)
-                        .lineLimit(isExpanded ? nil : 2)
-                        .foregroundStyle(Color("TextPrimary"))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 0) {
+                Text(entry.inputThought)
+                    .font(.subheadline)
+                    .lineLimit(isExpanded ? nil : 2)
+                    .foregroundStyle(Color("TextPrimary"))
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 8) {
-                        Text(entry.distortion)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color("AccentColor").opacity(0.1))
-                            .foregroundStyle(Color("AccentColor"))
-                            .clipShape(Capsule())
-
-                        if !entry.providerName.isEmpty {
-                            Text(entry.providerName)
-                                .font(.caption2)
-                                .foregroundStyle(Color("TextSecondary"))
-                        }
-
-                        Text(entry.createdAt, style: .time)
-                            .font(.caption2)
-                            .foregroundStyle(Color("TextSecondary"))
-                    }
-                }
-
-                Spacer()
+                Spacer(minLength: 12)
 
                 Button {
                     viewModel.toggleFavorite(entry, modelContext: modelContext)
                 } label: {
                     Image(systemName: entry.isFavorite ? "star.fill" : "star")
-                        .foregroundStyle(entry.isFavorite ? .yellow : Color("TextSecondary").opacity(0.4))
-                        .font(.title3)
+                        .foregroundStyle(entry.isFavorite ? .yellow : Color("TextSecondary").opacity(0.3))
+                        .font(.body)
                 }
                 .buttonStyle(.plain)
             }
 
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    expandedRow(label: "替代想法", value: entry.alternative, icon: "lightbulb")
-                    expandedRow(label: "建议行动", value: entry.action, icon: "figure.walk")
+            HStack(spacing: 6) {
+                Text(entry.distortion)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color("AccentColor").opacity(0.1))
+                    .foregroundStyle(Color("AccentColor"))
+                    .clipShape(Capsule())
+
+                if !entry.providerName.isEmpty {
+                    Text(entry.providerName)
+                        .font(.caption2)
+                        .foregroundStyle(Color("TextSecondary"))
                 }
-                .padding(.top, 4)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                Spacer()
+
+                Text(entry.createdAt, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(Color("TextSecondary"))
+            }
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                    expandedSection(
+                        icon: "lightbulb",
+                        iconColor: Color("AccentColor"),
+                        label: "替代想法",
+                        value: entry.alternative
+                    )
+                    expandedSection(
+                        icon: "figure.walk",
+                        iconColor: .green,
+                        label: "建议行动",
+                        value: entry.action
+                    )
+                }
+                .padding(.top, 2)
+                .transition(.opacity)
             }
         }
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.spring(response: 0.3)) {
+            withAnimation(.easeInOut(duration: 0.25)) {
                 isExpanded.toggle()
             }
         }
     }
 
-    private func expandedRow(label: String, value: String, icon: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+    private func expandedSection(icon: String, iconColor: Color, label: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(Color("AccentColor"))
-                .frame(width: 16)
-            VStack(alignment: .leading, spacing: 2) {
+                .foregroundStyle(iconColor)
+                .frame(width: 20, height: 20)
+                .background(iconColor.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+
+            VStack(alignment: .leading, spacing: 3) {
                 Text(label)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color("TextSecondary"))
                 Text(value)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(Color("TextPrimary"))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
