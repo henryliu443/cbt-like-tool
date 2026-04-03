@@ -105,18 +105,21 @@ struct HistoryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var groupedEntries: [(String, [HistoryEntry])] {
+        viewModel.groupedByDate(allEntries)
+    }
+
     private var listContent: some View {
         List {
             weeklyReviewSection
 
-            let grouped = viewModel.groupedByDate(allEntries)
-            ForEach(grouped, id: \.0) { dateString, entries in
-                Section(dateString) {
-                    ForEach(entries, id: \.id) { entry in
+            ForEach(groupedEntries, id: \.0) { pair in
+                Section(pair.0) {
+                    ForEach(pair.1, id: \.id) { entry in
                         HistoryRowView(entry: entry, viewModel: viewModel)
                     }
                     .onDelete { offsets in
-                        deleteEntries(entries: entries, at: offsets)
+                        deleteEntries(entries: pair.1, at: offsets)
                     }
                 }
             }
