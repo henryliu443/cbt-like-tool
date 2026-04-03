@@ -11,6 +11,7 @@ final class ReframeViewModel {
     var errorMessage: String?
     var showCrisisBanner: Bool = false
     var isButtonPressed: Bool = false
+    var retryRecoveryNotice: String?
 
     /// 分析前必选，供模型结合情绪解读想法。
     var selectedMood: String = ""
@@ -19,6 +20,7 @@ final class ReframeViewModel {
     var analysisElapsedSeconds: Int = 0
     var thinkingPhraseIndex: Int = 0
     private var thinkingTickerTask: Task<Void, Never>?
+    private var retryNoticeTask: Task<Void, Never>?
 
     var settings: SettingsViewModel
     var globalSettings: GlobalSettings
@@ -32,6 +34,12 @@ final class ReframeViewModel {
             || id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4")
             || id.contains("reason")
             || id.contains("thinking")
+    }
+
+    /// Gemini Pro 机型：显示轻量加载提示（不走深度思考计时条）。
+    var isGeminiProModel: Bool {
+        settings.selectedProvider == .gemini
+            && settings.selectedModel.id.lowercased().contains("pro")
     }
 
     static let thinkingPhrases: [String] = [
@@ -168,16 +176,22 @@ final class ReframeViewModel {
         }
 
         let rawResult = await pipeline.run(input: input, settings: globalSettings)
-
-        if rawResult.distortion == "error", rawResult.alternative == "analysis failed" {
+        if let message = rawResult.errorMessage {
+            errorMessage = message
+            return
+        }
+        guard let decodedResult = rawResult.result else {
             errorMessage = "分析失败，请稍后重试"
             return
         }
 
-        let analysisResult = rawResult.normalized(for: template)
+        let analysisResult = decodedResult.normalized(for: template)
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             self.result = analysisResult
+        }
+        if rawResult.metadata.recoveredByRetry {
+            showRetryRecoveryNotice()
         }
 
         let entry = HistoryEntry(
@@ -201,6 +215,9 @@ final class ReframeViewModel {
         result = nil
         errorMessage = nil
         showCrisisBanner = false
+        retryRecoveryNotice = nil
+        retryNoticeTask?.cancel()
+        retryNoticeTask = nil
         stopThinkingProgress()
     }
 
@@ -229,5 +246,23 @@ final class ReframeViewModel {
         thinkingTickerTask = nil
         analysisElapsedSeconds = 0
         thinkingPhraseIndex = 0
+    }
+
+    @MainActor
+    private func showRetryRecoveryNotice() {
+        let notice = "网络波动，已自动重试并成功"
+        withAnimation(.easeInOut(duration: 0.2)) {
+            retryRecoveryNotice = notice
+        }
+        retryNoticeTask?.cancel()
+        retryNoticeTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if retryRecoveryNotice == notice {
+                    retryRecoveryNotice = nil
+                }
+            }
+        }
     }
 }

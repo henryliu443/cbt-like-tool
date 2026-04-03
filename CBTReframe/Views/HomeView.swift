@@ -8,6 +8,7 @@ struct HomeView: View {
     @Bindable var viewModel: ReframeViewModel
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
+    @State private var geminiPulse = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -30,6 +31,16 @@ struct HomeView: View {
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)),
                                 removal: .opacity
                             ))
+                    }
+
+                    if viewModel.isLoading && viewModel.isGeminiProModel && !viewModel.isLongThinkingModel {
+                        geminiProLoadingBanner
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
+                    if let retryNotice = viewModel.retryRecoveryNotice {
+                        retryRecoveryBanner(retryNotice)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     if viewModel.showCrisisBanner {
@@ -325,5 +336,58 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
         .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func retryRecoveryBanner(_ message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.shield")
+                .foregroundStyle(Color("AccentColor"))
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(Color("TextPrimary"))
+            Spacer()
+        }
+        .padding(14)
+        .background(Color("AccentColor").opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal)
+    }
+
+    private var geminiProLoadingBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(Color("AccentColor"))
+            Text("Gemini Pro 正在组织回复")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color("TextPrimary"))
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { index in
+                    Circle()
+                        .fill(Color("AccentColor"))
+                        .frame(width: 5, height: 5)
+                        .scaleEffect(geminiPulse ? 1.0 : 0.55)
+                        .opacity(geminiPulse ? 1.0 : 0.45)
+                        .animation(
+                            .easeInOut(duration: 0.5).repeatForever(autoreverses: true).delay(Double(index) * 0.12),
+                            value: geminiPulse
+                        )
+                }
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal)
+        .onAppear {
+            geminiPulse = true
+        }
+        .onDisappear {
+            geminiPulse = false
+        }
     }
 }

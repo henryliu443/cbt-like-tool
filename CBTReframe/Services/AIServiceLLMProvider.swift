@@ -19,25 +19,33 @@ final class AIServiceLLMProvider: LLMProvider {
         self.settingsViewModel = settingsViewModel
     }
 
-    func generate(prompt: String) async throws -> String {
+    func generate(prompt: String) async throws -> LLMGenerationOutput {
         guard let data = prompt.data(using: .utf8) else {
             throw AIServiceError.parseError("invalid prompt encoding")
         }
         let req = try JSONDecoder().decode(ReframeLLMRequest.self, from: data)
         let service = AIServiceFactory.service(for: settingsViewModel.selectedProvider)
-        let result = try await service.reframe(
-            thought: req.thought,
-            mood: req.mood,
-            model: settingsViewModel.selectedModel,
-            mode: req.mode,
-            style: req.style,
-            template: req.template,
-            strategy: req.strategy
-        )
-        let out = try JSONEncoder().encode(result)
+
+        let retried = try await ReframeRetryExecutor.run {
+            try await service.reframe(
+                thought: req.thought,
+                mood: req.mood,
+                model: settingsViewModel.selectedModel,
+                mode: req.mode,
+                style: req.style,
+                template: req.template,
+                strategy: req.strategy
+            )
+        }
+
+        let out = try JSONEncoder().encode(retried.value)
         guard let s = String(data: out, encoding: .utf8) else {
             throw AIServiceError.invalidResponse
         }
-        return s
+        return LLMGenerationOutput(
+            text: s,
+            attemptCount: retried.attemptCount,
+            recoveredByRetry: retried.recoveredByRetry
+        )
     }
 }

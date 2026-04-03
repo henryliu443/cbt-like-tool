@@ -66,15 +66,18 @@ struct DeepSeekService: AIServiceProtocol {
 
         switch httpResponse.statusCode {
         case 200: break
-        case 401: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
+        case 401, 403: throw AIServiceError.invalidKey
+        case 429: throw AIServiceError.httpStatus(429)
         case 400:
             let bodyStr = String(data: data, encoding: .utf8) ?? ""
             if bodyStr.contains("Insufficient Balance") || bodyStr.contains("insufficient") {
                 throw AIServiceError.parseError("DeepSeek 账户余额不足，请充值后重试")
             }
-            throw AIServiceError.invalidResponse
-        default: throw AIServiceError.invalidResponse
+            throw AIServiceError.httpStatus(400)
+        case 500, 502, 503, 504:
+            throw AIServiceError.httpStatus(httpResponse.statusCode)
+        default:
+            throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         return try parseDeepSeekResponse(data, strategy: strategy)
@@ -114,9 +117,12 @@ struct DeepSeekService: AIServiceProtocol {
 
         switch httpResponse.statusCode {
         case 200: break
-        case 401: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
-        default: throw AIServiceError.invalidResponse
+        case 401, 403: throw AIServiceError.invalidKey
+        case 429: throw AIServiceError.httpStatus(429)
+        case 500, 502, 503, 504:
+            throw AIServiceError.httpStatus(httpResponse.statusCode)
+        default:
+            throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         return try parseDeepSeekThoughtPatternResponse(data)

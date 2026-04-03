@@ -5,5 +5,5 @@ protocol AnalysisEngine {
         input: String,
         settings: GlobalSettings,
         provider: LLMProvider
-    ) async throws -> String
+    ) async throws -> LLMGenerationOutput
 }

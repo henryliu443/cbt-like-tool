@@ -5,7 +5,7 @@ final class SocraticEngine: AnalysisEngine {
         input: String,
         settings: GlobalSettings,
         provider: LLMProvider
-    ) async throws -> String {
+    ) async throws -> LLMGenerationOutput {
         let envelope = try JSONDecoder().decode(AnalysisInputEnvelope.self, from: Data(input.utf8))
         let req = ReframeLLMRequest(
             thought: envelope.thought,

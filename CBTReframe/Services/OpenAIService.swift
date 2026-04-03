@@ -45,9 +45,10 @@ struct OpenAIService: AIServiceProtocol {
 
         switch httpResponse.statusCode {
         case 200: break
-        case 401: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
-        default: throw AIServiceError.invalidResponse
+        case 401, 403: throw AIServiceError.invalidKey
+        case 429: throw AIServiceError.httpStatus(429)
+        case 500, 502, 503, 504: throw AIServiceError.httpStatus(httpResponse.statusCode)
+        default: throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         return try parseOpenAIResponse(data, strategy: strategy)
@@ -87,9 +88,10 @@ struct OpenAIService: AIServiceProtocol {
 
         switch httpResponse.statusCode {
         case 200: break
-        case 401: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
-        default: throw AIServiceError.invalidResponse
+        case 401, 403: throw AIServiceError.invalidKey
+        case 429: throw AIServiceError.httpStatus(429)
+        case 500, 502, 503, 504: throw AIServiceError.httpStatus(httpResponse.statusCode)
+        default: throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         return try parseOpenAIThoughtPatternResponse(data)

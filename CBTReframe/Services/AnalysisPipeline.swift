@@ -7,6 +7,19 @@ struct AnalysisInputEnvelope: Codable {
     let strategy: ResponseStrategy
 }
 
+struct AnalysisRunMetadata {
+    let attemptCount: Int
+    let recoveredByRetry: Bool
+
+    static let `default` = AnalysisRunMetadata(attemptCount: 1, recoveredByRetry: false)
+}
+
+struct AnalysisPipelineOutput {
+    let result: AnalysisResult?
+    let metadata: AnalysisRunMetadata
+    let errorMessage: String?
+}
+
 /// Central entry for reframe analysis: ViewModels call this instead of AI services.
 @MainActor
 final class AnalysisPipeline {
@@ -20,14 +33,13 @@ final class AnalysisPipeline {
     }
 
     /// Single entry for reframe analysis. `input` must be JSON-encoded `AnalysisInputEnvelope` (thought, mood, risk strategy).
-    func run(input: String, settings: GlobalSettings) async -> AnalysisResult {
+    func run(input: String, settings: GlobalSettings) async -> AnalysisPipelineOutput {
         guard let data = input.data(using: .utf8),
               let envelope = try? JSONDecoder().decode(AnalysisInputEnvelope.self, from: data) else {
-            return AnalysisResult(
-                distortion: "error",
-                alternative: "analysis failed",
-                action: "请稍后重试",
-                actions: ["retry later"]
+            return AnalysisPipelineOutput(
+                result: nil,
+                metadata: .default,
+                errorMessage: "分析请求格式错误，请稍后重试"
             )
         }
 
@@ -38,13 +50,20 @@ final class AnalysisPipeline {
                 settings: settings,
                 provider: provider
             )
-            return safeDecode(raw, strategy: envelope.strategy)
+            return AnalysisPipelineOutput(
+                result: safeDecode(raw.text, strategy: envelope.strategy),
+                metadata: AnalysisRunMetadata(
+                    attemptCount: raw.attemptCount,
+                    recoveredByRetry: raw.recoveredByRetry
+                ),
+                errorMessage: nil
+            )
         } catch {
-            return AnalysisResult(
-                distortion: "error",
-                alternative: "analysis failed",
-                action: "请稍后重试",
-                actions: ["retry later"]
+            let serviceError = AIServiceError.classify(error)
+            return AnalysisPipelineOutput(
+                result: nil,
+                metadata: .default,
+                errorMessage: serviceError.userFacingMessage
             )
         }
     }

@@ -6,6 +6,7 @@ enum AIServiceError: LocalizedError {
     case networkError(Error)
     case rateLimited
     case invalidKey
+    case httpStatus(Int)
     case parseError(String)
 
     var errorDescription: String? {
@@ -20,9 +21,80 @@ enum AIServiceError: LocalizedError {
             return "请求过于频繁，请稍后再试"
         case .invalidKey:
             return "API Key 无效，请检查设置"
+        case .httpStatus(let code):
+            return "服务返回异常（\(code)）"
         case .parseError(let detail):
             return "解析响应失败：\(detail)"
         }
+    }
+
+    var userFacingMessage: String {
+        switch self {
+        case .noAPIKey:
+            return "请先在设置中填写 API Key"
+        case .invalidResponse:
+            return "AI 返回了无效的响应，请稍后重试"
+        case .networkError(let error):
+            if let urlError = error as? URLError {
+                switch urlError.code {
+                case .notConnectedToInternet, .networkConnectionLost:
+                    return "网络连接中断，请检查网络后重试"
+                case .timedOut:
+                    return "请求超时，请稍后重试"
+                default:
+                    return "网络波动，请稍后重试"
+                }
+            }
+            return "网络错误，请稍后重试"
+        case .rateLimited:
+            return "请求过于频繁，请稍后再试"
+        case .invalidKey:
+            return "API Key 无效或无权限，请检查设置"
+        case .httpStatus(let code):
+            switch code {
+            case 400:
+                return "请求参数或模型配置有误，请检查后重试"
+            case 401, 403:
+                return "API Key 无效或无权限，请检查设置"
+            case 429:
+                return "请求过于频繁，请稍后再试"
+            case 500, 502, 503, 504:
+                return "服务暂时不可用，请稍后重试"
+            default:
+                return "服务返回异常（\(code)），请稍后重试"
+            }
+        case .parseError(let detail):
+            return detail
+        }
+    }
+
+    var isRetriable: Bool {
+        switch self {
+        case .rateLimited:
+            return true
+        case .httpStatus(let code):
+            return code == 429 || code == 500 || code == 502 || code == 503 || code == 504
+        case .networkError(let error):
+            guard let urlError = error as? URLError else { return false }
+            switch urlError.code {
+            case .timedOut, .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed:
+                return true
+            default:
+                return false
+            }
+        case .noAPIKey, .invalidResponse, .invalidKey, .parseError:
+            return false
+        }
+    }
+
+    static func classify(_ error: Error) -> AIServiceError {
+        if let serviceError = error as? AIServiceError {
+            return serviceError
+        }
+        if error is URLError {
+            return .networkError(error)
+        }
+        return .networkError(error)
     }
 }
 

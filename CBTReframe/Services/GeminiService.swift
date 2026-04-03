@@ -45,12 +45,13 @@ struct GeminiService: AIServiceProtocol {
         switch httpResponse.statusCode {
         case 200: break
         case 401, 403: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
+        case 429: throw AIServiceError.httpStatus(429)
+        case 500, 502, 503, 504: throw AIServiceError.httpStatus(httpResponse.statusCode)
         default:
             if let msg = geminiErrorMessage(from: data) {
                 print("[CBTReframe][Gemini] HTTP \(httpResponse.statusCode): \(msg)")
             }
-            throw AIServiceError.invalidResponse
+            throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         return try parseGeminiGenerateResponse(data, strategy: strategy)
@@ -89,8 +90,9 @@ struct GeminiService: AIServiceProtocol {
         switch httpResponse.statusCode {
         case 200: break
         case 401, 403: throw AIServiceError.invalidKey
-        case 429: throw AIServiceError.rateLimited
-        default: throw AIServiceError.invalidResponse
+        case 429: throw AIServiceError.httpStatus(429)
+        case 500, 502, 503, 504: throw AIServiceError.httpStatus(httpResponse.statusCode)
+        default: throw AIServiceError.httpStatus(httpResponse.statusCode)
         }
 
         let text = try extractGeminiText(from: data)

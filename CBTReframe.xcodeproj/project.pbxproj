@@ -53,6 +53,10 @@
 		A1100040 /* SocraticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100040 /* SocraticEngine.swift */; };
 		A1100041 /* BehavioralEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100041 /* BehavioralEngine.swift */; };
 		A1100042 /* AnalysisPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* AnalysisPipeline.swift */; };
+		A1100043 /* ReframeRetryExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100043 /* ReframeRetryExecutor.swift */; };
+		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
+		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
+		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -103,6 +107,11 @@
 		A2100040 /* SocraticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocraticEngine.swift; sourceTree = "<group>"; };
 		A2100041 /* BehavioralEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehavioralEngine.swift; sourceTree = "<group>"; };
 		A2100042 /* AnalysisPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisPipeline.swift; sourceTree = "<group>"; };
+		A2100043 /* ReframeRetryExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutor.swift; sourceTree = "<group>"; };
+		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
+		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
+		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2200004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,13 +122,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A3000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1200003 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		A1300001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5000001;
+			remoteInfo = CBTReframe;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXGroup section */
 		A4000001 = {
 			isa = PBXGroup;
 			children = (
 				A4000002 /* CBTReframe */,
+				A4200001 /* CBTReframeTests */,
 				A4000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -144,6 +172,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000010 /* CBTReframe.app */,
+				A2200003 /* CBTReframeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -193,6 +222,7 @@
 				A2100040 /* SocraticEngine.swift */,
 				A2100041 /* BehavioralEngine.swift */,
 				A2100037 /* AIServiceLLMProvider.swift */,
+				A2100043 /* ReframeRetryExecutor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -233,6 +263,15 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		A4200001 /* CBTReframeTests */ = {
+			isa = PBXGroup;
+			children = (
+				A2200001 /* AIServiceErrorRetryPolicyTests.swift */,
+				A2200002 /* ReframeRetryExecutorTests.swift */,
+			);
+			path = CBTReframeTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -253,6 +292,23 @@
 			productReference = A2000010 /* CBTReframe.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A5000002 /* CBTReframeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A7000004 /* Build configuration list for PBXNativeTarget "CBTReframeTests" */;
+			buildPhases = (
+				A6000003 /* Sources */,
+				A3000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1400001 /* PBXTargetDependency */,
+			);
+			name = CBTReframeTests;
+			productName = CBTReframeTests;
+			productReference = A2200003 /* CBTReframeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -265,6 +321,10 @@
 				TargetAttributes = {
 					A5000001 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					A5000002 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = A5000001;
 					};
 				};
 			};
@@ -282,9 +342,18 @@
 			projectRoot = "";
 			targets = (
 				A5000001 /* CBTReframe */,
+				A5000002 /* CBTReframeTests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXTargetDependency section */
+		A1400001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5000001 /* CBTReframe */;
+			targetProxy = A1300001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A6000002 /* Resources */ = {
@@ -347,6 +416,16 @@
 				A1100040 /* SocraticEngine.swift in Sources */,
 				A1100041 /* BehavioralEngine.swift in Sources */,
 				A1100042 /* AnalysisPipeline.swift in Sources */,
+				A1100043 /* ReframeRetryExecutor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A6000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */,
+				A1200002 /* ReframeRetryExecutorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -470,6 +549,57 @@
 			};
 			name = Release;
 		};
+		A9000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D68WMWC7DQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cbt.reframe.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CBTReframe.app/CBTReframe";
+				TEST_TARGET_NAME = CBTReframe;
+			};
+			name = Debug;
+		};
+		A9000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D68WMWC7DQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cbt.reframe.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CBTReframe.app/CBTReframe";
+				TEST_TARGET_NAME = CBTReframe;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -487,6 +617,15 @@
 			buildConfigurations = (
 				A9000003 /* Debug */,
 				A9000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A7000004 /* Build configuration list for PBXNativeTarget "CBTReframeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9000005 /* Debug */,
+				A9000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
