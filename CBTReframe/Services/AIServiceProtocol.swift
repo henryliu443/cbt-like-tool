@@ -34,7 +34,8 @@ protocol AIServiceProtocol {
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
-        template: PromptTemplate
+        template: PromptTemplate,
+        strategy: ResponseStrategy
     ) async throws -> AnalysisResult
 
     func analyzeThoughtPatterns(

@@ -8,14 +8,15 @@ struct OpenAIService: AIServiceProtocol {
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
-        template: PromptTemplate
+        template: PromptTemplate,
+        strategy: ResponseStrategy
     ) async throws -> AnalysisResult {
         guard let apiKey = KeychainManager.shared.load(key: provider.rawValue),
               !apiKey.isEmpty else {
             throw AIServiceError.noAPIKey
         }
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
         let userPrompt = PromptBuilder.buildUserPrompt(thought: thought)
 
         let body: [String: Any] = [
@@ -25,7 +26,7 @@ struct OpenAIService: AIServiceProtocol {
                 ["role": "user", "content": userPrompt],
             ],
             "temperature": 0.7,
-            "max_tokens": 1024,
+            "max_tokens": strategy == .crisis ? 512 : 1024,
         ]
 
         var request = URLRequest(url: URL(string: provider.baseURL)!)
@@ -48,7 +49,7 @@ struct OpenAIService: AIServiceProtocol {
         default: throw AIServiceError.invalidResponse
         }
 
-        return try parseOpenAIResponse(data)
+        return try parseOpenAIResponse(data, strategy: strategy)
     }
 
     func analyzeThoughtPatterns(
@@ -93,7 +94,7 @@ struct OpenAIService: AIServiceProtocol {
         return try parseOpenAIThoughtPatternResponse(data)
     }
 
-    private func parseOpenAIResponse(_ data: Data) throws -> AnalysisResult {
+    private func parseOpenAIResponse(_ data: Data, strategy: ResponseStrategy) throws -> AnalysisResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
               let message = choices.first?["message"] as? [String: Any],
@@ -101,7 +102,7 @@ struct OpenAIService: AIServiceProtocol {
             throw AIServiceError.invalidResponse
         }
 
-        return try parseJSONContent(content)
+        return try parseReframeOutput(content, strategy: strategy)
     }
 
     private func parseOpenAIThoughtPatternResponse(_ data: Data) throws -> ThoughtPatternReport {
@@ -114,6 +115,27 @@ struct OpenAIService: AIServiceProtocol {
 
         return try parseThoughtPatternContent(content)
     }
+}
+
+func parseReframeOutput(_ content: String, strategy: ResponseStrategy) throws -> AnalysisResult {
+    if strategy == .crisis {
+        return parsePlainTextCrisisResponse(content)
+    }
+    return try parseJSONContent(content)
+}
+
+func parsePlainTextCrisisResponse(_ content: String) -> AnalysisResult {
+    var text = content
+        .replacingOccurrences(of: "```", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    if text.isEmpty {
+        text = "你愿意说出来，这本身就很不容易。你值得被认真对待，也有人愿意陪伴你度过这段艰难的时刻。"
+    }
+    return AnalysisResult(
+        distortion: "支持与陪伴",
+        alternative: text,
+        action: "若情绪持续或加重，请向信任的人求助，或联系当地心理援助热线与专业医疗机构。"
+    )
 }
 
 func parseJSONContent(_ content: String) throws -> AnalysisResult {

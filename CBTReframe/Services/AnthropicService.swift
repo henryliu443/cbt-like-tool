@@ -8,19 +8,20 @@ struct AnthropicService: AIServiceProtocol {
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
-        template: PromptTemplate
+        template: PromptTemplate,
+        strategy: ResponseStrategy
     ) async throws -> AnalysisResult {
         guard let apiKey = KeychainManager.shared.load(key: provider.rawValue),
               !apiKey.isEmpty else {
             throw AIServiceError.noAPIKey
         }
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
         let userPrompt = PromptBuilder.buildUserPrompt(thought: thought)
 
         let body: [String: Any] = [
             "model": model.id,
-            "max_tokens": 1024,
+            "max_tokens": strategy == .crisis ? 512 : 1024,
             "system": systemPrompt,
             "messages": [
                 ["role": "user", "content": userPrompt],
@@ -48,7 +49,7 @@ struct AnthropicService: AIServiceProtocol {
         default: throw AIServiceError.invalidResponse
         }
 
-        return try parseAnthropicResponse(data)
+        return try parseAnthropicResponse(data, strategy: strategy)
     }
 
     func analyzeThoughtPatterns(
@@ -93,7 +94,7 @@ struct AnthropicService: AIServiceProtocol {
         return try parseAnthropicThoughtPatternResponse(data)
     }
 
-    private func parseAnthropicResponse(_ data: Data) throws -> AnalysisResult {
+    private func parseAnthropicResponse(_ data: Data, strategy: ResponseStrategy) throws -> AnalysisResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = json["content"] as? [[String: Any]],
               let textBlock = content.first(where: { $0["type"] as? String == "text" }),
@@ -101,7 +102,7 @@ struct AnthropicService: AIServiceProtocol {
             throw AIServiceError.invalidResponse
         }
 
-        return try parseJSONContent(text)
+        return try parseReframeOutput(text, strategy: strategy)
     }
 
     private func parseAnthropicThoughtPatternResponse(_ data: Data) throws -> ThoughtPatternReport {

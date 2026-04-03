@@ -8,7 +8,8 @@ struct LocalAnalysisService: AIServiceProtocol {
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
-        template: PromptTemplate
+        template: PromptTemplate,
+        strategy: ResponseStrategy
     ) async throws -> AnalysisResult {
         try await Task.sleep(nanoseconds: 500_000_000)
 
@@ -19,6 +20,10 @@ struct LocalAnalysisService: AIServiceProtocol {
                 alternative: "请先输入一个想法",
                 action: "试着写下你的感受"
             )
+        }
+
+        if strategy == .crisis {
+            return Self.crisisLocalResult
         }
 
         let pool: [AnalysisResult]
@@ -96,6 +101,12 @@ struct LocalAnalysisService: AIServiceProtocol {
 
         return "情绪化推理"
     }
+
+    private static let crisisLocalResult = AnalysisResult(
+        distortion: "支持与陪伴",
+        alternative: "听起来你正在承受很大的痛苦，你愿意说出来已经很不容易。你值得被认真对待，不必独自扛下所有。若你感到难以承受，请尽量联系你信任的人陪伴在身边；紧急情况请拨打当地急救或心理危机热线。",
+        action: "若情绪持续或加重，请向信任的人求助，或联系当地心理援助热线与专业医疗机构。"
+    )
 
     private static func stableIndex(for text: String, count: Int) -> Int {
         let hash = text.unicodeScalars.reduce(into: UInt64(5381)) { partialResult, scalar in

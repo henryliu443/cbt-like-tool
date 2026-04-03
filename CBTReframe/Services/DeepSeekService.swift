@@ -8,7 +8,8 @@ struct DeepSeekService: AIServiceProtocol {
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
-        template: PromptTemplate
+        template: PromptTemplate,
+        strategy: ResponseStrategy
     ) async throws -> AnalysisResult {
         guard let apiKey = KeychainManager.shared.load(key: provider.rawValue),
               !apiKey.isEmpty else {
@@ -16,18 +17,23 @@ struct DeepSeekService: AIServiceProtocol {
         }
 
         let isReasoner = model.id.contains("reasoner")
+        let useJSON = isJSONMode(strategy)
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
         let userPrompt = PromptBuilder.buildUserPrompt(thought: thought)
 
         var body: [String: Any] = [
             "model": model.id,
-            // Reasoner：最终只需短 JSON；token 过大易鼓励冗长输出并撑爆 UI
-            "max_tokens": isReasoner ? 768 : 1024,
+            "max_tokens": isReasoner ? 768 : (strategy == .crisis ? 512 : 1024),
         ]
 
         if isReasoner {
-            let combined = "\(systemPrompt)\n\n\(PromptBuilder.reasonerAdditionalInstructions())\n\n\(userPrompt)"
+            let combined: String
+            if useJSON {
+                combined = "\(systemPrompt)\n\n\(PromptBuilder.reasonerAdditionalInstructions())\n\n\(userPrompt)"
+            } else {
+                combined = "\(systemPrompt)\n\n\(userPrompt)"
+            }
             body["messages"] = [
                 ["role": "user", "content": combined],
             ]
@@ -70,7 +76,7 @@ struct DeepSeekService: AIServiceProtocol {
         default: throw AIServiceError.invalidResponse
         }
 
-        return try parseDeepSeekResponse(data)
+        return try parseDeepSeekResponse(data, strategy: strategy)
     }
 
     func analyzeThoughtPatterns(
@@ -115,7 +121,7 @@ struct DeepSeekService: AIServiceProtocol {
         return try parseDeepSeekThoughtPatternResponse(data)
     }
 
-    private func parseDeepSeekResponse(_ data: Data) throws -> AnalysisResult {
+    private func parseDeepSeekResponse(_ data: Data, strategy: ResponseStrategy) throws -> AnalysisResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
               let message = choices.first?["message"] as? [String: Any] else {
@@ -132,7 +138,7 @@ struct DeepSeekService: AIServiceProtocol {
             throw AIServiceError.parseError("模型未返回最终回复，请重试；若持续出现可改用 DeepSeek Chat")
         }
 
-        return try parseJSONContent(content)
+        return try parseReframeOutput(content, strategy: strategy)
     }
 
     private func parseDeepSeekThoughtPatternResponse(_ data: Data) throws -> ThoughtPatternReport {

@@ -81,7 +81,9 @@ final class ReframeViewModel {
         let thought = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !thought.isEmpty else { return }
 
-        showCrisisBanner = PromptBuilder.containsCrisisContent(thought)
+        let riskLevel = detectRiskLevel(thought)
+        let responseStrategy = routeStrategy(level: riskLevel)
+        showCrisisBanner = (riskLevel == .high)
 
         isLoading = true
         errorMessage = nil
@@ -101,7 +103,8 @@ final class ReframeViewModel {
                 model: settings.selectedModel,
                 mode: settings.reframeMode,
                 style: settings.responseStyle,
-                template: template
+                template: template,
+                strategy: responseStrategy
             )
 
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {

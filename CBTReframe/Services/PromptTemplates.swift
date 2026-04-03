@@ -68,6 +68,50 @@ struct PromptBuilder {
         """
     }
 
+    /// 根据风险路由选择系统提示：高风险走危机支持（纯文本），中风险在 CBT 上叠加温和约束。
+    static func buildSystemPrompt(
+        mode: ReframeMode,
+        style: ResponseStyle,
+        template: PromptTemplate,
+        strategy: ResponseStrategy
+    ) -> String {
+        switch strategy {
+        case .cbtNormal:
+            return buildSystemPrompt(mode: mode, style: style, template: template)
+        case .cbtGentle:
+            return buildSystemPrompt(mode: mode, style: style, template: template) + "\n\n" + gentleAddon()
+        case .crisis:
+            return crisisSystemPrompt()
+        }
+    }
+
+    static func gentleAddon() -> String {
+        """
+        【额外要求】
+        请减少分析的「评判感」，优先表达理解和陪伴。
+        不要过度纠正用户的想法，而是温和引导。
+        """
+    }
+
+    static func crisisSystemPrompt() -> String {
+        """
+        你是一位支持性倾听者。
+
+        【重要】
+        - 不要分析认知扭曲
+        - 不要讲道理
+        - 不要给复杂建议
+
+        【你需要做】
+        1. 承认用户的痛苦
+        2. 表达理解和陪伴
+        3. 温和鼓励寻求现实支持（朋友/家人/专业帮助）
+
+        【输出要求】
+        只输出一段自然语言，不要 JSON，不要结构化字段。
+        """
+    }
+
     /// 仅用于 DeepSeek Reasoner 等「先推理再作答」的模型：避免把推理过程写入 JSON 或拉长字段。
     static func reasonerAdditionalInstructions() -> String {
         """
@@ -108,14 +152,8 @@ struct PromptBuilder {
         """
     }
 
-    static let crisisKeywords: Set<String> = [
-        "自杀", "不想活", "死了算了", "结束生命", "跳楼", "割腕",
-        "活着没意思", "去死", "了结", "轻生",
-        "suicide", "kill myself", "end my life", "want to die",
-    ]
-
+    /// 与 `RiskLexicon` 对齐：高风险时用于界面提示（如安全横幅）。
     static func containsCrisisContent(_ text: String) -> Bool {
-        let lowered = text.lowercased()
-        return crisisKeywords.contains { lowered.contains($0) }
+        detectRiskLevel(text) == .high
     }
 }
