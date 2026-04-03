@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
 @Observable
 final class SettingsViewModel {
@@ -84,9 +85,24 @@ final class SettingsViewModel {
         }
     }
 
-    func clearAllData() {
+    func clearAllData(modelContext: ModelContext) {
         KeychainManager.shared.deleteAll()
         apiKeyInput = ""
+
+        if let historyEntries = try? modelContext.fetch(FetchDescriptor<HistoryEntry>()) {
+            for entry in historyEntries {
+                modelContext.delete(entry)
+            }
+        }
+
+        if let thoughtEntries = try? modelContext.fetch(FetchDescriptor<ThoughtEntry>()) {
+            for entry in thoughtEntries {
+                modelContext.delete(entry)
+            }
+        }
+
+        try? modelContext.save()
+
         let domain = Bundle.main.bundleIdentifier ?? "com.cbt.reframe"
         UserDefaults.standard.removePersistentDomain(forName: domain)
         selectedProvider = .local

@@ -48,7 +48,8 @@ final class HistoryViewModel {
         return (thisWeek.count, favorites.count)
     }
 
-    func toggleFavorite(_ entry: HistoryEntry) {
+    func toggleFavorite(_ entry: HistoryEntry, modelContext: ModelContext) {
         entry.isFavorite.toggle()
+        try? modelContext.save()
     }
 }

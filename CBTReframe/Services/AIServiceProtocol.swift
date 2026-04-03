@@ -36,6 +36,11 @@ protocol AIServiceProtocol {
         style: ResponseStyle,
         template: PromptTemplate
     ) async throws -> AnalysisResult
+
+    func analyzeThoughtPatterns(
+        thoughts: [ThoughtEntry],
+        model: AIModel
+    ) async throws -> ThoughtPatternReport
 }
 
 struct AIServiceFactory {

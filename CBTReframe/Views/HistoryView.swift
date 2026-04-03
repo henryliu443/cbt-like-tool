@@ -1,15 +1,22 @@
 import SwiftUI
 import SwiftData
+import LocalAuthentication
 
 struct HistoryView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var allEntries: [HistoryEntry]
     @Bindable var viewModel: HistoryViewModel
+    @Bindable var settingsViewModel: SettingsViewModel
+    @State private var isUnlocked = false
+    @State private var authErrorMessage: String?
 
     var body: some View {
         NavigationStack {
             Group {
-                if allEntries.isEmpty {
+                if settingsViewModel.useFaceID && !isUnlocked {
+                    lockedState
+                } else if allEntries.isEmpty {
                     emptyState
                 } else {
                     listContent
@@ -18,16 +25,68 @@ struct HistoryView: View {
             .navigationTitle("历史记录")
             .searchable(text: $viewModel.searchText, prompt: "搜索想法...")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        withAnimation { viewModel.showFavoritesOnly.toggle() }
-                    } label: {
-                        Image(systemName: viewModel.showFavoritesOnly ? "star.fill" : "star")
-                            .foregroundStyle(viewModel.showFavoritesOnly ? .yellow : Color("TextSecondary"))
+                if !settingsViewModel.useFaceID || isUnlocked {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            withAnimation { viewModel.showFavoritesOnly.toggle() }
+                        } label: {
+                            Image(systemName: viewModel.showFavoritesOnly ? "star.fill" : "star")
+                                .foregroundStyle(viewModel.showFavoritesOnly ? .yellow : Color("TextSecondary"))
+                        }
                     }
                 }
             }
         }
+        .task(id: settingsViewModel.useFaceID) {
+            await refreshLockState()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard settingsViewModel.useFaceID else {
+                isUnlocked = true
+                return
+            }
+
+            if newPhase != .active {
+                isUnlocked = false
+            } else {
+                Task {
+                    await authenticateIfNeeded()
+                }
+            }
+        }
+    }
+
+    private var lockedState: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "lock.shield")
+                .font(.system(size: 44))
+                .foregroundStyle(Color("AccentColor"))
+
+            Text("历史记录已锁定")
+                .font(.headline)
+                .foregroundStyle(Color("TextPrimary"))
+
+            Text("启用 Face ID 后，进入历史页需要先验证身份。")
+                .font(.subheadline)
+                .foregroundStyle(Color("TextSecondary"))
+                .multilineTextAlignment(.center)
+
+            if let authErrorMessage, !authErrorMessage.isEmpty {
+                Text(authErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button("使用 Face ID 解锁") {
+                Task {
+                    await authenticateIfNeeded()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
     }
 
     private var emptyState: some View {
@@ -105,9 +164,47 @@ struct HistoryView: View {
         }
         try? modelContext.save()
     }
+
+    @MainActor
+    private func refreshLockState() async {
+        if settingsViewModel.useFaceID {
+            isUnlocked = false
+            await authenticateIfNeeded()
+        } else {
+            isUnlocked = true
+            authErrorMessage = nil
+        }
+    }
+
+    @MainActor
+    private func authenticateIfNeeded() async {
+        guard settingsViewModel.useFaceID, !isUnlocked else { return }
+
+        let context = LAContext()
+        var authError: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) else {
+            authErrorMessage = authError?.localizedDescription ?? "当前设备不可用 Face ID。"
+            return
+        }
+
+        do {
+            let success = try await context.evaluatePolicy(
+                .deviceOwnerAuthenticationWithBiometrics,
+                localizedReason: "解锁你的历史记录"
+            )
+            if success {
+                isUnlocked = true
+                authErrorMessage = nil
+            }
+        } catch {
+            authErrorMessage = error.localizedDescription
+        }
+    }
 }
 
 struct HistoryRowView: View {
+    @Environment(\.modelContext) private var modelContext
     let entry: HistoryEntry
     @Bindable var viewModel: HistoryViewModel
     @State private var isExpanded = false
@@ -145,7 +242,7 @@ struct HistoryRowView: View {
                 Spacer()
 
                 Button {
-                    viewModel.toggleFavorite(entry)
+                    viewModel.toggleFavorite(entry, modelContext: modelContext)
                 } label: {
                     Image(systemName: entry.isFavorite ? "star.fill" : "star")
                         .foregroundStyle(entry.isFavorite ? .yellow : Color("TextSecondary").opacity(0.4))

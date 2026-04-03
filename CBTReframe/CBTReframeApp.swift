@@ -48,7 +48,7 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            HistoryView(viewModel: historyViewModel)
+            HistoryView(viewModel: historyViewModel, settingsViewModel: settingsViewModel)
                 .tabItem {
                     Label("历史", systemImage: "clock.arrow.circlepath")
                 }

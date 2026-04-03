@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @Bindable var viewModel: SettingsViewModel
     @State private var showClearConfirmation = false
     @State private var showKeyField = false
@@ -22,7 +23,7 @@ struct SettingsView: View {
             .navigationTitle("设置")
             .alert("确认清除", isPresented: $showClearConfirmation) {
                 Button("清除所有数据", role: .destructive) {
-                    viewModel.clearAllData()
+                    viewModel.clearAllData(modelContext: modelContext)
                 }
                 Button("取消", role: .cancel) {}
             } message: {

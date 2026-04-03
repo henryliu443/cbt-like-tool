@@ -54,58 +54,16 @@ final class ThoughtJournalViewModel {
         isAnalyzing = true
         errorMessage = nil
 
-        let thoughtsList = unprocessed.enumerated().map { idx, entry in
-            var line = "\(idx + 1). \"\(entry.content)\""
-            if !entry.emotion.isEmpty { line += "（情绪: \(entry.emotion)）" }
-            if !entry.situation.isEmpty { line += "（情境: \(entry.situation)）" }
-            return line
-        }.joined(separator: "\n")
-
-        let prompt = """
-        请分析以下自动想法列表，找出认知扭曲模式：
-
-        \(thoughtsList)
-
-        请按以下 JSON 格式输出，不要输出其他内容：
-        {"topDistortions": [{"name": "扭曲类型名", "count": 出现次数, "example": "最典型的一条原文"}], "overallPattern": "整体思维模式总结（2-3句话）", "suggestion": "改善建议（1-2句话）"}
-        注意：topDistortions 最多列出3种最常见的扭曲类型。键名必须是英文。值用中文。
-        """
-
         do {
             let service = AIServiceFactory.service(for: settings.selectedProvider)
-            let model = settings.selectedModel
-            let result = try await service.reframe(
-                thought: prompt,
-                model: model,
-                mode: .balanced,
-                style: .coach,
-                template: .cbtReframe
+            patternReport = try await service.analyzeThoughtPatterns(
+                thoughts: unprocessed,
+                model: settings.selectedModel
             )
-
-            let reportText = """
-            {"topDistortions": [{"name": "\(result.distortion)", "count": \(unprocessed.count), "example": "\(unprocessed.first?.content ?? "")"}], "overallPattern": "\(result.alternative)", "suggestion": "\(result.action)"}
-            """
-
-            if let data = reportText.data(using: .utf8),
-               let report = try? JSONDecoder().decode(ThoughtPatternReport.self, from: data) {
-                patternReport = report
-            } else {
-                patternReport = ThoughtPatternReport(
-                    topDistortions: [
-                        ThoughtPatternReport.DistortionCount(
-                            name: result.distortion,
-                            count: unprocessed.count,
-                            example: unprocessed.first?.content ?? ""
-                        )
-                    ],
-                    overallPattern: result.alternative,
-                    suggestion: result.action
-                )
-            }
 
             for entry in unprocessed {
                 entry.isProcessed = true
-                entry.distortionTag = result.distortion
+                entry.distortionTag = patternReport?.topDistortions.first?.name ?? ""
             }
             try? modelContext.save()
 

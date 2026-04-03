@@ -31,8 +31,77 @@ struct LocalAnalysisService: AIServiceProtocol {
             pool = Self.behavioralPool
         }
 
-        let index = abs(trimmed.hashValue) % pool.count
+        let index = Self.stableIndex(for: trimmed, count: pool.count)
         return pool[index]
+    }
+
+    func analyzeThoughtPatterns(
+        thoughts: [ThoughtEntry],
+        model: AIModel
+    ) async throws -> ThoughtPatternReport {
+        try await Task.sleep(nanoseconds: 300_000_000)
+
+        let grouped = Dictionary(grouping: thoughts) { entry in
+            Self.detectDistortion(for: entry.content)
+        }
+
+        let sortedGroups = grouped
+            .map { name, entries in
+                ThoughtPatternReport.DistortionCount(
+                    name: name,
+                    count: entries.count,
+                    example: entries.first?.content ?? ""
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.count == rhs.count {
+                    return lhs.name < rhs.name
+                }
+                return lhs.count > rhs.count
+            }
+
+        let topDistortions = Array(sortedGroups.prefix(3))
+        let overallPattern = topDistortions.isEmpty
+            ? "最近记录还不够多，暂时看不出稳定模式。"
+            : "你最近更常出现的模式是\(topDistortions.map(\.name).joined(separator: "、"))。这些想法容易在情绪上来时快速放大压力。"
+        let suggestion = topDistortions.contains(where: { $0.name == "灾难化思维" })
+            ? "先把“最坏结果”和“最可能结果”分开写下来，再决定下一步。"
+            : "下次记录想法时，补一句证据支持或不支持它，可以更快打断自动化反应。"
+
+        return ThoughtPatternReport(
+            topDistortions: topDistortions,
+            overallPattern: overallPattern,
+            suggestion: suggestion
+        )
+    }
+
+    private static func detectDistortion(for thought: String) -> String {
+        let text = thought.lowercased()
+
+        if text.contains("一定") || text.contains("完了") || text.contains("最糟") {
+            return "灾难化思维"
+        }
+
+        if text.contains("都") || text.contains("从来") || text.contains("永远") {
+            return "过度概括"
+        }
+
+        if text.contains("应该") || text.contains("必须") {
+            return "应该思维"
+        }
+
+        if text.contains("他们觉得") || text.contains("别人肯定") {
+            return "读心术"
+        }
+
+        return "情绪化推理"
+    }
+
+    private static func stableIndex(for text: String, count: Int) -> Int {
+        let hash = text.unicodeScalars.reduce(into: UInt64(5381)) { partialResult, scalar in
+            partialResult = ((partialResult << 5) &+ partialResult) &+ UInt64(scalar.value)
+        }
+        return Int(hash % UInt64(count))
     }
 
     private static let cbtPool: [AnalysisResult] = [

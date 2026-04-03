@@ -51,6 +51,48 @@ struct OpenAIService: AIServiceProtocol {
         return try parseOpenAIResponse(data)
     }
 
+    func analyzeThoughtPatterns(
+        thoughts: [ThoughtEntry],
+        model: AIModel
+    ) async throws -> ThoughtPatternReport {
+        guard let apiKey = KeychainManager.shared.load(key: provider.rawValue),
+              !apiKey.isEmpty else {
+            throw AIServiceError.noAPIKey
+        }
+
+        let body: [String: Any] = [
+            "model": model.id,
+            "messages": [
+                ["role": "system", "content": PromptBuilder.thoughtPatternSystemPrompt],
+                ["role": "user", "content": PromptBuilder.buildThoughtPatternUserPrompt(thoughts: thoughts)],
+            ],
+            "temperature": 0.3,
+            "max_tokens": 1400,
+        ]
+
+        var request = URLRequest(url: URL(string: provider.baseURL)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 60
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AIServiceError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200: break
+        case 401: throw AIServiceError.invalidKey
+        case 429: throw AIServiceError.rateLimited
+        default: throw AIServiceError.invalidResponse
+        }
+
+        return try parseOpenAIThoughtPatternResponse(data)
+    }
+
     private func parseOpenAIResponse(_ data: Data) throws -> AnalysisResult {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
@@ -60,6 +102,17 @@ struct OpenAIService: AIServiceProtocol {
         }
 
         return try parseJSONContent(content)
+    }
+
+    private func parseOpenAIThoughtPatternResponse(_ data: Data) throws -> ThoughtPatternReport {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let message = choices.first?["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw AIServiceError.invalidResponse
+        }
+
+        return try parseThoughtPatternContent(content)
     }
 }
 
@@ -118,4 +171,26 @@ func parseJSONContent(_ content: String) throws -> AnalysisResult {
         alternative: content,
         action: "请尝试重新分析"
     )
+}
+
+func parseThoughtPatternContent(_ content: String) throws -> ThoughtPatternReport {
+    var text = content
+        .replacingOccurrences(of: "```json", with: "")
+        .replacingOccurrences(of: "```", with: "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if let startIdx = text.firstIndex(of: "{"),
+       let endIdx = text.lastIndex(of: "}") {
+        text = String(text[startIdx...endIdx])
+    }
+
+    guard let data = text.data(using: .utf8) else {
+        throw AIServiceError.parseError("无法转换模式分析文本")
+    }
+
+    do {
+        return try JSONDecoder().decode(ThoughtPatternReport.self, from: data)
+    } catch {
+        throw AIServiceError.parseError("模式分析 JSON 解析失败")
+    }
 }

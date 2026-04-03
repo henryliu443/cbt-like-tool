@@ -72,6 +72,32 @@ struct PromptBuilder {
         return "我的想法是：\(thought)"
     }
 
+    static let thoughtPatternSystemPrompt = """
+    你是一位专业的认知行为治疗（CBT）辅助工具。请分析多条自动想法中的共性模式。
+    只输出一个纯 JSON 对象，不要输出任何解释、前言、markdown 标记或其他文字。
+    格式如下：
+    {"topDistortions":[{"name":"扭曲类型名","count":1,"example":"最典型的一条原文"}],"overallPattern":"整体思维模式总结","suggestion":"改善建议"}
+    注意：
+    1. 键名必须是英文 topDistortions, name, count, example, overallPattern, suggestion
+    2. topDistortions 最多返回 3 项
+    3. 所有值用中文
+    """
+
+    static func buildThoughtPatternUserPrompt(thoughts: [ThoughtEntry]) -> String {
+        let thoughtsList = thoughts.enumerated().map { idx, entry in
+            var line = "\(idx + 1). \"\(entry.content)\""
+            if !entry.emotion.isEmpty { line += "（情绪: \(entry.emotion)）" }
+            if !entry.situation.isEmpty { line += "（情境: \(entry.situation)）" }
+            return line
+        }.joined(separator: "\n")
+
+        return """
+        请分析以下自动想法列表，找出其中最常见的认知扭曲模式，并总结整体倾向：
+
+        \(thoughtsList)
+        """
+    }
+
     static let crisisKeywords: Set<String> = [
         "自杀", "不想活", "死了算了", "结束生命", "跳楼", "割腕",
         "活着没意思", "去死", "了结", "轻生",
