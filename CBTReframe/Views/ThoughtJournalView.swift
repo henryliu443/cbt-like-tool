@@ -224,12 +224,11 @@ struct ThoughtJournalView: View {
         impact.impactOccurred()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if let url = URL(string: "chatgpt://") {
-                if UIApplication.shared.canOpenURL(url) {
-                    UIApplication.shared.open(url)
-                } else if let webURL = URL(string: "https://chat.openai.com") {
-                    UIApplication.shared.open(webURL)
-                }
+            let chatgptURL = URL(string: "chatgpt://")!
+            if UIApplication.shared.canOpenURL(chatgptURL) {
+                UIApplication.shared.open(chatgptURL)
+            } else {
+                UIApplication.shared.open(URL(string: "https://chat.openai.com")!)
             }
         }
     }

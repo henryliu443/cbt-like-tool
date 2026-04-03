@@ -158,43 +158,62 @@ struct HomeView: View {
         return viewModel.activeTemplate.shortLabel
     }
 
+    @State private var spinnerRotation: Double = 0
+
     private var thinkingProgressBanner: some View {
         HStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
-                    .stroke(Color("AccentColor").opacity(0.15), lineWidth: 3)
+                    .stroke(Color("AccentColor").opacity(0.12), lineWidth: 2.5)
                     .frame(width: 40, height: 40)
                 Circle()
-                    .trim(from: 0, to: 0.7)
-                    .stroke(Color("AccentColor"), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .trim(from: 0, to: 0.65)
+                    .stroke(
+                        AngularGradient(
+                            colors: [Color("AccentColor"), Color("AccentColor").opacity(0.1)],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                    )
                     .frame(width: 40, height: 40)
-                    .rotationEffect(.degrees(Double(viewModel.analysisElapsedSeconds * 90)))
-                    .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: viewModel.analysisElapsedSeconds)
+                    .rotationEffect(.degrees(spinnerRotation))
 
                 Text("\(viewModel.analysisElapsedSeconds)")
-                    .font(.caption2.bold().monospacedDigit())
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundStyle(Color("AccentColor"))
+            }
+            .onAppear {
+                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                    spinnerRotation = 360
+                }
+            }
+            .onDisappear {
+                spinnerRotation = 0
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(viewModel.currentThinkingPhrase)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Color("TextPrimary"))
-                        .contentTransition(.numericText())
-                    Spacer()
-                }
-                if viewModel.isLongThinkingModel {
-                    Text("深度思考模式 · 概括提示")
-                        .font(.caption2)
-                        .foregroundStyle(Color("TextSecondary").opacity(0.8))
+                Text(viewModel.currentThinkingPhrase)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Color("TextPrimary"))
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.currentThinkingPhrase)
+
+                HStack(spacing: 4) {
+                    if viewModel.isLongThinkingModel {
+                        Text("深度思考")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(Color("AccentColor"))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color("AccentColor").opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                    Text("\(viewModel.analysisElapsedSeconds)秒")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(Color("TextSecondary"))
                 }
             }
 
-            Image(systemName: "sparkles")
-                .font(.body)
-                .foregroundStyle(Color("AccentColor").opacity(0.6))
-                .symbolEffect(.pulse, isActive: true)
+            Spacer()
         }
         .padding(14)
         .background(Color("CardBackground"))

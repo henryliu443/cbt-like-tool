@@ -25,12 +25,12 @@ struct HistoryView: View {
                     emptyState
                 } else {
                     listContent
+                        .searchable(text: $viewModel.searchText, prompt: "搜索想法...")
                 }
             }
             .navigationTitle("历史记录")
-            .searchable(text: $viewModel.searchText, prompt: "搜索想法...")
             .toolbar {
-                if !needsAuth {
+                if !needsAuth && !allEntries.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             withAnimation { viewModel.showFavoritesOnly.toggle() }

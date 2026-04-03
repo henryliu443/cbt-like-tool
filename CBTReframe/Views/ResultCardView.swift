@@ -120,17 +120,20 @@ struct ResultCardView: View {
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
         withAnimation(.spring(response: 0.3)) { copiedToast = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            if let url = URL(string: "chatgpt://") {
-                if UIApplication.shared.canOpenURL(url) {
-                    UIApplication.shared.open(url)
-                } else if let webURL = URL(string: "https://chat.openai.com") {
-                    UIApplication.shared.open(webURL)
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            openChatGPT()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation { copiedToast = false }
             }
+        }
+    }
+
+    private func openChatGPT() {
+        let chatgptURL = URL(string: "chatgpt://")!
+        if UIApplication.shared.canOpenURL(chatgptURL) {
+            UIApplication.shared.open(chatgptURL)
+        } else {
+            UIApplication.shared.open(URL(string: "https://chat.openai.com")!)
         }
     }
 
