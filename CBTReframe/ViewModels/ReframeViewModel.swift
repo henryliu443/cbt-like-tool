@@ -85,7 +85,9 @@ final class ReframeViewModel {
 
         isLoading = true
         errorMessage = nil
-        startThinkingProgress()
+        if isLongThinkingModel {
+            startThinkingProgress()
+        }
         defer {
             stopThinkingProgress()
             isLoading = false
@@ -128,6 +130,7 @@ final class ReframeViewModel {
         }
     }
 
+    @MainActor
     func reset() {
         inputText = ""
         result = nil

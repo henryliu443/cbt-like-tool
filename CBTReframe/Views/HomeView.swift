@@ -21,7 +21,7 @@ struct HomeView: View {
                     MoodTagPicker(selectedMood: $selectedMood)
                     analyzeButton
 
-                    if viewModel.isLoading {
+                    if viewModel.isLoading && viewModel.isLongThinkingModel {
                         thinkingProgressBanner
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)),
