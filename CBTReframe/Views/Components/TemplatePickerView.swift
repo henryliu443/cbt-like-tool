@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct TemplatePickerView: View {
+    /// 三枚方式按钮等宽，整体由外层 `HStack` + `Spacer` 水平居中（宽度兼顾窄屏）。
+    private static let segmentWidth: CGFloat = 74
+
     @Binding var selectedTemplate: ThinkingTemplate
     var suggestedTemplate: ThinkingTemplate?
     var onTemplateTapped: (() -> Void)?
@@ -44,14 +47,19 @@ struct TemplatePickerView: View {
                 }
             }
 
-            HStack(spacing: 0) {
-                ForEach(ThinkingTemplate.allCases) { template in
-                    templateButton(template)
+            HStack {
+                Spacer(minLength: 0)
+                HStack(spacing: 0) {
+                    ForEach(ThinkingTemplate.allCases) { template in
+                        templateButton(template)
+                    }
                 }
+                .padding(5)
+                .background(Color("TextSecondary").opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Spacer(minLength: 0)
             }
-            .padding(5)
-            .background(Color("TextSecondary").opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(maxWidth: .infinity)
         }
         .padding(18)
         .background(
@@ -100,7 +108,7 @@ struct TemplatePickerView: View {
                     Color.clear.frame(height: 12)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: Self.segmentWidth)
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

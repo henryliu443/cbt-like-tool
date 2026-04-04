@@ -20,16 +20,12 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     headerSection
 
-                    Spacer(minLength: 40)
-
                     VStack(spacing: 20) {
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
                         templatePicker
                         MoodTagPicker(selectedMood: $viewModel.selectedMood)
                         analyzeButton
                     }
-
-                    Spacer(minLength: 40)
 
                     externalMoneySaverSection
 
@@ -72,7 +68,7 @@ struct HomeView: View {
                             ))
                     }
 
-                    Spacer(minLength: 72)
+                    Spacer(minLength: 60)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
