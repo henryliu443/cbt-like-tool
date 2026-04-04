@@ -10,6 +10,8 @@ enum AIServiceError: LocalizedError {
     case parseError(String)
     /// 苏格拉底模式：JSON 中 `questions` 缺失、不足或无效；可触发一次自动重试。
     case invalidSocraticOutput
+    /// 结构化 JSON 已解析但字段不可用（如元信息占位、主字段全空）；可触发自动重试。
+    case invalidStructuredOutput(String)
 
     var errorDescription: String? {
         switch self {
@@ -29,6 +31,8 @@ enum AIServiceError: LocalizedError {
             return "解析响应失败：\(detail)"
         case .invalidSocraticOutput:
             return "模型未返回有效的引导问题"
+        case .invalidStructuredOutput(let detail):
+            return detail
         }
     }
 
@@ -71,6 +75,8 @@ enum AIServiceError: LocalizedError {
             return detail
         case .invalidSocraticOutput:
             return "模型未返回有效的引导问题，请重试或换用其他服务商。"
+        case .invalidStructuredOutput(let detail):
+            return detail
         }
     }
 
@@ -88,7 +94,7 @@ enum AIServiceError: LocalizedError {
             default:
                 return false
             }
-        case .invalidSocraticOutput:
+        case .invalidSocraticOutput, .invalidStructuredOutput:
             return true
         case .noAPIKey, .invalidResponse, .invalidKey, .parseError:
             return false

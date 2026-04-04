@@ -101,7 +101,7 @@ struct PromptBuilder {
             【输出要求】请严格按照以下 JSON 格式输出。
             不要输出任何解释、前言、markdown标记或其他文字，只输出一个纯 JSON 对象：
             {"distortion":"自动想法中的认知扭曲类型或简要描述","alternative":"更平衡的替代想法","action":"一条可执行的小行动","actions":["可选的更多行动建议"]}
-            注意：键名必须是英文 distortion, alternative, action。actions 可选。值用中文。不要用 ```json 包裹。
+            distortion 必须是具体的扭曲类型或临床相关简述，禁止填写「有返回结果」「成功」「OK」等系统状态或元信息；alternative 与 action 均须填写有效中文内容，不可留空。键名必须是英文 distortion, alternative, action。actions 可选。不要用 ```json 包裹。
             """
         case .socratic:
             return """

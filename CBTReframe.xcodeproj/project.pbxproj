@@ -54,6 +54,7 @@
 		A1100041 /* BehavioralEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100041 /* BehavioralEngine.swift */; };
 		A1100042 /* AnalysisPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* AnalysisPipeline.swift */; };
 		A1100043 /* ReframeRetryExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100043 /* ReframeRetryExecutor.swift */; };
+		A1100044 /* ReframeOutputGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100044 /* ReframeOutputGate.swift */; };
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
 		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
@@ -108,6 +109,7 @@
 		A2100041 /* BehavioralEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehavioralEngine.swift; sourceTree = "<group>"; };
 		A2100042 /* AnalysisPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisPipeline.swift; sourceTree = "<group>"; };
 		A2100043 /* ReframeRetryExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutor.swift; sourceTree = "<group>"; };
+		A2100044 /* ReframeOutputGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeOutputGate.swift; sourceTree = "<group>"; };
 		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -223,6 +225,7 @@
 				A2100041 /* BehavioralEngine.swift */,
 				A2100037 /* AIServiceLLMProvider.swift */,
 				A2100043 /* ReframeRetryExecutor.swift */,
+				A2100044 /* ReframeOutputGate.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -417,6 +420,7 @@
 				A1100041 /* BehavioralEngine.swift in Sources */,
 				A1100042 /* AnalysisPipeline.swift in Sources */,
 				A1100043 /* ReframeRetryExecutor.swift in Sources */,
+				A1100044 /* ReframeOutputGate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

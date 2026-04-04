@@ -24,4 +24,8 @@ final class AIServiceErrorRetryPolicyTests: XCTestCase {
     func testUserFacingMessageForBadRequest() {
         XCTAssertEqual(AIServiceError.httpStatus(400).userFacingMessage, "请求参数或模型配置有误，请检查后重试")
     }
+
+    func testInvalidStructuredOutputIsRetriable() {
+        XCTAssertTrue(AIServiceError.invalidStructuredOutput("模型未返回有效内容").isRetriable)
+    }
 }

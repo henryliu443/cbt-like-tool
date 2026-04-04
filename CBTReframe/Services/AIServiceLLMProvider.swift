@@ -86,6 +86,9 @@ final class AIServiceLLMProvider: LLMProvider {
             if req.template == .socratic && req.strategy != .crisis {
                 result = try SocraticPipelineValidation.applyingSanitizedQuestions(result)
             }
+            if req.strategy != .crisis {
+                try ReframeOutputGate.validate(result, template: req.template)
+            }
             return result
         }
 
