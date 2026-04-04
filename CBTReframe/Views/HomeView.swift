@@ -33,17 +33,12 @@ struct HomeView: View {
 
                     externalMoneySaverSection
 
-                    if viewModel.isLoading && viewModel.isLongThinkingModel {
-                        thinkingProgressBanner
+                    if viewModel.isLoading && viewModel.loadingBannerStyle != .none {
+                        analysisLoadingBanner
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)),
                                 removal: .opacity
                             ))
-                    }
-
-                    if viewModel.isLoading && viewModel.isGeminiProModel && !viewModel.isLongThinkingModel {
-                        geminiProLoadingBanner
-                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     if let retryNotice = viewModel.retryRecoveryNotice {
@@ -277,14 +272,26 @@ struct HomeView: View {
 
     private var analyzeButtonTitle: String {
         if viewModel.isLoading {
-            return viewModel.isLongThinkingModel ? "深度思考中…" : "正在分析…"
+            return viewModel.loadingBannerStyle == .deepReasoningWithTimer ? "深度思考中…" : "正在分析…"
         }
         return globalSettings.thinkingTemplate.shortLabel
     }
 
     @State private var spinnerRotation: Double = 0
 
-    private var thinkingProgressBanner: some View {
+    @ViewBuilder
+    private var analysisLoadingBanner: some View {
+        switch viewModel.loadingBannerStyle {
+        case .none:
+            EmptyView()
+        case .deepReasoningWithTimer:
+            deepReasoningLoadingBanner
+        case .geminiPro:
+            geminiProLoadingBanner
+        }
+    }
+
+    private var deepReasoningLoadingBanner: some View {
         HStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
@@ -322,15 +329,13 @@ struct HomeView: View {
                     .animation(.easeInOut(duration: 0.3), value: viewModel.currentThinkingPhrase)
 
                 HStack(spacing: 4) {
-                    if viewModel.isLongThinkingModel {
-                        Text("深度思考")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(Color("AccentColor"))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color("AccentColor").opacity(0.1))
-                            .clipShape(Capsule())
-                    }
+                    Text("深度思考")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(Color("AccentColor"))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color("AccentColor").opacity(0.1))
+                        .clipShape(Capsule())
                     Text("\(viewModel.analysisElapsedSeconds)秒")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(Color("TextSecondary"))
@@ -404,11 +409,14 @@ struct HomeView: View {
             }
             Spacer()
         }
-        .padding(12)
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
         )
         .onAppear {

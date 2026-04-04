@@ -27,8 +27,22 @@ final class ReframeViewModel {
 
     private let pipeline: AnalysisPipeline
 
-    /// OpenAI o‑系列 / DeepSeek Reasoner 等
-    var isLongThinkingModel: Bool {
+    /// 分析进行中时首页加载条样式（互斥；与 `analyzeThought` 里是否启动计时器一致）。
+    enum LoadingBannerStyle: Equatable {
+        case none
+        /// OpenAI o‑系列 / DeepSeek Reasoner 等：计时 + 阶段文案
+        case deepReasoningWithTimer
+        /// Gemini Pro：偏慢但无链式思考 UI，仅轻量提示
+        case geminiPro
+    }
+
+    var loadingBannerStyle: LoadingBannerStyle {
+        if modelIndicatesDeepReasoning { return .deepReasoningWithTimer }
+        if modelIndicatesGeminiPro { return .geminiPro }
+        return .none
+    }
+
+    private var modelIndicatesDeepReasoning: Bool {
         let id = settings.selectedModel.id.lowercased()
         return id.contains("reasoner")
             || id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4")
@@ -36,8 +50,7 @@ final class ReframeViewModel {
             || id.contains("thinking")
     }
 
-    /// Gemini Pro 机型：显示轻量加载提示（不走深度思考计时条）。
-    var isGeminiProModel: Bool {
+    private var modelIndicatesGeminiPro: Bool {
         settings.selectedProvider == .gemini
             && settings.selectedModel.id.lowercased().contains("pro")
     }
@@ -156,7 +169,7 @@ final class ReframeViewModel {
 
         isLoading = true
         errorMessage = nil
-        if isLongThinkingModel {
+        if loadingBannerStyle == .deepReasoningWithTimer {
             startThinkingProgress()
         }
         defer {
