@@ -63,9 +63,6 @@ struct AnalysisResult: Codable, Identifiable, Equatable {
         let tid = id
         let dist = distortion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "未识别" : distortion
         let alt = alternative
-        let act = action.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? (template == .behavioral ? "先从小行动开始。" : "暂无替代想法")
-            : action
         switch template {
         case .cbt:
             return AnalysisResult(

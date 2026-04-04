@@ -4,6 +4,14 @@ import Foundation
 struct GeminiService: AIServiceProtocol {
     let provider = AIProvider.gemini
 
+    /// 与 `URLSession.shared` 分离：默认配置的 `timeoutIntervalForRequest` 仅 60s，慢模型可能在首包前被切断。
+    private static let generateSession: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 300
+        config.timeoutIntervalForResource = 600
+        return URLSession(configuration: config)
+    }()
+
     func reframe(
         thought: String,
         mood: String,
@@ -120,10 +128,10 @@ struct GeminiService: AIServiceProtocol {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        // 原 90s；Gemini Pro 等偏慢，放宽为 1.5 倍以免误超时
-        request.timeoutInterval = 135
+        // 单次请求上限（与 session 的 request/resource 超时配合）；Flash 通常较快，Pro / 高峰仍可能久等首包
+        request.timeoutInterval = 300
 
-        return try await URLSession.shared.data(for: request)
+        return try await Self.generateSession.data(for: request)
     }
 
     private func geminiErrorMessage(from data: Data) -> String? {

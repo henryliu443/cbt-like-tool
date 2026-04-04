@@ -64,6 +64,22 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
         fallbackModels[0]
     }
 
+    /// 从服务商返回的列表里选默认模型 id。Gemini 优先 `gemini-flash-latest`（展示名 Gemini Flash Latest），否则按 2.x / 1.5 Flash 回退，避免按字母序误选第一条。
+    func resolveDefaultModelId(from models: [AIModel]) -> String {
+        guard let first = models.first else { return defaultModel.id }
+        guard self == .gemini else { return first.id }
+        let priority = [
+            "gemini-flash-latest",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-1.5-flash",
+        ]
+        let idSet = Set(models.map(\.id))
+        for id in priority where idSet.contains(id) { return id }
+        return first.id
+    }
+
     var baseURL: String {
         switch self {
         case .openai:

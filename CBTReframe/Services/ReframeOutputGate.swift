@@ -7,7 +7,7 @@ enum ReframeOutputGate {
         static let path = "/Users/henry/cbt-like-tool-2/.cursor/debug-e47c55.log"
 
         static func append(hypothesisId: String, message: String, data: [String: String]) {
-            var o: [String: Any] = [
+            let o: [String: Any] = [
                 "sessionId": "e47c55",
                 "hypothesisId": hypothesisId,
                 "location": "ReframeOutputGate.swift",
@@ -20,7 +20,7 @@ enum ReframeOutputGate {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: path), let h = try? FileHandle(forWritingTo: url) {
                 defer { try? h.close() }
-                try? h.seekToEnd()
+                _ = try? h.seekToEnd()
                 try? h.write(contentsOf: (line + "\n").data(using: .utf8)!)
             } else {
                 try? (line + "\n").write(to: url, atomically: true, encoding: .utf8)

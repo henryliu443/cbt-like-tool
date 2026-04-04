@@ -19,7 +19,7 @@ final class SettingsViewModel {
             UserDefaults.standard.set(selectedProvider.rawValue, forKey: "selectedProvider")
             let models = resolvedModels(for: selectedProvider)
             if !models.contains(where: { $0.id == selectedModelId }) {
-                selectedModelId = models.first?.id ?? selectedProvider.fallbackModels.first!.id
+                selectedModelId = selectedProvider.resolveDefaultModelId(from: models)
             }
             loadAPIKey()
             Task { await refreshModels() }
@@ -67,7 +67,7 @@ final class SettingsViewModel {
         loadModelCacheFromDisk()
         let list = resolvedModels(for: selectedProvider)
         if !list.contains(where: { $0.id == selectedModelId }) {
-            selectedModelId = list.first?.id ?? provider.fallbackModels.first!.id
+            selectedModelId = provider.resolveDefaultModelId(from: list)
         }
 
         loadAPIKey()
@@ -116,7 +116,7 @@ final class SettingsViewModel {
             if !models.isEmpty {
                 persistModelCache(models, for: selectedProvider)
                 if !models.contains(where: { $0.id == selectedModelId }) {
-                    selectedModelId = models[0].id
+                    selectedModelId = selectedProvider.resolveDefaultModelId(from: models)
                 }
             }
         } catch {
