@@ -1,10 +1,39 @@
 import Foundation
 
-/// Encodes thought + mood + risk strategy for engines (`input` JSON string).
+/// Encodes thought + mood + risk strategy for engines (`input` JSON string)。
 struct AnalysisInputEnvelope: Codable {
     let thought: String
     let mood: String
     let strategy: ResponseStrategy
+    /// 与心情胶囊独立：用户勾选「Akathisia（静坐不能）」时为 true。
+    var hasAkathisia: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case thought, mood, strategy, hasAkathisia
+    }
+
+    init(thought: String, mood: String, strategy: ResponseStrategy, hasAkathisia: Bool = false) {
+        self.thought = thought
+        self.mood = mood
+        self.strategy = strategy
+        self.hasAkathisia = hasAkathisia
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        thought = try c.decode(String.self, forKey: .thought)
+        mood = try c.decode(String.self, forKey: .mood)
+        strategy = try c.decode(ResponseStrategy.self, forKey: .strategy)
+        hasAkathisia = try c.decodeIfPresent(Bool.self, forKey: .hasAkathisia) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(thought, forKey: .thought)
+        try c.encode(mood, forKey: .mood)
+        try c.encode(strategy, forKey: .strategy)
+        try c.encode(hasAkathisia, forKey: .hasAkathisia)
+    }
 }
 
 struct AnalysisRunMetadata {

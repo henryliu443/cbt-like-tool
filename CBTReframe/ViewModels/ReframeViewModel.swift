@@ -15,6 +15,8 @@ final class ReframeViewModel {
 
     /// 分析前必选，供模型结合情绪解读想法。
     var selectedMood: String = ""
+    /// 与心情胶囊独立；为 true 时在系统提示中追加 Akathisia 说明并写入用户消息补充。
+    var isAkathisia: Bool = false
 
     /// 深度思考类模型：请求耗时长，展示阶段性提示与计时（不向用户展示模型原始思考全文）
     var analysisElapsedSeconds: Int = 0
@@ -119,7 +121,8 @@ final class ReframeViewModel {
             mode: globalSettings.analysisDepth.reframeMode,
             style: globalSettings.responseStyle.legacyResponseStyle,
             template: globalSettings.thinkingTemplate.promptTemplate,
-            strategy: strategy
+            strategy: strategy,
+            hasAkathisia: isAkathisia
         )
     }
 
@@ -157,7 +160,7 @@ final class ReframeViewModel {
                 result: analysisResult,
                 providerName: CrisisLocalSupport.historyProviderName,
                 modelName: CrisisLocalSupport.historyModelName,
-                moodTag: moodTrimmed,
+                moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
                 therapyTemplate: template,
                 analysisDepth: globalSettings.analysisDepth,
                 responseStyle: globalSettings.responseStyle
@@ -180,7 +183,8 @@ final class ReframeViewModel {
         let envelope = AnalysisInputEnvelope(
             thought: thought,
             mood: moodTrimmed,
-            strategy: responseStrategy
+            strategy: responseStrategy,
+            hasAkathisia: isAkathisia
         )
         guard let payload = try? JSONEncoder().encode(envelope),
               let input = String(data: payload, encoding: .utf8) else {
@@ -212,7 +216,7 @@ final class ReframeViewModel {
             result: analysisResult,
             providerName: settings.selectedProvider.displayName,
             modelName: settings.selectedModel.name,
-            moodTag: moodTrimmed,
+            moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
             therapyTemplate: template,
             analysisDepth: globalSettings.analysisDepth,
             responseStyle: globalSettings.responseStyle
@@ -221,10 +225,18 @@ final class ReframeViewModel {
         try? modelContext.save()
     }
 
+    /// 历史列表展示：勾选 Akathisia 时在心情后标注。
+    private static func moodTagForHistory(base: String, isAkathisia: Bool) -> String {
+        guard isAkathisia else { return base }
+        if base == PromptBuilder.akathisiaMoodTag { return base }
+        return "\(base)（Akathisia）"
+    }
+
     @MainActor
     func reset() {
         inputText = ""
         selectedMood = ""
+        isAkathisia = false
         result = nil
         errorMessage = nil
         showCrisisBanner = false

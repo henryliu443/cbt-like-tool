@@ -7,6 +7,7 @@ struct GeminiService: AIServiceProtocol {
     func reframe(
         thought: String,
         mood: String,
+        hasAkathisia: Bool,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
@@ -18,8 +19,15 @@ struct GeminiService: AIServiceProtocol {
             throw AIServiceError.noAPIKey
         }
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(
+            mode: mode,
+            style: style,
+            template: template,
+            strategy: strategy,
+            mood: mood,
+            hasAkathisia: hasAkathisia
+        )
+        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood, hasAkathisia: hasAkathisia)
 
         let body: [String: Any] = [
             "systemInstruction": [
@@ -112,7 +120,8 @@ struct GeminiService: AIServiceProtocol {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 90
+        // 原 90s；Gemini Pro 等偏慢，放宽为 1.5 倍以免误超时
+        request.timeoutInterval = 135
 
         return try await URLSession.shared.data(for: request)
     }

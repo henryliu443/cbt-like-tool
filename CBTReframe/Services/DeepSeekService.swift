@@ -6,6 +6,7 @@ struct DeepSeekService: AIServiceProtocol {
     func reframe(
         thought: String,
         mood: String,
+        hasAkathisia: Bool,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
@@ -20,12 +21,20 @@ struct DeepSeekService: AIServiceProtocol {
         let isReasoner = model.id.contains("reasoner")
         let useJSON = isJSONMode(strategy)
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(
+            mode: mode,
+            style: style,
+            template: template,
+            strategy: strategy,
+            mood: mood,
+            hasAkathisia: hasAkathisia
+        )
+        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood, hasAkathisia: hasAkathisia)
 
+        // Reasoner 会把大量 token 用在内部 reasoning_content；768 极易导致最终 content 为空。
         var body: [String: Any] = [
             "model": model.id,
-            "max_tokens": isReasoner ? 768 : (strategy == .crisis ? 512 : 1024),
+            "max_tokens": isReasoner ? 8192 : (strategy == .crisis ? 512 : 2048),
         ]
 
         if isReasoner {
@@ -51,7 +60,7 @@ struct DeepSeekService: AIServiceProtocol {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = isReasoner ? 120 : 60
+        request.timeoutInterval = isReasoner ? 180 : 60
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -137,12 +146,23 @@ struct DeepSeekService: AIServiceProtocol {
             throw AIServiceError.invalidResponse
         }
 
-        // 仅解析最终 content。reasoning_content 为模型内部链式推理，绝不能当作用户可见结果或写入历史。
+        // 仅解析最终 content。reasoning_content 为链式推理，不可当作用户可见结果。
+        let finish = (choices.first?["finish_reason"] as? String) ?? (choices.first?["finishReason"] as? String)
+        if finish == "length" {
+            print("[CBTReframe][DeepSeek] finish_reason=length (输出可能被截断)")
+        }
+
         guard let content = message["content"] as? String,
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             let hasReasoning = (message["reasoning_content"] as? String)?.isEmpty == false
-            print("[CBTReframe][DeepSeek] empty content (has reasoning_content: \(hasReasoning)), keys: \(message.keys)")
-            throw AIServiceError.parseError("模型未返回最终回复，请重试；若持续出现可改用 DeepSeek Chat")
+            print("[CBTReframe][DeepSeek] empty content (has reasoning_content: \(hasReasoning)), finish_reason: \(finish ?? "nil"), keys: \(message.keys)")
+            throw AIServiceError.parseError(
+                "DeepSeek Reasoner 未返回最终正文（推理可能占满 token）。请重试，或改用「DeepSeek Chat」；若仍失败请检查账户额度与 API 文档。"
+            )
+        }
+
+        if finish == "length", strategy != .crisis, isJSONMode(strategy) {
+            throw AIServiceError.parseError("DeepSeek 输出因长度被截断，无法保证完整 JSON。请缩短输入或重试。")
         }
 
         return try parseReframeOutput(content, strategy: strategy)

@@ -7,6 +7,7 @@ struct MoonshotService: AIServiceProtocol {
     func reframe(
         thought: String,
         mood: String,
+        hasAkathisia: Bool,
         model: AIModel,
         mode: ReframeMode,
         style: ResponseStyle,
@@ -18,8 +19,15 @@ struct MoonshotService: AIServiceProtocol {
             throw AIServiceError.noAPIKey
         }
 
-        let systemPrompt = PromptBuilder.buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood)
+        let systemPrompt = PromptBuilder.buildSystemPrompt(
+            mode: mode,
+            style: style,
+            template: template,
+            strategy: strategy,
+            mood: mood,
+            hasAkathisia: hasAkathisia
+        )
+        let userPrompt = PromptBuilder.buildUserPrompt(thought: thought, mood: mood, hasAkathisia: hasAkathisia)
 
         let body: [String: Any] = [
             "model": model.id,

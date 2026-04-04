@@ -173,9 +173,14 @@ enum AIModelListService {
             let id = m.name.hasPrefix("models/")
                 ? String(m.name.dropFirst("models/".count))
                 : m.name
-            let label = m.displayName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-                ? m.displayName!
-                : prettyGenericName(id)
+            let label: String
+            if id == "gemini-flash-latest" {
+                label = "Gemini Flash Latest"
+            } else if m.displayName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                label = m.displayName!
+            } else {
+                label = prettyGenericName(id)
+            }
             return AIModel(id: id, name: label)
         }
         .sorted { $0.name < $1.name }

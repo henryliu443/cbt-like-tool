@@ -1,7 +1,33 @@
 import Foundation
 
 struct PromptBuilder {
-    static func buildSystemPrompt(mode: ReframeMode, style: ResponseStyle, template: PromptTemplate) -> String {
+    /// 与 `MoodTagPicker` 一致：独立 Toggle 用 `hasAkathisia`；若 `mood` 仅此字符串也视为 Akathisia 语境。
+    static let akathisiaMoodTag = "Akathisia"
+
+    private static func isAkathisiaMood(_ mood: String) -> Bool {
+        mood.trimmingCharacters(in: .whitespacesAndNewlines) == akathisiaMoodTag
+    }
+
+    private static func shouldAttachAkathisiaInstructions(mood: String, hasAkathisia: Bool) -> Bool {
+        hasAkathisia || isAkathisiaMood(mood)
+    }
+
+    /// 仅在用户勾选 Akathisia 时追加，避免对生理性不安过度认知化。
+    private static let akathisiaSafetyInstructions = """
+    【Akathisia 补充】
+    用户标记了静坐不能（Akathisia）。请遵守：
+    - 承认其不安可能部分由生理因素驱动，不必把一切不适都归为「认知」或「性格」。
+    - 避免过度认知解释与长篇扭曲分析；不要替用户下绝对化结论。
+    - 通篇多用「可能」「似乎」「不一定」等不确定表述，少用断定句式。
+    """
+
+    static func buildSystemPrompt(
+        mode: ReframeMode,
+        style: ResponseStyle,
+        template: PromptTemplate,
+        mood: String = "",
+        hasAkathisia: Bool = false
+    ) -> String {
         let roleIntro = "你是一位专业的认知行为治疗（CBT）辅助工具。你温和、有同理心、专业。"
 
         let templateInstructions: String
@@ -51,6 +77,10 @@ struct PromptBuilder {
 
         let outputFormat = outputFormatJSON(for: template)
 
+        let akathisiaBlock = shouldAttachAkathisiaInstructions(mood: mood, hasAkathisia: hasAkathisia)
+            ? "\n\n\(akathisiaSafetyInstructions)\n"
+            : ""
+
         return """
         \(roleIntro)
 
@@ -58,7 +88,7 @@ struct PromptBuilder {
 
         \(modeInstructions)
         \(styleInstructions)
-
+        \(akathisiaBlock)
         \(outputFormat)
         """
     }
@@ -94,13 +124,15 @@ struct PromptBuilder {
         mode: ReframeMode,
         style: ResponseStyle,
         template: PromptTemplate,
-        strategy: ResponseStrategy
+        strategy: ResponseStrategy,
+        mood: String = "",
+        hasAkathisia: Bool = false
     ) -> String {
         switch strategy {
         case .cbtNormal:
-            return buildSystemPrompt(mode: mode, style: style, template: template)
+            return buildSystemPrompt(mode: mode, style: style, template: template, mood: mood, hasAkathisia: hasAkathisia)
         case .cbtGentle:
-            return buildSystemPrompt(mode: mode, style: style, template: template) + "\n\n" + gentleAddon()
+            return buildSystemPrompt(mode: mode, style: style, template: template, mood: mood, hasAkathisia: hasAkathisia) + "\n\n" + gentleAddon()
         case .crisis:
             return crisisSystemPrompt()
         }
@@ -148,10 +180,17 @@ struct PromptBuilder {
     }
 
     /// `mood` 为用户必选的心情标签，便于模型结合情绪语境解读自动想法。
-    static func buildUserPrompt(thought: String, mood: String) -> String {
+    static func buildUserPrompt(thought: String, mood: String, hasAkathisia: Bool = false) -> String {
         let m = mood.trimmingCharacters(in: .whitespacesAndNewlines)
         if m.isEmpty {
             return "我的想法是：\(thought)"
+        }
+        if hasAkathisia, !isAkathisiaMood(m) {
+            return """
+            用户选择的心情：\(m)
+            用户另标记：存在静坐不能（Akathisia），身体不适可能与生理因素有关。
+            我的想法是：\(thought)
+            """
         }
         return """
         用户选择的心情：\(m)
@@ -166,10 +205,18 @@ struct PromptBuilder {
         mode: ReframeMode,
         style: ResponseStyle,
         template: PromptTemplate,
-        strategy: ResponseStrategy
+        strategy: ResponseStrategy,
+        hasAkathisia: Bool = false
     ) -> String {
-        let system = buildSystemPrompt(mode: mode, style: style, template: template, strategy: strategy)
-        let user = buildUserPrompt(thought: thought, mood: mood)
+        let system = buildSystemPrompt(
+            mode: mode,
+            style: style,
+            template: template,
+            strategy: strategy,
+            mood: mood,
+            hasAkathisia: hasAkathisia
+        )
+        let user = buildUserPrompt(thought: thought, mood: mood, hasAkathisia: hasAkathisia)
         return """
         —— CBT Reframe · 外站使用 ——
         在网页/App 中新建对话后：可将「系统提示」设为自定义说明，再发送「用户消息」；或整段一次性粘贴（视平台支持而定）。

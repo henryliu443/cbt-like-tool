@@ -8,6 +8,7 @@ struct MoodTag: Identifiable, Hashable {
 
 struct MoodTagPicker: View {
     @Binding var selectedMood: String
+    @Binding var isAkathisia: Bool
 
     private let moods: [MoodTag] = [
         MoodTag(emoji: "😔", label: "低落"),
@@ -17,6 +18,9 @@ struct MoodTagPicker: View {
         MoodTag(emoji: "😞", label: "失望"),
         MoodTag(emoji: "🫠", label: "疲惫"),
         MoodTag(emoji: "😶", label: "麻木"),
+        MoodTag(emoji: "😣", label: "内在不安"),
+        MoodTag(emoji: "🥳", label: "开心"),
+        MoodTag(emoji: "😆", label: "愉快"),
     ]
 
     var body: some View {
@@ -87,6 +91,13 @@ struct MoodTagPicker: View {
                 }
                 .padding(.trailing, 2)
             }
+
+            Toggle(isOn: $isAkathisia) {
+                Text("Akathisia（静坐不能）")
+                    .font(.subheadline)
+                    .foregroundStyle(Color("TextPrimary"))
+            }
+            .tint(Color("AccentColor"))
         }
         .padding(18)
         .background(

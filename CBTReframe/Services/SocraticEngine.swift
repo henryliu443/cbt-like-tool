@@ -10,6 +10,7 @@ final class SocraticEngine: AnalysisEngine {
         let req = ReframeLLMRequest(
             thought: envelope.thought,
             mood: envelope.mood,
+            hasAkathisia: envelope.hasAkathisia,
             mode: settings.analysisDepth.reframeMode,
             style: settings.responseStyle.legacyResponseStyle,
             template: PromptTemplate.socratic,

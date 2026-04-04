@@ -39,6 +39,8 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
             ]
         case .gemini:
             return [
+                AIModel(id: "gemini-flash-latest", name: "Gemini Flash Latest"),
+                AIModel(id: "gemini-2.5-flash", name: "Gemini 2.5 Flash"),
                 AIModel(id: "gemini-2.0-flash", name: "Gemini 2.0 Flash"),
                 AIModel(id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash-Lite"),
                 AIModel(id: "gemini-1.5-flash", name: "Gemini 1.5 Flash"),

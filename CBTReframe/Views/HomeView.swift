@@ -23,7 +23,7 @@ struct HomeView: View {
                     VStack(spacing: 20) {
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
                         templatePicker
-                        MoodTagPicker(selectedMood: $viewModel.selectedMood)
+                        MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
                         analyzeButton
                     }
 

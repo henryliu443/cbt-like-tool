@@ -55,7 +55,7 @@ final class SettingsViewModel {
     }
 
     init() {
-        let providerRaw = UserDefaults.standard.string(forKey: "selectedProvider") ?? AIProvider.local.rawValue
+        let providerRaw = UserDefaults.standard.string(forKey: "selectedProvider") ?? AIProvider.gemini.rawValue
         let provider = AIProvider(rawValue: providerRaw) ?? .local
         self.selectedProvider = provider
 
