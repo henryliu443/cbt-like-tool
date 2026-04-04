@@ -186,13 +186,7 @@ final class ReframeViewModel {
             strategy: responseStrategy,
             hasAkathisia: isAkathisia
         )
-        guard let payload = try? JSONEncoder().encode(envelope),
-              let input = String(data: payload, encoding: .utf8) else {
-            errorMessage = "分析失败，请稍后重试"
-            return
-        }
-
-        let rawResult = await pipeline.run(input: input, settings: globalSettings)
+        let rawResult = await pipeline.run(envelope: envelope, settings: globalSettings)
         if let message = rawResult.errorMessage {
             errorMessage = message
             return

@@ -1,14 +1,18 @@
 import Foundation
 
 final class EngineRouter {
+    private let cbtEngine = CBTEngine()
+    private let socraticEngine = SocraticEngine()
+    private let behavioralEngine = BehavioralEngine()
+
     func resolve(settings: GlobalSettings) -> AnalysisEngine {
         switch settings.thinkingTemplate {
         case .cbt:
-            return CBTEngine()
+            return cbtEngine
         case .socratic:
-            return SocraticEngine()
+            return socraticEngine
         case .behavioral:
-            return BehavioralEngine()
+            return behavioralEngine
         }
     }
 }

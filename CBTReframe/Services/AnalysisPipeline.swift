@@ -61,24 +61,12 @@ final class AnalysisPipeline {
         self.settingsViewModel = settingsViewModel
     }
 
-    /// Single entry for reframe analysis. `input` must be JSON-encoded `AnalysisInputEnvelope` (thought, mood, risk strategy).
-    func run(input: String, settings: GlobalSettings) async -> AnalysisPipelineOutput {
-        guard let data = input.data(using: .utf8),
-              let envelope = try? JSONDecoder().decode(AnalysisInputEnvelope.self, from: data) else {
-            return AnalysisPipelineOutput(
-                result: nil,
-                metadata: .default,
-                errorMessage: "分析请求格式错误，请稍后重试"
-            )
-        }
-
+    /// Single entry for reframe analysis (typed pipeline request).
+    func run(envelope: AnalysisInputEnvelope, settings: GlobalSettings) async -> AnalysisPipelineOutput {
         let engine = router.resolve(settings: settings)
+        let request = AnalysisEngineRequest(envelope: envelope, settings: settings)
         do {
-            let raw = try await engine.generateRaw(
-                input: input,
-                settings: settings,
-                provider: provider
-            )
+            let raw = try await engine.generateRaw(request: request, provider: provider)
             var result = safeDecode(raw.text, strategy: envelope.strategy)
             if settings.thinkingTemplate == .socratic && envelope.strategy != .crisis {
                 do {
@@ -87,20 +75,14 @@ final class AnalysisPipeline {
                     let serviceError = AIServiceError.classify(error)
                     return AnalysisPipelineOutput(
                         result: nil,
-                        metadata: AnalysisRunMetadata(
-                            attemptCount: raw.attemptCount,
-                            recoveredByRetry: raw.recoveredByRetry
-                        ),
+                        metadata: metadata(from: raw),
                         errorMessage: serviceError.userFacingMessage
                     )
                 }
             }
             return AnalysisPipelineOutput(
                 result: result,
-                metadata: AnalysisRunMetadata(
-                    attemptCount: raw.attemptCount,
-                    recoveredByRetry: raw.recoveredByRetry
-                ),
+                metadata: metadata(from: raw),
                 errorMessage: nil
             )
         } catch {
@@ -111,6 +93,19 @@ final class AnalysisPipeline {
                 errorMessage: serviceError.userFacingMessage
             )
         }
+    }
+
+    /// Backward-compatible entry for older callers that still pass JSON string payload.
+    func run(input: String, settings: GlobalSettings) async -> AnalysisPipelineOutput {
+        guard let data = input.data(using: .utf8),
+              let envelope = try? JSONDecoder().decode(AnalysisInputEnvelope.self, from: data) else {
+            return AnalysisPipelineOutput(
+                result: nil,
+                metadata: .default,
+                errorMessage: "分析请求格式错误，请稍后重试"
+            )
+        }
+        return await run(envelope: envelope, settings: settings)
     }
 
     /// Thought journal pattern analysis — routed here so ViewModels do not call `AIServiceFactory` directly.
@@ -134,6 +129,13 @@ final class AnalysisPipeline {
             distortion: "error",
             alternative: raw,
             action: "请尝试重新分析"
+        )
+    }
+
+    private func metadata(from output: LLMGenerationOutput) -> AnalysisRunMetadata {
+        AnalysisRunMetadata(
+            attemptCount: output.attemptCount,
+            recoveredByRetry: output.recoveredByRetry
         )
     }
 }
