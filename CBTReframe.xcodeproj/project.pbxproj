@@ -55,6 +55,7 @@
 		A1100042 /* AnalysisPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* AnalysisPipeline.swift */; };
 		A1100043 /* ReframeRetryExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100043 /* ReframeRetryExecutor.swift */; };
 		A1100044 /* ReframeOutputGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100044 /* ReframeOutputGate.swift */; };
+		A1100045 /* AppleIntelligenceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100045 /* AppleIntelligenceStyle.swift */; };
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
 		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
@@ -110,6 +111,7 @@
 		A2100042 /* AnalysisPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisPipeline.swift; sourceTree = "<group>"; };
 		A2100043 /* ReframeRetryExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutor.swift; sourceTree = "<group>"; };
 		A2100044 /* ReframeOutputGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeOutputGate.swift; sourceTree = "<group>"; };
+		A2100045 /* AppleIntelligenceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceStyle.swift; sourceTree = "<group>"; };
 		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -262,6 +264,7 @@
 				A2100021 /* MoodTagPicker.swift */,
 				A2100022 /* SafetyBannerView.swift */,
 				A2100023 /* TemplatePickerView.swift */,
+				A2100045 /* AppleIntelligenceStyle.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -421,6 +424,7 @@
 				A1100042 /* AnalysisPipeline.swift in Sources */,
 				A1100043 /* ReframeRetryExecutor.swift in Sources */,
 				A1100044 /* ReframeOutputGate.swift in Sources */,
+				A1100045 /* AppleIntelligenceStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

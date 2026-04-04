@@ -177,6 +177,7 @@ struct HomeView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+            IntelligenceAmbientBackground()
         }
     }
 
@@ -197,17 +198,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 40, weight: .light))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color("GradientStart"), Color("GradientEnd")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .accessibilityHidden(true)
+            IntelligenceAnimatedGlyph(systemName: "brain.head.profile", pointSize: 40, weight: .light)
         }
     }
 
@@ -255,6 +246,10 @@ struct HomeView: View {
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .shadow(color: Color("GradientEnd").opacity(0.38), radius: 16, y: 8)
+            .overlay {
+                IntelligenceRainbowCardStroke(cornerRadius: 18)
+                    .opacity(canSubmitAnalysis ? 0.95 : 0.35)
+            }
         }
         .disabled(!canSubmitAnalysis)
         .opacity(canSubmitAnalysis ? 1 : 0.6)
