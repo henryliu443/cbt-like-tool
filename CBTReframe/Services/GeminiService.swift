@@ -4,11 +4,12 @@ import Foundation
 struct GeminiService: AIServiceProtocol {
     let provider = AIProvider.gemini
 
-    /// 与 `URLSession.shared` 分离：默认配置的 `timeoutIntervalForRequest` 仅 60s，慢模型可能在首包前被切断。
+    /// 与 `URLSession.shared` 分离；弱网访问 Google 时需更长「等首包 / 等下一 chunk」与整次传输上限，避免半截 JSON。
     private static let generateSession: URLSession = {
         let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 300
-        config.timeoutIntervalForResource = 600
+        config.timeoutIntervalForRequest = 600
+        config.timeoutIntervalForResource = 1200
+        config.waitsForConnectivity = true
         return URLSession(configuration: config)
     }()
 
@@ -49,7 +50,8 @@ struct GeminiService: AIServiceProtocol {
             ],
             "generationConfig": [
                 "temperature": 0.7,
-                "maxOutputTokens": strategy == .crisis ? 512 : 1024,
+                // 中文 JSON + actions 数组易顶满 1024，表现为合法 HTTP 200 但 JSON 半截、解析失败
+                "maxOutputTokens": strategy == .crisis ? 512 : 4096,
             ] as [String: Any],
         ]
 
@@ -128,8 +130,7 @@ struct GeminiService: AIServiceProtocol {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        // 单次请求上限（与 session 的 request/resource 超时配合）；Flash 通常较快，Pro / 高峰仍可能久等首包
-        request.timeoutInterval = 300
+        request.timeoutInterval = 600
 
         return try await Self.generateSession.data(for: request)
     }
@@ -156,9 +157,11 @@ struct GeminiService: AIServiceProtocol {
         guard let candidates = json["candidates"] as? [[String: Any]],
               let first = candidates.first,
               let content = first["content"] as? [String: Any],
-              let parts = content["parts"] as? [[String: Any]],
-              let text = parts.first?["text"] as? String,
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+              let parts = content["parts"] as? [[String: Any]] else {
+            throw AIServiceError.invalidResponse
+        }
+        let text = parts.compactMap { $0["text"] as? String }.joined()
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AIServiceError.invalidResponse
         }
         return text
