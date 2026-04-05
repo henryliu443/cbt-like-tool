@@ -310,8 +310,9 @@ struct SettingsView: View {
             HStack {
                 Text("版本")
                 Spacer()
-                Text("1.5.0")
+                Text(AppMetadata.versionLabel)
                     .foregroundStyle(Color("TextSecondary"))
+                    .font(.body.monospacedDigit())
             }
             HStack {
                 Text("当前服务商")
@@ -327,6 +328,9 @@ struct SettingsView: View {
             }
         } header: {
             Label("关于", systemImage: "info.circle")
+        } footer: {
+            Text("在「历史」可搜索与收藏记录，并导出当前列表为 JSON（V2.1）。")
+                .font(.footnote)
         }
     }
 }

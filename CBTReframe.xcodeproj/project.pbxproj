@@ -56,6 +56,8 @@
 		A1100043 /* ReframeRetryExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100043 /* ReframeRetryExecutor.swift */; };
 		A1100044 /* ReframeOutputGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100044 /* ReframeOutputGate.swift */; };
 		A1100045 /* AppleIntelligenceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100045 /* AppleIntelligenceStyle.swift */; };
+		A1100046 /* AppMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100046 /* AppMetadata.swift */; };
+		A1100047 /* HistoryExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100047 /* HistoryExportService.swift */; };
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
 		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
@@ -112,6 +114,8 @@
 		A2100043 /* ReframeRetryExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutor.swift; sourceTree = "<group>"; };
 		A2100044 /* ReframeOutputGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeOutputGate.swift; sourceTree = "<group>"; };
 		A2100045 /* AppleIntelligenceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceStyle.swift; sourceTree = "<group>"; };
+		A2100046 /* AppMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetadata.swift; sourceTree = "<group>"; };
+		A2100047 /* HistoryExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryExportService.swift; sourceTree = "<group>"; };
 		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -160,6 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000001 /* CBTReframeApp.swift */,
+				A2100046 /* AppMetadata.swift */,
 				A2100033 /* AppSession.swift */,
 				A2000002 /* ContentView.swift */,
 				A4100001 /* Models */,
@@ -228,6 +233,7 @@
 				A2100037 /* AIServiceLLMProvider.swift */,
 				A2100043 /* ReframeRetryExecutor.swift */,
 				A2100044 /* ReframeOutputGate.swift */,
+				A2100047 /* HistoryExportService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -425,6 +431,8 @@
 				A1100043 /* ReframeRetryExecutor.swift in Sources */,
 				A1100044 /* ReframeOutputGate.swift in Sources */,
 				A1100045 /* AppleIntelligenceStyle.swift in Sources */,
+				A1100046 /* AppMetadata.swift in Sources */,
+				A1100047 /* HistoryExportService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,7 +507,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_ASSET_PATHS = "\"CBTReframe/Preview Content\"";
 				DEVELOPMENT_TEAM = D68WMWC7DQ;
 				ENABLE_PREVIEWS = YES;
@@ -516,7 +524,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cbt.reframe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -531,7 +539,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_ASSET_PATHS = "\"CBTReframe/Preview Content\"";
 				DEVELOPMENT_TEAM = D68WMWC7DQ;
 				ENABLE_PREVIEWS = YES;
@@ -548,7 +556,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cbt.reframe;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import LocalAuthentication
+import UIKit
 
 struct HistoryView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -11,6 +12,8 @@ struct HistoryView: View {
     @State private var isUnlocked = false
     @State private var authErrorMessage: String?
     @State private var hasAttemptedAuth = false
+    @State private var isPresentingHistoryExport = false
+    @State private var historyExportItems: [Any] = []
 
     private var needsAuth: Bool {
         settingsViewModel.useFaceID && !isUnlocked
@@ -28,17 +31,36 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("历史记录")
+            .searchable(text: $viewModel.searchText, prompt: "搜索想法、心情、扭曲、行动…")
             .toolbar {
                 if !needsAuth && !allEntries.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            withAnimation { viewModel.showFavoritesOnly.toggle() }
-                        } label: {
-                            Image(systemName: viewModel.showFavoritesOnly ? "star.fill" : "star")
-                                .foregroundStyle(viewModel.showFavoritesOnly ? .yellow : Color("TextSecondary"))
+                        HStack(spacing: 16) {
+                            Button {
+                                let subset = viewModel.filteredEntries(allEntries)
+                                if let url = HistoryExportService.makeTemporaryJSONFile(entries: subset) {
+                                    historyExportItems = [url]
+                                    isPresentingHistoryExport = true
+                                }
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundStyle(Color("AccentColor"))
+                            }
+                            .accessibilityLabel("导出当前列表为 JSON")
+
+                            Button {
+                                withAnimation { viewModel.showFavoritesOnly.toggle() }
+                            } label: {
+                                Image(systemName: viewModel.showFavoritesOnly ? "star.fill" : "star")
+                                    .foregroundStyle(viewModel.showFavoritesOnly ? .yellow : Color("TextSecondary"))
+                            }
+                            .accessibilityLabel(viewModel.showFavoritesOnly ? "显示全部" : "仅显示收藏")
                         }
                     }
                 }
+            }
+            .sheet(isPresented: $isPresentingHistoryExport, onDismiss: { historyExportItems = [] }) {
+                HistoryExportActivityView(items: historyExportItems)
             }
         }
         .onAppear {
@@ -342,4 +364,16 @@ struct HistoryRowView: View {
             }
         }
     }
+}
+
+// MARK: - V2.1 导出分享
+
+private struct HistoryExportActivityView: UIViewControllerRepresentable {
+    var items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

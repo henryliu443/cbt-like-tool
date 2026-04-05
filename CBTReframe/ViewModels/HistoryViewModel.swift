@@ -17,7 +17,12 @@ final class HistoryViewModel {
             result = result.filter {
                 $0.inputThought.lowercased().contains(query) ||
                 $0.distortion.lowercased().contains(query) ||
-                $0.alternative.lowercased().contains(query)
+                $0.alternative.lowercased().contains(query) ||
+                $0.action.lowercased().contains(query) ||
+                $0.moodTag.lowercased().contains(query) ||
+                $0.providerName.lowercased().contains(query) ||
+                $0.modelName.lowercased().contains(query) ||
+                $0.therapyTemplateRaw.lowercased().contains(query)
             }
         }
         return result.sorted { $0.createdAt > $1.createdAt }
