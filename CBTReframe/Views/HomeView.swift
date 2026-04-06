@@ -192,12 +192,11 @@ struct HomeView: View {
     }
 
     private var homeBackground: some View {
-        let glowOpacity = colorScheme == .dark ? 0.04 : 0.07
         ZStack {
             Color(.systemGroupedBackground)
             LinearGradient(
                 colors: [
-                    Color("AccentColor").opacity(glowOpacity),
+                    Color("AccentColor").opacity(colorScheme == .dark ? 0.04 : 0.07),
                     Color.clear,
                     Color(.systemGroupedBackground)
                 ],
@@ -473,5 +472,58 @@ struct HomeView: View {
         .onDisappear {
             geminiPulse = false
         }
+    }
+}
+
+private struct StreamingResultView: View {
+    let text: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("流式输出")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color("TextSecondary"))
+            Text(text.isEmpty ? "正在生成..." : text)
+                .font(.body)
+                .foregroundStyle(Color("TextPrimary"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+@MainActor
+private final class StreakService: ObservableObject {
+    @Published private(set) var currentStreak: Int = 0
+    @Published private(set) var longestStreak: Int = 0
+
+    private let defaults = UserDefaults.standard
+    private let currentKey = "streak.current"
+    private let longestKey = "streak.longest"
+    private let lastDateKey = "streak.lastDate"
+
+    init() {
+        currentStreak = defaults.integer(forKey: currentKey)
+        longestStreak = defaults.integer(forKey: longestKey)
+    }
+
+    func markToday() {
+        let cal = Calendar.current
+        let now = Date()
+        let last = defaults.object(forKey: lastDateKey) as? Date
+
+        if let last, cal.isDate(last, inSameDayAs: now) { return }
+        if let last,
+           let delta = cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: now)).day,
+           delta == 1 {
+            currentStreak += 1
+        } else {
+            currentStreak = 1
+        }
+        longestStreak = max(longestStreak, currentStreak)
+        defaults.set(currentStreak, forKey: currentKey)
+        defaults.set(longestStreak, forKey: longestKey)
+        defaults.set(now, forKey: lastDateKey)
     }
 }

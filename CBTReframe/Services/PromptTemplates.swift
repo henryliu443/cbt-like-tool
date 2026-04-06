@@ -263,3 +263,18 @@ struct PromptBuilder {
         detectRiskLevel(text) == .high
     }
 }
+
+enum CognitiveDistortion: String, CaseIterable, Codable, Identifiable {
+    case catastrophizing = "灾难化"
+    case blackAndWhite = "非黑即白"
+    case overgeneralization = "过度概括"
+    case mindReading = "读心术"
+    case emotionalReasoning = "情绪化推理"
+    case shouldStatement = "应该思维"
+    case labeling = "贴标签"
+    case personalization = "个人化"
+    case fortuneTelling = "预言未来"
+    case mentalFilter = "心理过滤"
+
+    var id: String { rawValue }
+}

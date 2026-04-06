@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import OSLog
 
 @main
 struct CBTReframeApp: App {
@@ -16,7 +15,7 @@ struct CBTReframeApp: App {
         do {
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
-            AppLogger.data.error("SwiftData initialization failed: \(error.localizedDescription, privacy: .public)")
+            NSLog("SwiftData initialization failed: \(error.localizedDescription)")
             container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
         }
     }
@@ -35,6 +34,53 @@ struct CBTReframeApp: App {
             }
         }
         .modelContainer(container)
+    }
+}
+
+private struct MoodInsightsView: View {
+    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var checkins: [MoodCheckIn]
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("最近心情签到") {
+                    if checkins.isEmpty {
+                        Text("暂无数据").foregroundStyle(.secondary)
+                    } else {
+                        ForEach(checkins.prefix(20), id: \.id) { item in
+                            HStack {
+                                Text(item.moodLabel)
+                                Spacer()
+                                Text("\(item.moodScore)/10")
+                                Text(item.createdAt, style: .date).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("情绪趋势")
+        }
+    }
+}
+
+private struct ExercisesView: View {
+    private let items: [(String, String)] = [
+        ("4-7-8 呼吸", "吸气4秒，屏息7秒，呼气8秒"),
+        ("渐进式肌肉放松", "从脚到头逐段放松"),
+        ("5-4-3-2-1 感官着陆", "回到当下的地面技巧"),
+        ("身体扫描", "从头到脚觉察紧绷和放松"),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List(items, id: \.0) { item in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.0).font(.headline)
+                    Text(item.1).font(.subheadline).foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+            .navigationTitle("练习")
+        }
     }
 }
 

@@ -70,7 +70,7 @@ struct DeepSeekService: AIServiceProtocol {
 
         if httpResponse.statusCode != 200 {
             let bodyStr = String(data: data, encoding: .utf8) ?? ""
-            AppLogger.network.error("DeepSeek HTTP \(httpResponse.statusCode): \(bodyStr, privacy: .public)")
+            NSLog("DeepSeek HTTP \(httpResponse.statusCode): \(bodyStr)")
         }
 
         switch httpResponse.statusCode {
@@ -142,20 +142,20 @@ struct DeepSeekService: AIServiceProtocol {
               let choices = json["choices"] as? [[String: Any]],
               let message = choices.first?["message"] as? [String: Any] else {
             let raw = String(data: data, encoding: .utf8) ?? "nil"
-            AppLogger.network.error("DeepSeek cannot parse top-level: \(String(raw.prefix(500)), privacy: .public)")
+            NSLog("DeepSeek cannot parse top-level: \(String(raw.prefix(500)))")
             throw AIServiceError.invalidResponse
         }
 
         // 仅解析最终 content。reasoning_content 为链式推理，不可当作用户可见结果。
         let finish = (choices.first?["finish_reason"] as? String) ?? (choices.first?["finishReason"] as? String)
         if finish == "length" {
-            AppLogger.network.warning("DeepSeek finish_reason=length")
+            NSLog("DeepSeek finish_reason=length")
         }
 
         guard let content = message["content"] as? String,
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             let hasReasoning = (message["reasoning_content"] as? String)?.isEmpty == false
-            AppLogger.network.error("DeepSeek empty content. has_reasoning=\(hasReasoning), finish=\(finish ?? "nil", privacy: .public)")
+            NSLog("DeepSeek empty content. has_reasoning=\(hasReasoning), finish=\(finish ?? "nil")")
             throw AIServiceError.parseError(
                 "DeepSeek Reasoner 未返回最终正文（推理可能占满 token）。请重试，或改用「DeepSeek Chat」；若仍失败请检查账户额度与 API 文档。"
             )

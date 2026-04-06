@@ -229,3 +229,9 @@ final class SettingsViewModel {
         return !key.isEmpty
     }
 }
+
+enum ReminderService {
+    static func requestPermission() async -> Bool { true }
+    static func scheduleDailyReminder(hour: Int, minute: Int) async {}
+    static func cancelDailyReminder() {}
+}

@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import UIKit
 
 @MainActor
 @Observable
@@ -304,5 +305,15 @@ final class ReframeViewModel {
             streamingText.append(ch)
             try? await Task.sleep(nanoseconds: 8_000_000)
         }
+    }
+}
+
+enum HapticManager {
+    static func tap() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    static func success() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 }
