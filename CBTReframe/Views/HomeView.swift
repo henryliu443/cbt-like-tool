@@ -6,14 +6,12 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var globalSettings: GlobalSettings
     @Environment(\.colorScheme) private var colorScheme
-    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var moodCheckIns: [MoodCheckIn]
     @Bindable var viewModel: ReframeViewModel
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
     @State private var geminiPulse = false
     @State private var showSecondaryTools = false
     @State private var flowStep: HomeFlowStep = .writeThought
-    @StateObject private var streakService = StreakService()
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -26,10 +24,13 @@ struct HomeView: View {
                     headerSection
 
                     VStack(spacing: 20) {
-                        compactStreakRow
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
                         if flowStep.rawValue >= HomeFlowStep.chooseMode.rawValue {
                             templatePicker
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                        if flowStep.rawValue >= HomeFlowStep.chooseMood.rawValue {
+                            MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         analyzeButton
@@ -38,7 +39,6 @@ struct HomeView: View {
                     if flowStep.rawValue >= HomeFlowStep.chooseMode.rawValue {
                         DisclosureGroup("更多选项", isExpanded: $showSecondaryTools) {
                             VStack(spacing: 12) {
-                                moodCheckinCard
                                 externalMoneySaverSection
                             }
                             .padding(.top, 8)
@@ -101,6 +101,11 @@ struct HomeView: View {
         }
         .onTapGesture {
             isInputFocused = false
+        }
+        .onChange(of: viewModel.selectedMood) { _, newValue in
+            if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                viewModel.errorMessage = nil
+            }
         }
         .onChange(of: viewModel.inputText) { _, newValue in
             let hasText = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -187,23 +192,12 @@ struct HomeView: View {
 
     private var canSubmitAnalysis: Bool {
         let hasText = !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return hasText && !viewModel.isLoading
+        let hasMood = !viewModel.selectedMood.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasText && hasMood && !viewModel.isLoading
     }
 
     private var canAdvanceFromThought: Bool {
         !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var compactStreakRow: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "flame.fill")
-                .foregroundStyle(.orange)
-            Text("连续记录 \(streakService.currentStreak) 天")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color("TextSecondary"))
-            Spacer()
-        }
-        .padding(.horizontal, 4)
     }
 
     private var emptyGuideCard: some View {
@@ -259,43 +253,6 @@ struct HomeView: View {
         }
     }
 
-    private var moodCheckinCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("连续记录 \(streakService.currentStreak) 天")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color("TextPrimary"))
-                Spacer()
-                if let last = moodCheckIns.first {
-                    Text(last.createdAt, style: .date)
-                        .font(.caption)
-                        .foregroundStyle(Color("TextSecondary"))
-                }
-            }
-            HStack {
-                ForEach(MoodTagPicker.sharedMoods.prefix(5), id: \.id) { mood in
-                    Button {
-                        modelContext.insert(
-                            MoodCheckIn(
-                                moodScore: MoodTagPicker.score(for: mood.label),
-                                moodLabel: mood.label
-                            )
-                        )
-                        try? modelContext.save()
-                        streakService.markToday()
-                        HapticManager.tap()
-                    } label: {
-                        Text(mood.emoji)
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-        }
-        .padding(14)
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
     private var templatePicker: some View {
         TemplatePickerView(
             selectedTemplate: $globalSettings.thinkingTemplate,
@@ -318,6 +275,12 @@ struct HomeView: View {
                     return
                 }
                 if flowStep == .chooseMode {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        flowStep = .chooseMood
+                    }
+                    return
+                }
+                if flowStep == .chooseMood {
                     await viewModel.analyzeThought(modelContext: modelContext)
                     if viewModel.result != nil {
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -336,7 +299,7 @@ struct HomeView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Image(systemName: "arrow.right")
+                    Image(systemName: flowStep == .chooseMood ? "arrow.triangle.2.circlepath" : "arrow.right")
                         .font(.headline)
                 }
                 Text(analyzeButtonTitle)
@@ -377,6 +340,8 @@ struct HomeView: View {
         case .writeThought:
             return "下一步：选最省力的方式"
         case .chooseMode:
+            return "下一步：点当前心情"
+        case .chooseMood:
             return "开始分析"
         }
     }
@@ -387,6 +352,8 @@ struct HomeView: View {
         case .writeThought:
             return canAdvanceFromThought
         case .chooseMode:
+            return canAdvanceFromThought
+        case .chooseMood:
             return canSubmitAnalysis
         }
     }
@@ -545,6 +512,7 @@ struct HomeView: View {
 private enum HomeFlowStep: Int {
     case writeThought
     case chooseMode
+    case chooseMood
 }
 
 private struct StreamingResultView: View {
@@ -652,37 +620,3 @@ private struct StreamingResultView: View {
     }
 }
 
-@MainActor
-private final class StreakService: ObservableObject {
-    @Published private(set) var currentStreak: Int = 0
-    @Published private(set) var longestStreak: Int = 0
-
-    private let defaults = UserDefaults.standard
-    private let currentKey = "streak.current"
-    private let longestKey = "streak.longest"
-    private let lastDateKey = "streak.lastDate"
-
-    init() {
-        currentStreak = defaults.integer(forKey: currentKey)
-        longestStreak = defaults.integer(forKey: longestKey)
-    }
-
-    func markToday() {
-        let cal = Calendar.current
-        let now = Date()
-        let last = defaults.object(forKey: lastDateKey) as? Date
-
-        if let last, cal.isDate(last, inSameDayAs: now) { return }
-        if let last,
-           let delta = cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: now)).day,
-           delta == 1 {
-            currentStreak += 1
-        } else {
-            currentStreak = 1
-        }
-        longestStreak = max(longestStreak, currentStreak)
-        defaults.set(currentStreak, forKey: currentKey)
-        defaults.set(longestStreak, forKey: longestKey)
-        defaults.set(now, forKey: lastDateKey)
-    }
-}

@@ -135,7 +135,10 @@ final class ReframeViewModel {
         guard !thought.isEmpty else { return }
 
         let moodTrimmed = selectedMood.trimmingCharacters(in: .whitespacesAndNewlines)
-        let moodForAnalysis = moodTrimmed.isEmpty ? "未填写" : moodTrimmed
+        guard !moodTrimmed.isEmpty else {
+            errorMessage = "先点一个最接近现在状态的心情，再继续。"
+            return
+        }
         errorMessage = nil
 
         let riskLevel = detectRiskLevel(thought)
@@ -160,7 +163,7 @@ final class ReframeViewModel {
                 result: analysisResult,
                 providerName: CrisisLocalSupport.historyProviderName,
                 modelName: CrisisLocalSupport.historyModelName,
-                moodTag: Self.moodTagForHistory(base: moodForAnalysis, isAkathisia: isAkathisia),
+                moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
                 therapyTemplate: template,
                 analysisDepth: globalSettings.analysisDepth,
                 responseStyle: globalSettings.responseStyle
@@ -184,7 +187,7 @@ final class ReframeViewModel {
 
         let envelope = AnalysisInputEnvelope(
             thought: thought,
-            mood: moodForAnalysis,
+            mood: moodTrimmed,
             strategy: responseStrategy,
             hasAkathisia: isAkathisia
         )
@@ -214,7 +217,7 @@ final class ReframeViewModel {
             result: analysisResult,
             providerName: settings.selectedProvider.displayName,
             modelName: settings.selectedModel.name,
-            moodTag: Self.moodTagForHistory(base: moodForAnalysis, isAkathisia: isAkathisia),
+            moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
             therapyTemplate: template,
             analysisDepth: globalSettings.analysisDepth,
             responseStyle: globalSettings.responseStyle
