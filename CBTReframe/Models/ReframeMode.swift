@@ -49,7 +49,7 @@ enum PromptTemplate: String, CaseIterable, Codable, Identifiable {
 
     var shortLabel: String {
         switch self {
-        case .cbtReframe: return "重构想法"
+        case .cbtReframe: return "一键改成更有用的想法"
         case .socratic: return "引导反思"
         case .behavioral: return "行动起来"
         }

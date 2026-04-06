@@ -10,9 +10,14 @@ struct ResultCardView: View {
     @State private var copiedToast = false
     @State private var showFollowUp = false
     @State private var reveal = false
+    @State private var collapsedSections: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
+            keyInsightHeader
+            if keyInsightText != nil {
+                sectionDivider()
+            }
             switch template {
             case .cbt:
                 cbtContent
@@ -23,6 +28,7 @@ struct ResultCardView: View {
             }
             sectionDivider()
             actionBar
+            continueExplorationFooter
         }
         .background(Color("CardBackground"))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -52,6 +58,30 @@ struct ResultCardView: View {
             withAnimation(.easeInOut(duration: 0.35)) {
                 reveal = true
             }
+        }
+    }
+
+    @ViewBuilder
+    private var keyInsightHeader: some View {
+        if let insight = keyInsightText {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("关键提醒")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color("TextSecondary"))
+                    .textCase(.uppercase)
+                Text(insight)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(Color("TextPrimary"))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Color("AccentColor").opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color("AccentColor").opacity(0.18), lineWidth: 1)
+            )
+            .padding(16)
         }
     }
 
@@ -210,11 +240,41 @@ struct ResultCardView: View {
                 .fill(Color(.separator).opacity(0.2))
                 .frame(width: 1, height: 28)
 
-            actionButton(icon: "ellipsis.bubble", label: "继续探索") {
-                showFollowUp = true
+            actionButton(icon: collapsedSections.isEmpty ? "arrow.up.left.and.arrow.down.right" : "arrow.down.right.and.arrow.up.left", label: collapsedSections.isEmpty ? "收起分段" : "展开分段") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if collapsedSections.isEmpty {
+                        collapsedSections = allSectionLabels
+                    } else {
+                        collapsedSections.removeAll()
+                    }
+                }
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var continueExplorationFooter: some View {
+        Button {
+            showFollowUp = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.right.circle.fill")
+                Text("继续探索")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundStyle(Color("AccentColor"))
+            .background(Color("AccentColor").opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
     }
 
     private func actionButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
@@ -299,25 +359,45 @@ struct ResultCardView: View {
     }
 
     private func resultSection(icon: String, iconColor: Color, label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.subheadline)
-                    .foregroundStyle(iconColor)
-                    .frame(width: 28, height: 28)
-                    .background(iconColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+        let isCollapsed = collapsedSections.contains(label)
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if isCollapsed {
+                        collapsedSections.remove(label)
+                    } else {
+                        collapsedSections.insert(label)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.subheadline)
+                        .foregroundStyle(iconColor)
+                        .frame(width: 28, height: 28)
+                        .background(iconColor.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                Text(label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color("TextSecondary"))
-                    .textCase(.uppercase)
+                    Text(label)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color("TextSecondary"))
+                        .textCase(.uppercase)
+
+                    Spacer()
+                    Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color("TextSecondary"))
+                }
             }
+            .buttonStyle(.plain)
 
-            Text(value)
-                .font(.body)
-                .foregroundStyle(Color("TextPrimary"))
-                .fixedSize(horizontal: false, vertical: true)
+            if !isCollapsed {
+                Text(value)
+                    .font(.body)
+                    .foregroundStyle(Color("TextPrimary"))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -328,6 +408,42 @@ struct ResultCardView: View {
             .fill(Color(.separator).opacity(0.2))
             .frame(height: 1)
             .padding(.horizontal, 16)
+    }
+
+    private var keyInsightText: String? {
+        let source: String
+        switch template {
+        case .cbt:
+            source = result.alternative
+        case .socratic:
+            source = result.alternative.isEmpty ? result.action : result.alternative
+        case .behavioral:
+            source = result.action
+        }
+        let sentence = source
+            .split(whereSeparator: { $0 == "。" || $0 == "！" || $0 == "？" || $0 == "\n" })
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return sentence.isEmpty ? nil : sentence
+    }
+
+    private var allSectionLabels: Set<String> {
+        switch template {
+        case .cbt:
+            var labels: [String] = ["认知扭曲", "替代想法", "建议行动"]
+            if let extra = result.actions, !extra.isEmpty {
+                labels.append("更多行动")
+            }
+            return Set(labels)
+        case .socratic:
+            return Set(["视角提示", "反思练习", "说明"])
+        case .behavioral:
+            var labels: [String] = ["当前状态", "下一步行动"]
+            if !result.alternative.isEmpty {
+                labels.append("积极视角")
+            }
+            return Set(labels)
+        }
     }
 }
 

@@ -41,7 +41,7 @@ struct TemplatePickerView: View {
             Image(systemName: "wand.and.stars")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Color("AccentColor"))
-            Text("选择方式")
+            Text("选最快开始的方式")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Color("TextSecondary"))
                 .textCase(.uppercase)

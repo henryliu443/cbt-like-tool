@@ -136,7 +136,7 @@ final class ReframeViewModel {
 
         let moodTrimmed = selectedMood.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !moodTrimmed.isEmpty else {
-            errorMessage = "请先选择心情，便于结合情绪解读你的想法。"
+            errorMessage = "先点一个最接近现在状态的心情，再继续。"
             return
         }
         errorMessage = nil

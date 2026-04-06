@@ -30,7 +30,7 @@ struct MoodTagPicker: View {
                     Image(systemName: "heart.text.square.fill")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color("AccentColor"))
-                    Text("选择心情")
+                    Text("点选当前心情")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Color("TextSecondary"))
                         .textCase(.uppercase)
@@ -43,7 +43,7 @@ struct MoodTagPicker: View {
                         .foregroundStyle(Color("AccentColor"))
                         .clipShape(Capsule())
                 }
-                Text("便于结合你当下的情绪，更好地解读和改善自动想法与感受。")
+                Text("不用选得很准，先点一个就能继续。")
                     .font(.caption)
                     .foregroundStyle(Color("TextSecondary"))
                     .fixedSize(horizontal: false, vertical: true)

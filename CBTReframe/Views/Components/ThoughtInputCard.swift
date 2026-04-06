@@ -10,7 +10,7 @@ struct ThoughtInputCard: View {
                 Image(systemName: "bubble.left.and.text.bubble.right")
                     .foregroundStyle(Color("AccentColor"))
                     .font(.subheadline.weight(.medium))
-                Text("写下你的想法")
+                Text("写1句：现在最烦的事")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color("TextSecondary"))
                     .textCase(.uppercase)

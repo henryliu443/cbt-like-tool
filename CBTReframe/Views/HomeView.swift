@@ -11,6 +11,8 @@ struct HomeView: View {
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
     @State private var geminiPulse = false
+    @State private var showSecondaryTools = false
+    @State private var flowStep: HomeFlowStep = .writeThought
     @StateObject private var streakService = StreakService()
     @FocusState private var isInputFocused: Bool
 
@@ -24,14 +26,29 @@ struct HomeView: View {
                     headerSection
 
                     VStack(spacing: 20) {
-                        moodCheckinCard
+                        compactStreakRow
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
-                        templatePicker
-                        MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
+                        if flowStep.rawValue >= HomeFlowStep.chooseMode.rawValue {
+                            templatePicker
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                        if flowStep.rawValue >= HomeFlowStep.chooseMood.rawValue {
+                            MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                         analyzeButton
                     }
 
-                    externalMoneySaverSection
+                    if flowStep.rawValue >= HomeFlowStep.chooseMood.rawValue {
+                        DisclosureGroup("更多选项", isExpanded: $showSecondaryTools) {
+                            VStack(spacing: 12) {
+                                moodCheckinCard
+                                externalMoneySaverSection
+                            }
+                            .padding(.top, 8)
+                        }
+                        .padding(.horizontal, 2)
+                    }
                     if viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.result == nil {
                         emptyGuideCard
                     }
@@ -92,6 +109,14 @@ struct HomeView: View {
         .onChange(of: viewModel.selectedMood) { _, newValue in
             if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 viewModel.errorMessage = nil
+            }
+        }
+        .onChange(of: viewModel.inputText) { _, newValue in
+            let hasText = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if hasText && flowStep == .writeThought {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    flowStep = .chooseMode
+                }
             }
         }
         .confirmationDialog("已复制到剪贴板", isPresented: $showExternalAppChoices, titleVisibility: .visible) {
@@ -173,6 +198,22 @@ struct HomeView: View {
         let hasText = !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let hasMood = !viewModel.selectedMood.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return hasText && hasMood && !viewModel.isLoading
+    }
+
+    private var canAdvanceFromThought: Bool {
+        !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var compactStreakRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "flame.fill")
+                .foregroundStyle(.orange)
+            Text("连续记录 \(streakService.currentStreak) 天")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color("TextSecondary"))
+            Spacer()
+        }
+        .padding(.horizontal, 4)
     }
 
     private var emptyGuideCard: some View {
@@ -272,10 +313,23 @@ struct HomeView: View {
             impactFeedback.impactOccurred()
 
             Task {
+                if flowStep == .writeThought {
+                    guard canAdvanceFromThought else { return }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        flowStep = .chooseMode
+                    }
+                    return
+                }
+                if flowStep == .chooseMode {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        flowStep = .chooseMood
+                    }
+                    return
+                }
+
                 await viewModel.analyzeThought(modelContext: modelContext)
                 if viewModel.result != nil {
-                    let notificationFeedback = UINotificationFeedbackGenerator()
-                    notificationFeedback.notificationOccurred(.success)
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
                 }
             }
         } label: {
@@ -284,7 +338,7 @@ struct HomeView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Image(systemName: flowStep == .chooseMood ? "arrow.triangle.2.circlepath" : "arrow.right")
                         .font(.headline)
                 }
                 Text(analyzeButtonTitle)
@@ -304,11 +358,11 @@ struct HomeView: View {
             .shadow(color: Color("GradientEnd").opacity(0.38), radius: 16, y: 8)
             .overlay {
                 IntelligenceRainbowCardStroke(cornerRadius: 18)
-                    .opacity(canSubmitAnalysis ? 0.95 : 0.35)
+                    .opacity(buttonEnabled ? 0.95 : 0.35)
             }
         }
-        .disabled(!canSubmitAnalysis)
-        .opacity(canSubmitAnalysis ? 1 : 0.6)
+        .disabled(!buttonEnabled)
+        .opacity(buttonEnabled ? 1 : 0.6)
         .scaleEffect(isButtonPressed ? 0.98 : 1)
         .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -321,7 +375,26 @@ struct HomeView: View {
         if viewModel.isLoading {
             return viewModel.loadingBannerStyle == .deepReasoningWithTimer ? "深度思考中…" : "正在分析…"
         }
-        return globalSettings.thinkingTemplate.shortLabel
+        switch flowStep {
+        case .writeThought:
+            return "下一步：选最省力的方式"
+        case .chooseMode:
+            return "下一步：点当前心情"
+        case .chooseMood:
+            return "开始分析"
+        }
+    }
+
+    private var buttonEnabled: Bool {
+        if viewModel.isLoading { return false }
+        switch flowStep {
+        case .writeThought:
+            return canAdvanceFromThought
+        case .chooseMode:
+            return canAdvanceFromThought
+        case .chooseMood:
+            return canSubmitAnalysis
+        }
     }
 
     @State private var spinnerRotation: Double = 0
@@ -475,21 +548,114 @@ struct HomeView: View {
     }
 }
 
+private enum HomeFlowStep: Int {
+    case writeThought
+    case chooseMode
+    case chooseMood
+}
+
 private struct StreamingResultView: View {
     let text: String
+    @State private var visibleCount: Int = 1
+    @State private var isPaused: Bool = false
+    @State private var showAll: Bool = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("流式输出")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("分段生成中")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color("TextSecondary"))
-            Text(text.isEmpty ? "正在生成..." : text)
-                .font(.body)
-                .foregroundStyle(Color("TextPrimary"))
+
+            if text.isEmpty {
+                Text("正在生成...")
+                    .font(.body)
+                    .foregroundStyle(Color("TextSecondary"))
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(visibleChunks.enumerated()), id: \.offset) { _, chunk in
+                        if let highlighted = highlightedChunk, highlighted == chunk {
+                            Text(chunk)
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(Color("TextPrimary"))
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color("AccentColor").opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        } else {
+                            Text(chunk)
+                                .font(.body)
+                                .foregroundStyle(Color("TextPrimary"))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button(isPaused ? "继续" : "暂停") {
+                    isPaused.toggle()
+                }
+                .buttonStyle(.bordered)
+
+                Button(showAll ? "分段查看" : "显示全部") {
+                    showAll.toggle()
+                    if showAll {
+                        visibleCount = chunks.count
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color("AccentColor"))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(Color("CardBackground"))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                guard !Task.isCancelled else { return }
+                guard !isPaused, !showAll else { continue }
+                let target = chunks.count
+                if target > visibleCount {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        visibleCount += 1
+                    }
+                }
+            }
+        }
+        .onChange(of: text) { _, _ in
+            if visibleCount < 1 {
+                visibleCount = 1
+            }
+            if showAll {
+                visibleCount = chunks.count
+            }
+        }
+    }
+
+    private var chunks: [String] {
+        let lines = text
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if !lines.isEmpty { return lines }
+        let sentenceSplit = text
+            .split(whereSeparator: { $0 == "。" || $0 == "！" || $0 == "？" })
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return sentenceSplit
+    }
+
+    private var visibleChunks: [String] {
+        if showAll { return chunks }
+        return Array(chunks.prefix(max(1, visibleCount)))
+    }
+
+    private var highlightedChunk: String? {
+        chunks.first(where: { $0.contains("替代想法") || $0.contains("下一步行动") || $0.contains("积极视角") })
     }
 }
 
