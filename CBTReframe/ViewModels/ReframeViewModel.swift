@@ -28,7 +28,8 @@ final class ReframeViewModel {
     var settings: SettingsViewModel
     var globalSettings: GlobalSettings
 
-    let streakService = StreakService()
+    var currentStreak: Int = 0
+    var longestStreak: Int = 0
 
     /// Today's analysis count (reset each calendar day via UserDefaults).
     var todayAnalysisCount: Int {
@@ -104,6 +105,7 @@ final class ReframeViewModel {
         self.settings = settings
         self.globalSettings = globalSettings
         self.pipeline = pipeline
+        loadStreak()
     }
 
     var greeting: String {
@@ -147,6 +149,35 @@ final class ReframeViewModel {
             defaults.set(today, forKey: dateKey)
             defaults.set(1, forKey: key)
         }
+    }
+
+    private func loadStreak() {
+        let defaults = UserDefaults.standard
+        currentStreak = defaults.integer(forKey: "streak.current")
+        longestStreak = defaults.integer(forKey: "streak.longest")
+    }
+
+    private func markStreakToday() {
+        let defaults = UserDefaults.standard
+        let cal = Calendar.current
+        let now = Date()
+        let last = defaults.object(forKey: "streak.lastDate") as? Date
+
+        if let last, cal.isDate(last, inSameDayAs: now) {
+            return
+        }
+
+        if let last,
+           let delta = cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: now)).day,
+           delta == 1 {
+            currentStreak += 1
+        } else {
+            currentStreak = 1
+        }
+        longestStreak = max(longestStreak, currentStreak)
+        defaults.set(currentStreak, forKey: "streak.current")
+        defaults.set(longestStreak, forKey: "streak.longest")
+        defaults.set(now, forKey: "streak.lastDate")
     }
 
     /// 生成与当前设置、风险路由一致的完整提示词，供复制到外站（免 App 内 API 费用）。
@@ -270,7 +301,7 @@ final class ReframeViewModel {
         try? modelContext.save()
         latestHistoryEntryID = entry.id
 
-        streakService.markToday()
+        markStreakToday()
         incrementTodayCount()
         HapticManager.success()
     }

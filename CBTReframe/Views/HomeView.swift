@@ -154,7 +154,7 @@ struct HomeView: View {
         HStack(spacing: 0) {
             dashboardItem(
                 icon: "flame.fill",
-                value: "\(viewModel.streakService.currentStreak)",
+                value: "\(viewModel.currentStreak)",
                 label: "连续天数",
                 color: .orange
             )
@@ -168,7 +168,7 @@ struct HomeView: View {
             dashboardDivider
             dashboardItem(
                 icon: "trophy.fill",
-                value: "\(viewModel.streakService.longestStreak)",
+                value: "\(viewModel.longestStreak)",
                 label: "最长连续",
                 color: .yellow
             )
