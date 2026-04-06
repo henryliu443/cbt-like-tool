@@ -6,6 +6,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var globalSettings: GlobalSettings
     @Environment(\.colorScheme) private var colorScheme
+    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var recentHistory: [HistoryEntry]
     @Bindable var viewModel: ReframeViewModel
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
@@ -22,6 +23,11 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     headerSection
+                    todayDashboard
+
+                    if viewModel.result != nil {
+                        newAnalysisButton
+                    }
 
                     VStack(spacing: 20) {
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
@@ -45,8 +51,9 @@ struct HomeView: View {
                         }
                         .padding(.horizontal, 2)
                     }
+
                     if viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.result == nil {
-                        emptyGuideCard
+                        quickStartSection
                     }
 
                     if viewModel.isLoading && viewModel.loadingBannerStyle != .none {
@@ -78,7 +85,10 @@ struct HomeView: View {
                         ResultCardView(
                             result: result,
                             template: globalSettings.thinkingTemplate,
-                            inputThought: viewModel.inputText
+                            inputThought: viewModel.inputText,
+                            moodTag: viewModel.selectedMood,
+                            analysisDepthLabel: globalSettings.analysisDepth.displayName,
+                            historyEntryID: viewModel.latestHistoryEntryID
                         )
                             .transition(.asymmetric(
                                 insertion: .opacity
@@ -89,6 +99,10 @@ struct HomeView: View {
                     }
                     if viewModel.isStreamingResult {
                         StreamingResultView(text: viewModel.streamingText)
+                    }
+
+                    if viewModel.result == nil && !recentHistory.isEmpty {
+                        recentHistoryPreview
                     }
 
                     Spacer(minLength: 60)
@@ -133,6 +147,184 @@ struct HomeView: View {
             Text("在新建对话里粘贴刚才复制的全部内容即可。")
         }
     }
+
+    // MARK: - Today Dashboard
+
+    private var todayDashboard: some View {
+        HStack(spacing: 0) {
+            dashboardItem(
+                icon: "flame.fill",
+                value: "\(viewModel.streakService.currentStreak)",
+                label: "连续天数",
+                color: .orange
+            )
+            dashboardDivider
+            dashboardItem(
+                icon: "brain.head.profile",
+                value: "\(viewModel.todayAnalysisCount)",
+                label: "今日分析",
+                color: Color("AccentColor")
+            )
+            dashboardDivider
+            dashboardItem(
+                icon: "trophy.fill",
+                value: "\(viewModel.streakService.longestStreak)",
+                label: "最长连续",
+                color: .yellow
+            )
+        }
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 4)
+        )
+    }
+
+    private func dashboardItem(icon: String, value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(color)
+            Text(value)
+                .font(.title2.bold().monospacedDigit())
+                .foregroundStyle(Color("TextPrimary"))
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(Color("TextSecondary"))
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var dashboardDivider: some View {
+        Rectangle()
+            .fill(Color(.separator).opacity(0.2))
+            .frame(width: 1, height: 40)
+    }
+
+    // MARK: - New Analysis Button
+
+    private var newAnalysisButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                viewModel.reset()
+                flowStep = .writeThought
+            }
+            HapticManager.tap()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.subheadline)
+                Text("开始新的分析")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundStyle(Color("AccentColor"))
+            .background(Color("AccentColor").opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color("AccentColor").opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Quick Start
+
+    private var quickStartSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.orange)
+                Text("不知道怎么开始？试试这些：")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color("TextPrimary"))
+            }
+
+            ForEach(ReframeViewModel.quickStartPrompts, id: \.text) { prompt in
+                Button {
+                    viewModel.inputText = prompt.text
+                    HapticManager.tap()
+                } label: {
+                    HStack(spacing: 10) {
+                        Text(prompt.emoji)
+                            .font(.title3)
+                        Text(prompt.text)
+                            .font(.subheadline)
+                            .foregroundStyle(Color("TextPrimary"))
+                            .multilineTextAlignment(.leading)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color("TextSecondary"))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
+        )
+    }
+
+    // MARK: - Recent History Preview
+
+    private var recentHistoryPreview: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.subheadline)
+                    .foregroundStyle(Color("AccentColor"))
+                Text("最近的分析")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color("TextPrimary"))
+                Spacer()
+            }
+
+            ForEach(Array(recentHistory.prefix(3)), id: \.id) { entry in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.inputThought)
+                        .font(.subheadline)
+                        .foregroundStyle(Color("TextPrimary"))
+                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        if !entry.moodTag.isEmpty {
+                            Text(MoodTagPicker.emoji(for: entry.moodTag))
+                            Text(entry.moodTag)
+                                .font(.caption2)
+                                .foregroundStyle(Color("TextSecondary"))
+                        }
+                        Spacer()
+                        Text(entry.createdAt, style: .relative)
+                            .font(.caption2)
+                            .foregroundStyle(Color("TextSecondary"))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color("CardBackground"))
+                .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
+        )
+    }
+
+    // MARK: - External Prompt
 
     private var externalMoneySaverSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -198,22 +390,6 @@ struct HomeView: View {
 
     private var canAdvanceFromThought: Bool {
         !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var emptyGuideCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("不知道怎么开始？")
-                .font(.subheadline.weight(.semibold))
-            Button("试试输入：我觉得自己什么都做不好") {
-                viewModel.inputText = "我觉得自己什么都做不好"
-                HapticManager.tap()
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var homeBackground: some View {

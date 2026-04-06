@@ -4,6 +4,7 @@ import SwiftData
 struct ThoughtJournalView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ThoughtEntry.createdAt, order: .reverse) private var entries: [ThoughtEntry]
+    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
     @Bindable var viewModel: ThoughtJournalViewModel
 
     var body: some View {
@@ -116,6 +117,19 @@ struct ThoughtJournalView: View {
                     .onDelete { offsets in
                         deleteEntries(from: processed, at: offsets)
                     }
+                }
+            }
+
+            if !historyEntries.isEmpty {
+                Section {
+                    ForEach(Array(historyEntries.prefix(20)), id: \.id) { entry in
+                        JournalHistoryRow(entry: entry)
+                    }
+                } header: {
+                    Text("整理历史")
+                } footer: {
+                    Text("这里展示最近 20 条整理结果，方便回看。")
+                        .font(.caption)
                 }
             }
         }
@@ -276,6 +290,46 @@ struct ThoughtRowView: View {
             if !entry.balancedThought.isEmpty {
                 Text("平衡想法：\(entry.balancedThought)")
                     .font(.caption)
+                    .foregroundStyle(Color("TextSecondary"))
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct JournalHistoryRow: View {
+    let entry: HistoryEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(entry.inputThought)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color("TextPrimary"))
+                .lineLimit(2)
+
+            Text("替代想法：\(entry.alternative)")
+                .font(.caption)
+                .foregroundStyle(Color("TextSecondary"))
+                .lineLimit(2)
+
+            Text("建议行动：\(entry.action)")
+                .font(.caption)
+                .foregroundStyle(Color("TextSecondary"))
+                .lineLimit(2)
+
+            HStack(spacing: 8) {
+                if !entry.moodTag.isEmpty {
+                    Text(entry.moodTag)
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color("AccentColor").opacity(0.1))
+                        .foregroundStyle(Color("AccentColor"))
+                        .clipShape(Capsule())
+                }
+                Spacer()
+                Text(entry.createdAt, style: .relative)
+                    .font(.caption2)
                     .foregroundStyle(Color("TextSecondary"))
             }
         }

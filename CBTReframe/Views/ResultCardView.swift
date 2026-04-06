@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct ResultCardView: View {
     let result: AnalysisResult
@@ -7,6 +8,7 @@ struct ResultCardView: View {
     /// 历史记录等场景：复制到剪贴板时附在文首（首页留空即可）。
     var moodTag: String = ""
     var analysisDepthLabel: String = ""
+    var historyEntryID: UUID?
     @State private var copiedToast = false
     @State private var showFollowUp = false
     @State private var reveal = false
@@ -51,7 +53,13 @@ struct ResultCardView: View {
         }
         .sheet(isPresented: $showFollowUp) {
             NavigationStack {
-                FollowUpChatView(initialThought: inputThought, initialResult: result)
+                FollowUpChatView(
+                    initialThought: inputThought,
+                    initialResult: result,
+                    template: template,
+                    moodTag: moodTag,
+                    historyEntryID: historyEntryID
+                )
             }
         }
         .onAppear {
@@ -448,10 +456,16 @@ struct ResultCardView: View {
 }
 
 private struct FollowUpChatView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
     let initialThought: String
     let initialResult: AnalysisResult
+    let template: ThinkingTemplate
+    let moodTag: String
+    let historyEntryID: UUID?
     @State private var messages: [FollowUpMessage] = []
     @State private var draft: String = ""
+    @State private var isReplying = false
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -512,13 +526,13 @@ private struct FollowUpChatView: View {
                         .focused($isInputFocused)
 
                     Button {
-                        sendMessage()
+                        Task { await sendMessage() }
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 30))
                             .foregroundStyle(canSend ? Color("AccentColor") : Color.gray.opacity(0.45))
                     }
-                    .disabled(!canSend)
+                    .disabled(!canSend || isReplying)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
@@ -532,12 +546,7 @@ private struct FollowUpChatView: View {
                 }
             }
             .onAppear {
-                if messages.isEmpty {
-                    messages = [
-                        FollowUpMessage(role: .assistant, text: "你刚刚的原始想法：\(initialThought)"),
-                        FollowUpMessage(role: .assistant, text: "上一轮结论：\(initialResult.alternative)")
-                    ]
-                }
+                loadOrBootstrapMessages()
             }
         }
         .navigationTitle("继续探索")
@@ -547,16 +556,115 @@ private struct FollowUpChatView: View {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func sendMessage() {
+    private func loadOrBootstrapMessages() {
+        if let entry = currentHistoryEntry,
+           !entry.followUpMessagesJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let data = entry.followUpMessagesJSON.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode([FollowUpMessage].self, from: data),
+           !decoded.isEmpty {
+            messages = decoded
+            return
+        }
+        messages = [
+            FollowUpMessage(role: .assistant, text: "你刚刚的原始想法：\(initialThought)"),
+            FollowUpMessage(role: .assistant, text: "上一轮结论：\(initialResult.alternative)")
+        ]
+        persistMessages()
+    }
+
+    private var currentHistoryEntry: HistoryEntry? {
+        guard let id = historyEntryID else { return nil }
+        return historyEntries.first(where: { $0.id == id })
+    }
+
+    private func persistMessages() {
+        guard let entry = currentHistoryEntry,
+              let data = try? JSONEncoder().encode(messages),
+              let text = String(data: data, encoding: .utf8) else { return }
+        entry.followUpMessagesJSON = text
+        try? modelContext.save()
+    }
+
+    private func responseText(from result: AnalysisResult) -> String {
+        switch template {
+        case .cbt:
+            return "换个角度：\(result.alternative)\n\n你现在可以先做：\(result.action)"
+        case .socratic:
+            if let qs = result.questions, !qs.isEmpty {
+                return qs.prefix(3).enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+            }
+            return result.alternative.isEmpty ? result.action : result.alternative
+        case .behavioral:
+            return "下一步建议：\(result.action)\n\n积极视角：\(result.alternative)"
+        }
+    }
+
+    private func resolvedProvider() -> AIProvider {
+        let raw = UserDefaults.standard.string(forKey: "selectedProvider") ?? AIProvider.gemini.rawValue
+        return AIProvider(rawValue: raw) ?? .local
+    }
+
+    private func resolvedModel(for provider: AIProvider) -> AIModel {
+        let id = UserDefaults.standard.string(forKey: "selectedModelId") ?? provider.defaultModel.id
+        return provider.fallbackModels.first(where: { $0.id == id }) ?? provider.defaultModel
+    }
+
+    private func buildFollowUpThought(for userInput: String) -> String {
+        let recent = messages.suffix(6).map { msg in
+            let role = msg.role == .user ? "用户" : "助手"
+            return "\(role)：\(msg.text)"
+        }.joined(separator: "\n")
+        return """
+        原始想法：\(initialThought)
+        上一轮结论：\(initialResult.alternative)
+        对话上下文：
+        \(recent)
+
+        用户继续追问：\(userInput)
+        请基于 CBT 给出简短、具体、可执行的回应。
+        """
+    }
+
+    private func sendMessage() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         messages.append(FollowUpMessage(role: .user, text: text))
         draft = ""
+        persistMessages()
+
+        isReplying = true
+        defer { isReplying = false }
+
+        let provider = resolvedProvider()
+        let model = resolvedModel(for: provider)
+        let service = AIServiceFactory.service(for: provider)
+
+        let mode: ReframeMode = .balanced
+        let style: ResponseStyle = .warm
+        let strategy = routeStrategy(level: detectRiskLevel(text))
+
+        do {
+            let result = try await service.reframe(
+                thought: buildFollowUpThought(for: text),
+                mood: moodTag.isEmpty ? "未填写" : moodTag,
+                hasAkathisia: false,
+                model: model,
+                mode: mode,
+                style: style,
+                template: template.promptTemplate,
+                strategy: strategy
+            )
+            messages.append(FollowUpMessage(role: .assistant, text: responseText(from: result)))
+        } catch {
+            let fallback = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            messages.append(FollowUpMessage(role: .assistant, text: "这次没有成功生成回复：\(fallback)"))
+        }
+        persistMessages()
     }
 }
 
-private struct FollowUpMessage: Identifiable {
-    enum Role {
+private struct FollowUpMessage: Identifiable, Codable {
+    enum Role: String, Codable {
         case assistant
         case user
     }

@@ -17,7 +17,10 @@ struct MoodInsightsView: View {
 
     private var points: [DailyMoodPoint] {
         let cutoff = Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast
-        let filtered = checkins.filter { $0.createdAt >= cutoff }
+        let validLabels = Set(MoodTagPicker.sharedMoods.map(\.label))
+        let filtered = checkins.filter {
+            $0.createdAt >= cutoff && validLabels.contains($0.moodLabel)
+        }
         let grouped = Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.createdAt) }
 
         return grouped.keys.sorted().compactMap { day in

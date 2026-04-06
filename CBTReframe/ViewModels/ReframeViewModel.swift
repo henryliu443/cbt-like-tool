@@ -15,13 +15,11 @@ final class ReframeViewModel {
     var retryRecoveryNotice: String?
     var streamingText: String = ""
     var isStreamingResult: Bool = false
+    var latestHistoryEntryID: UUID?
 
-    /// 分析前必选，供模型结合情绪解读想法。
     var selectedMood: String = ""
-    /// 与心情胶囊独立；为 true 时在系统提示中追加 Akathisia 说明并写入用户消息补充。
     var isAkathisia: Bool = false
 
-    /// 深度思考类模型：请求耗时长，展示阶段性提示与计时（不向用户展示模型原始思考全文）
     var analysisElapsedSeconds: Int = 0
     var thinkingPhraseIndex: Int = 0
     private var thinkingTickerTask: Task<Void, Never>?
@@ -29,6 +27,29 @@ final class ReframeViewModel {
 
     var settings: SettingsViewModel
     var globalSettings: GlobalSettings
+
+    let streakService = StreakService()
+
+    /// Today's analysis count (reset each calendar day via UserDefaults).
+    var todayAnalysisCount: Int {
+        let key = "todayAnalysisCount"
+        let dateKey = "todayAnalysisDate"
+        let defaults = UserDefaults.standard
+        let today = Calendar.current.startOfDay(for: Date())
+        if let stored = defaults.object(forKey: dateKey) as? Date,
+           Calendar.current.isDate(stored, inSameDayAs: today) {
+            return defaults.integer(forKey: key)
+        }
+        return 0
+    }
+
+    static let quickStartPrompts: [(emoji: String, text: String)] = [
+        ("💭", "我觉得自己什么都做不好"),
+        ("😰", "明天开会我一定会搞砸"),
+        ("😔", "没有人真正关心我"),
+        ("😤", "所有事情都不顺利"),
+        ("🫠", "我太累了，什么都不想做"),
+    ]
 
     private let pipeline: AnalysisPipeline
 
@@ -104,11 +125,28 @@ final class ReframeViewModel {
         "对自己温柔一点，你正在做一件勇敢的事。",
         "情绪像天气，会变的。",
         "你可以感受到痛苦，同时选择前行。",
+        "你不需要完美，只需要前进一小步。",
+        "承认情绪本身就是一种力量。",
+        "慢一点没关系，你已经在路上了。",
     ]
 
     var todayQuote: String {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
         return Self.dailyQuotes[dayOfYear % Self.dailyQuotes.count]
+    }
+
+    private func incrementTodayCount() {
+        let key = "todayAnalysisCount"
+        let dateKey = "todayAnalysisDate"
+        let defaults = UserDefaults.standard
+        let today = Calendar.current.startOfDay(for: Date())
+        if let stored = defaults.object(forKey: dateKey) as? Date,
+           Calendar.current.isDate(stored, inSameDayAs: today) {
+            defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
+        } else {
+            defaults.set(today, forKey: dateKey)
+            defaults.set(1, forKey: key)
+        }
     }
 
     /// 生成与当前设置、风险路由一致的完整提示词，供复制到外站（免 App 内 API 费用）。
@@ -170,6 +208,7 @@ final class ReframeViewModel {
             )
             modelContext.insert(entry)
             try? modelContext.save()
+            latestHistoryEntryID = entry.id
             return
         }
 
@@ -223,7 +262,16 @@ final class ReframeViewModel {
             responseStyle: globalSettings.responseStyle
         )
         modelContext.insert(entry)
+
+        let moodScore = MoodTagPicker.score(for: moodTrimmed)
+        let checkin = MoodCheckIn(moodScore: moodScore, moodLabel: moodTrimmed)
+        modelContext.insert(checkin)
+
         try? modelContext.save()
+        latestHistoryEntryID = entry.id
+
+        streakService.markToday()
+        incrementTodayCount()
         HapticManager.success()
     }
 
@@ -246,6 +294,7 @@ final class ReframeViewModel {
         retryNoticeTask?.cancel()
         retryNoticeTask = nil
         stopThinkingProgress()
+        latestHistoryEntryID = nil
     }
 
     @MainActor

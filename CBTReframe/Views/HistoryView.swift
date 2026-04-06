@@ -168,7 +168,12 @@ struct HistoryView: View {
                             .padding(.horizontal, 4)
 
                         ForEach(pair.1, id: \.id) { entry in
-                            HistoryRowView(entry: entry, viewModel: viewModel)
+                            HistoryRowView(
+                                entry: entry,
+                                viewModel: viewModel,
+                                onShare: { shareEntry(entry) },
+                                onDelete: { deleteEntry(entry) }
+                            )
                                 .padding(14)
                                 .background(Color("CardBackground"))
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -193,8 +198,12 @@ struct HistoryView: View {
             HStack(spacing: 0) {
                 let stats = viewModel.weeklyStats(allEntries)
                 statItem(value: "\(stats.count)", label: "本周分析", icon: "brain.head.profile", color: Color("AccentColor"))
+                statDivider
                 statItem(value: "\(stats.favoriteCount)", label: "收藏", icon: "star.fill", color: .yellow)
+                statDivider
                 statItem(value: "\(allEntries.count)", label: "总记录", icon: "clock", color: Color("TextSecondary"))
+                statDivider
+                statItem(value: topMoodEmoji, label: "常见心情", icon: "", color: .clear)
             }
             .padding(.vertical, 12)
             .background(Color("CardBackground"))
@@ -203,14 +212,35 @@ struct HistoryView: View {
         }
     }
 
+    private var statDivider: some View {
+        Rectangle()
+            .fill(Color(.separator).opacity(0.15))
+            .frame(width: 1, height: 36)
+    }
+
+    private var topMoodEmoji: String {
+        let moods = allEntries.prefix(50).map(\.moodTag).filter { !$0.isEmpty }
+        guard !moods.isEmpty else { return "–" }
+        let counts = Dictionary(grouping: moods, by: { $0 }).mapValues(\.count)
+        let top = counts.max(by: { $0.value < $1.value })?.key ?? "–"
+        return MoodTagPicker.emoji(for: top)
+    }
+
     private func statItem(value: String, label: String, icon: String, color: Color) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(color)
-            Text(value)
-                .font(.title2.bold())
-                .foregroundStyle(Color("TextPrimary"))
+            if icon.isEmpty {
+                Text(value)
+                    .font(.title2)
+            } else {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(color)
+            }
+            if !icon.isEmpty {
+                Text(value)
+                    .font(.title2.bold())
+                    .foregroundStyle(Color("TextPrimary"))
+            }
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(Color("TextSecondary"))
@@ -240,6 +270,56 @@ struct HistoryView: View {
             historyExportItems = [url]
             isPresentingHistoryExport = true
         }
+    }
+
+    private func shareEntry(_ entry: HistoryEntry) {
+        historyExportItems = [buildShareText(for: entry)]
+        isPresentingHistoryExport = true
+    }
+
+    private func deleteEntry(_ entry: HistoryEntry) {
+        modelContext.delete(entry)
+        try? modelContext.save()
+    }
+
+    private func buildShareText(for entry: HistoryEntry) -> String {
+        var text = ""
+        if !entry.moodTag.isEmpty {
+            text += "心情：\(entry.moodTag)\n"
+        }
+        if let depth = entry.analysisDepth {
+            text += "深度：\(depth.displayName)\n"
+        }
+        text += "我的想法：\(entry.inputThought)\n\n"
+
+        let template = entry.thinkingTemplate ?? .cbt
+        switch template {
+        case .cbt:
+            text += """
+            认知扭曲：\(entry.distortion)
+            替代想法：\(entry.alternative)
+            建议行动：\(entry.action)
+            """
+        case .socratic:
+            let qs = (entry.analysisResult.questions ?? [])
+                .enumerated()
+                .map { "\($0.offset + 1). \($0.element)" }
+                .joined(separator: "\n")
+            text += """
+            引导问题：
+            \(qs)
+
+            说明：\(entry.alternative)
+            反思练习：\(entry.action)
+            """
+        case .behavioral:
+            text += """
+            状态：\(entry.analysisResult.stateAssessment ?? entry.distortion)
+            下一步：\(entry.action)
+            积极视角：\(entry.alternative)
+            """
+        }
+        return text
     }
 
     @MainActor
@@ -273,6 +353,8 @@ struct HistoryRowView: View {
     @Environment(\.modelContext) private var modelContext
     let entry: HistoryEntry
     @Bindable var viewModel: HistoryViewModel
+    var onShare: (() -> Void)?
+    var onDelete: (() -> Void)?
     @State private var isExpanded = false
 
     private var displayTemplate: ThinkingTemplate {
@@ -363,7 +445,8 @@ struct HistoryRowView: View {
                         template: displayTemplate,
                         inputThought: entry.inputThought,
                         moodTag: entry.moodTag,
-                        analysisDepthLabel: entry.analysisDepth?.displayName ?? ""
+                        analysisDepthLabel: entry.analysisDepth?.displayName ?? "",
+                        historyEntryID: entry.id
                     )
                 }
                 .transition(.opacity)
@@ -374,6 +457,33 @@ struct HistoryRowView: View {
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.25)) {
                 isExpanded.toggle()
+            }
+        }
+        .contextMenu {
+            Button {
+                onShare?()
+            } label: {
+                Label("分享", systemImage: "square.and.arrow.up")
+            }
+
+            Button(role: .destructive) {
+                onDelete?()
+            } label: {
+                Label("移除", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                onShare?()
+            } label: {
+                Label("分享", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color("AccentColor"))
+
+            Button(role: .destructive) {
+                onDelete?()
+            } label: {
+                Label("移除", systemImage: "trash")
             }
         }
     }
