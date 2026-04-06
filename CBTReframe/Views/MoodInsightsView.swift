@@ -7,9 +7,30 @@ struct MoodInsightsView: View {
     @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
     @State private var range: Int = 30
 
-    private var points: [MoodCheckIn] {
+    private struct DailyMoodPoint: Identifiable {
+        let day: Date
+        let avgScore: Double
+        let moodLabel: String
+        let count: Int
+        var id: Date { day }
+    }
+
+    private var points: [DailyMoodPoint] {
         let cutoff = Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast
-        return checkins.filter { $0.createdAt >= cutoff }.sorted { $0.createdAt < $1.createdAt }
+        let filtered = checkins.filter { $0.createdAt >= cutoff }
+        let grouped = Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.createdAt) }
+
+        return grouped.keys.sorted().compactMap { day in
+            guard let items = grouped[day], !items.isEmpty else { return nil }
+            let avg = Double(items.map(\.moodScore).reduce(0, +)) / Double(items.count)
+            let label = items
+                .reduce(into: [String: Int]()) { dict, item in
+                    dict[item.moodLabel, default: 0] += 1
+                }
+                .max(by: { $0.value < $1.value })?
+                .key ?? "未记录"
+            return DailyMoodPoint(day: day, avgScore: avg, moodLabel: label, count: items.count)
+        }
     }
 
     var body: some View {
@@ -31,17 +52,32 @@ struct MoodInsightsView: View {
                     } else {
                         Chart(points) { item in
                             LineMark(
-                                x: .value("日期", item.createdAt),
-                                y: .value("心情", item.moodScore)
+                                x: .value("日期", item.day),
+                                y: .value("心情", item.avgScore)
                             )
                             .foregroundStyle(Color("AccentColor"))
                             PointMark(
-                                x: .value("日期", item.createdAt),
-                                y: .value("心情", item.moodScore)
+                                x: .value("日期", item.day),
+                                y: .value("心情", item.avgScore)
                             )
                             .foregroundStyle(Color("AccentColor"))
                         }
                         .frame(height: 220)
+
+                        ForEach(points.reversed()) { item in
+                            HStack(spacing: 10) {
+                                Text(MoodTagPicker.emoji(for: item.moodLabel))
+                                Text(item.moodLabel)
+                                    .font(.subheadline.weight(.medium))
+                                Spacer()
+                                Text(item.day, style: .date)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(String(format: "%.1f/10", item.avgScore))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
 

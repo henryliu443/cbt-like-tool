@@ -32,14 +32,10 @@ struct HomeView: View {
                             templatePicker
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
-                        if flowStep.rawValue >= HomeFlowStep.chooseMood.rawValue {
-                            MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
                         analyzeButton
                     }
 
-                    if flowStep.rawValue >= HomeFlowStep.chooseMood.rawValue {
+                    if flowStep.rawValue >= HomeFlowStep.chooseMode.rawValue {
                         DisclosureGroup("更多选项", isExpanded: $showSecondaryTools) {
                             VStack(spacing: 12) {
                                 moodCheckinCard
@@ -105,11 +101,6 @@ struct HomeView: View {
         }
         .onTapGesture {
             isInputFocused = false
-        }
-        .onChange(of: viewModel.selectedMood) { _, newValue in
-            if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                viewModel.errorMessage = nil
-            }
         }
         .onChange(of: viewModel.inputText) { _, newValue in
             let hasText = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -196,8 +187,7 @@ struct HomeView: View {
 
     private var canSubmitAnalysis: Bool {
         let hasText = !viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasMood = !viewModel.selectedMood.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return hasText && hasMood && !viewModel.isLoading
+        return hasText && !viewModel.isLoading
     }
 
     private var canAdvanceFromThought: Bool {
@@ -283,12 +273,19 @@ struct HomeView: View {
                 }
             }
             HStack {
-                ForEach(1...5, id: \.self) { score in
-                    Button("🙂") {
-                        modelContext.insert(MoodCheckIn(moodScore: score * 2, moodLabel: "今日签到"))
+                ForEach(MoodTagPicker.sharedMoods.prefix(5), id: \.id) { mood in
+                    Button {
+                        modelContext.insert(
+                            MoodCheckIn(
+                                moodScore: MoodTagPicker.score(for: mood.label),
+                                moodLabel: mood.label
+                            )
+                        )
                         try? modelContext.save()
                         streakService.markToday()
                         HapticManager.tap()
+                    } label: {
+                        Text(mood.emoji)
                     }
                     .buttonStyle(.bordered)
                 }
@@ -321,8 +318,9 @@ struct HomeView: View {
                     return
                 }
                 if flowStep == .chooseMode {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        flowStep = .chooseMood
+                    await viewModel.analyzeThought(modelContext: modelContext)
+                    if viewModel.result != nil {
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }
                     return
                 }
@@ -338,7 +336,7 @@ struct HomeView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Image(systemName: flowStep == .chooseMood ? "arrow.triangle.2.circlepath" : "arrow.right")
+                    Image(systemName: "arrow.right")
                         .font(.headline)
                 }
                 Text(analyzeButtonTitle)
@@ -379,8 +377,6 @@ struct HomeView: View {
         case .writeThought:
             return "下一步：选最省力的方式"
         case .chooseMode:
-            return "下一步：点当前心情"
-        case .chooseMood:
             return "开始分析"
         }
     }
@@ -391,8 +387,6 @@ struct HomeView: View {
         case .writeThought:
             return canAdvanceFromThought
         case .chooseMode:
-            return canAdvanceFromThought
-        case .chooseMood:
             return canSubmitAnalysis
         }
     }
@@ -551,7 +545,6 @@ struct HomeView: View {
 private enum HomeFlowStep: Int {
     case writeThought
     case chooseMode
-    case chooseMood
 }
 
 private struct StreamingResultView: View {

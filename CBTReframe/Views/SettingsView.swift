@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -6,6 +7,8 @@ struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
     @State private var showClearConfirmation = false
     @State private var showKeyField = false
+    @State private var showFaceIDDisableBlockedAlert = false
+    @State private var showDisableDisclaimerConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -46,6 +49,24 @@ struct SettingsView: View {
                 Button("取消", role: .cancel) {}
             } message: {
                 Text("这将删除所有 API Key、历史记录和设置。此操作不可撤销。")
+            }
+            .alert("无法关闭 Face ID 保护", isPresented: $showFaceIDDisableBlockedAlert) {
+                Button("我知道了", role: .cancel) {}
+            } message: {
+                Text("请先通过 Face ID 验证，才能关闭历史记录保护。")
+            }
+            .alert("确认关闭免责声明？", isPresented: $showDisableDisclaimerConfirm) {
+                Button("继续开启", role: .cancel) {
+                    viewModel.hasAcceptedDisclaimer = true
+                }
+                Button("关闭并退出 App", role: .destructive) {
+                    viewModel.hasAcceptedDisclaimer = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        exit(0)
+                    }
+                }
+            } message: {
+                Text("关闭后将立即退出 App。")
             }
         }
     }
@@ -286,7 +307,12 @@ struct SettingsView: View {
 
     private var privacySection: some View {
         Section {
-            Toggle(isOn: $viewModel.useFaceID) {
+            Toggle(isOn: Binding(
+                get: { viewModel.useFaceID },
+                set: { newValue in
+                    handleFaceIDToggleChanged(newValue)
+                }
+            )) {
                 HStack(spacing: 10) {
                     Image(systemName: "faceid")
                         .foregroundStyle(Color("AccentColor"))
@@ -360,17 +386,47 @@ struct SettingsView: View {
             }
         } header: {
             Label("提醒", systemImage: "bell")
+        } footer: {
+            Text("每日提醒通过系统 Push 通知发送（本地通知）。请在系统设置里允许通知。")
+                .font(.caption)
         }
     }
 
     private var disclaimerSection: some View {
         Section {
-            Toggle("我理解本应用不能替代专业治疗", isOn: $viewModel.hasAcceptedDisclaimer)
+            Toggle(isOn: Binding(
+                get: { viewModel.hasAcceptedDisclaimer },
+                set: { newValue in
+                    if newValue {
+                        viewModel.hasAcceptedDisclaimer = true
+                    } else {
+                        showDisableDisclaimerConfirm = true
+                    }
+                }
+            )) {
+                Text("我理解本应用不能替代专业治疗")
+            }
             Text("若你处于危机中，请立即联系专业机构或急救服务。")
                 .font(.caption)
                 .foregroundStyle(Color("TextSecondary"))
         } header: {
             Label("免责声明", systemImage: "exclamationmark.triangle")
+        }
+    }
+
+    private func handleFaceIDToggleChanged(_ newValue: Bool) {
+        if newValue {
+            viewModel.useFaceID = true
+            return
+        }
+        Task {
+            let ok = await viewModel.authenticateWithFaceID(reason: "关闭 Face ID 历史记录保护")
+            if ok {
+                viewModel.useFaceID = false
+            } else {
+                viewModel.useFaceID = true
+                showFaceIDDisableBlockedAlert = true
+            }
         }
     }
 }

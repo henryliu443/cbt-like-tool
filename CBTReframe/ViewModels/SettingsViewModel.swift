@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import SwiftData
 import UIKit
+import LocalAuthentication
 
 @MainActor
 @Observable
@@ -228,10 +229,20 @@ final class SettingsViewModel {
         let key = KeychainManager.shared.load(key: selectedProvider.rawValue) ?? ""
         return !key.isEmpty
     }
-}
 
-enum ReminderService {
-    static func requestPermission() async -> Bool { true }
-    static func scheduleDailyReminder(hour: Int, minute: Int) async {}
-    static func cancelDailyReminder() {}
+    func authenticateWithFaceID(reason: String) async -> Bool {
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            return false
+        }
+        do {
+            return try await context.evaluatePolicy(
+                .deviceOwnerAuthenticationWithBiometrics,
+                localizedReason: reason
+            )
+        } catch {
+            return false
+        }
+    }
 }

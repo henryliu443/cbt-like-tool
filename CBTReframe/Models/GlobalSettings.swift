@@ -13,7 +13,7 @@ enum ActionMode: String, CaseIterable, Codable, Identifiable {
 
     var shortLabel: String {
         switch self {
-        case .reframe: return "一键改成更有用的想法"
+        case .reframe: return "改变想法"
         case .reflect: return "引导反思"
         case .act: return "行动起来"
         }

@@ -130,13 +130,6 @@ struct HistoryView: View {
             }
             .padding(.top, 8)
 
-            Button("跳过，暂时关闭 Face ID") {
-                settingsViewModel.useFaceID = false
-                isUnlocked = true
-            }
-            .font(.caption)
-            .foregroundStyle(Color("TextSecondary"))
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

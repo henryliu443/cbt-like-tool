@@ -10,7 +10,7 @@ struct MoodTagPicker: View {
     @Binding var selectedMood: String
     @Binding var isAkathisia: Bool
 
-    private let moods: [MoodTag] = [
+    static let sharedMoods: [MoodTag] = [
         MoodTag(emoji: "😔", label: "低落"),
         MoodTag(emoji: "😰", label: "焦虑"),
         MoodTag(emoji: "😤", label: "愤怒"),
@@ -22,6 +22,20 @@ struct MoodTagPicker: View {
         MoodTag(emoji: "🥳", label: "开心"),
         MoodTag(emoji: "😆", label: "愉快"),
     ]
+
+    static func score(for moodLabel: String) -> Int {
+        switch moodLabel {
+        case "低落", "失望": return 2
+        case "焦虑", "担忧", "愤怒", "内在不安": return 4
+        case "疲惫", "麻木": return 5
+        case "开心", "愉快": return 9
+        default: return 6
+        }
+    }
+
+    static func emoji(for moodLabel: String) -> String {
+        sharedMoods.first(where: { $0.label == moodLabel })?.emoji ?? "🙂"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -51,7 +65,7 @@ struct MoodTagPicker: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(moods) { mood in
+                    ForEach(Self.sharedMoods) { mood in
                         Button {
                             withAnimation(.spring(response: 0.3)) {
                                 selectedMood = mood.label

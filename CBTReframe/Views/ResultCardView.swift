@@ -450,37 +450,118 @@ struct ResultCardView: View {
 private struct FollowUpChatView: View {
     let initialThought: String
     let initialResult: AnalysisResult
-    @State private var messages: [String] = []
+    @State private var messages: [FollowUpMessage] = []
     @State private var draft: String = ""
+    @FocusState private var isInputFocused: Bool
 
     var body: some View {
-        List {
-            Section("原始想法") {
-                Text(initialThought)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    ForEach(messages) { message in
+                        HStack {
+                            if message.role == .user {
+                                Spacer(minLength: 48)
+                            }
+
+                            Text(message.text)
+                                .font(.body)
+                                .foregroundStyle(message.role == .user ? Color.white : Color("TextPrimary"))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(
+                                    message.role == .user
+                                        ? Color("AccentColor")
+                                        : Color(.secondarySystemGroupedBackground)
+                                )
+                                .clipShape(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .stroke(
+                                            message.role == .user
+                                                ? Color.clear
+                                                : Color(.separator).opacity(0.25),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
+                                .id(message.id)
+
+                            if message.role != .user {
+                                Spacer(minLength: 48)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 12)
             }
-            Section("上一轮结论") {
-                Text(initialResult.alternative)
+            .background(Color(.systemGroupedBackground))
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 8) {
+                    TextField("继续追问…", text: $draft, axis: .vertical)
+                        .lineLimit(1...4)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(Capsule())
+                        .focused($isInputFocused)
+
+                    Button {
+                        sendMessage()
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundStyle(canSend ? Color("AccentColor") : Color.gray.opacity(0.45))
+                    }
+                    .disabled(!canSend)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .background(.ultraThinMaterial)
             }
-            Section("继续探索") {
-                ForEach(messages, id: \.self) { msg in
-                    Text(msg)
+            .onChange(of: messages.count) { _, _ in
+                guard let last = messages.last else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo(last.id, anchor: .bottom)
                 }
             }
-        }
-        .safeAreaInset(edge: .bottom) {
-            HStack {
-                TextField("继续追问...", text: $draft)
-                    .textFieldStyle(.roundedBorder)
-                Button("发送") {
-                    let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !t.isEmpty else { return }
-                    messages.append(t)
-                    draft = ""
+            .onAppear {
+                if messages.isEmpty {
+                    messages = [
+                        FollowUpMessage(role: .assistant, text: "你刚刚的原始想法：\(initialThought)"),
+                        FollowUpMessage(role: .assistant, text: "上一轮结论：\(initialResult.alternative)")
+                    ]
                 }
             }
-            .padding()
-            .background(.ultraThinMaterial)
         }
         .navigationTitle("继续探索")
     }
+
+    private var canSend: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func sendMessage() {
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        messages.append(FollowUpMessage(role: .user, text: text))
+        draft = ""
+    }
+}
+
+private struct FollowUpMessage: Identifiable {
+    enum Role {
+        case assistant
+        case user
+    }
+
+    let id = UUID()
+    let role: Role
+    let text: String
 }
