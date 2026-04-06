@@ -14,6 +14,7 @@ struct HistoryView: View {
     @State private var hasAttemptedAuth = false
     @State private var isPresentingHistoryExport = false
     @State private var historyExportItems: [Any] = []
+    @State private var showExportOptions = false
 
     private var needsAuth: Bool {
         settingsViewModel.useFaceID && !isUnlocked
@@ -37,11 +38,7 @@ struct HistoryView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         HStack(spacing: 16) {
                             Button {
-                                let subset = viewModel.filteredEntries(allEntries)
-                                if let url = HistoryExportService.makeTemporaryJSONFile(entries: subset) {
-                                    historyExportItems = [url]
-                                    isPresentingHistoryExport = true
-                                }
+                                showExportOptions = true
                             } label: {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundStyle(Color("AccentColor"))
@@ -70,6 +67,12 @@ struct HistoryView: View {
             } else if !settingsViewModel.useFaceID {
                 isUnlocked = true
             }
+        }
+        .confirmationDialog("导出格式", isPresented: $showExportOptions) {
+            Button("JSON") { export(format: "json") }
+            Button("CSV") { export(format: "csv") }
+            Button("PDF") { export(format: "pdf") }
+            Button("取消", role: .cancel) {}
         }
         .onChange(of: settingsViewModel.useFaceID) { _, newValue in
             if !newValue {
@@ -227,6 +230,23 @@ struct HistoryView: View {
             modelContext.delete(entries[index])
         }
         try? modelContext.save()
+    }
+
+    private func export(format: String) {
+        let subset = viewModel.filteredEntries(allEntries)
+        let url: URL?
+        switch format {
+        case "csv":
+            url = HistoryExportService.makeTemporaryCSVFile(entries: subset)
+        case "pdf":
+            url = HistoryExportService.makeTemporaryPDFFile(entries: subset)
+        default:
+            url = HistoryExportService.makeTemporaryJSONFile(entries: subset)
+        }
+        if let url {
+            historyExportItems = [url]
+            isPresentingHistoryExport = true
+        }
     }
 
     @MainActor

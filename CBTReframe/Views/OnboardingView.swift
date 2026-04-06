@@ -164,6 +164,10 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
 
+            Toggle("我理解本应用仅用于自助练习，不能替代专业治疗", isOn: $settingsViewModel.hasAcceptedDisclaimer)
+                .font(.footnote)
+                .padding(.horizontal, 24)
+
             Spacer()
             Spacer()
         }
@@ -228,6 +232,7 @@ struct OnboardingView: View {
                     )
                     .clipShape(Capsule())
                 }
+                .disabled(!settingsViewModel.hasAcceptedDisclaimer)
             }
         }
         .padding(.horizontal, 24)

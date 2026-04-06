@@ -8,6 +8,8 @@ struct ResultCardView: View {
     var moodTag: String = ""
     var analysisDepthLabel: String = ""
     @State private var copiedToast = false
+    @State private var showFollowUp = false
+    @State private var reveal = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,6 +41,16 @@ struct ResultCardView: View {
                 .clipShape(Capsule())
                 .offset(y: -12)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .sheet(isPresented: $showFollowUp) {
+            NavigationStack {
+                FollowUpChatView(initialThought: inputThought, initialResult: result)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                reveal = true
             }
         }
     }
@@ -148,6 +160,9 @@ struct ResultCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
+        .opacity(reveal ? 1 : 0.1)
+        .offset(y: reveal ? 0 : 8)
+        .animation(.easeOut(duration: 0.3), value: reveal)
     }
 
     private var behavioralContent: some View {
@@ -189,6 +204,14 @@ struct ResultCardView: View {
 
             actionButton(icon: "paperplane.fill", label: "发到 ChatGPT") {
                 sendToChatGPT()
+            }
+
+            Rectangle()
+                .fill(Color(.separator).opacity(0.2))
+                .frame(width: 1, height: 28)
+
+            actionButton(icon: "ellipsis.bubble", label: "继续探索") {
+                showFollowUp = true
             }
         }
         .padding(.vertical, 4)

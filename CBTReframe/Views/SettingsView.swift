@@ -19,6 +19,8 @@ struct SettingsView: View {
                 responseStyleSection
                 promptTemplateSection
                 privacySection
+                reminderSection
+                disclaimerSection
                 aboutSection
             }
             .navigationTitle("设置")
@@ -331,6 +333,44 @@ struct SettingsView: View {
         } footer: {
             Text("在「历史」可搜索与收藏记录，并导出当前列表为 JSON（V2.1）。")
                 .font(.footnote)
+        }
+    }
+
+    private var reminderSection: some View {
+        Section {
+            Toggle("每日提醒", isOn: $viewModel.dailyReminderEnabled)
+            if viewModel.dailyReminderEnabled {
+                DatePicker(
+                    "提醒时间",
+                    selection: Binding(
+                        get: {
+                            var comps = DateComponents()
+                            comps.hour = viewModel.reminderHour
+                            comps.minute = viewModel.reminderMinute
+                            return Calendar.current.date(from: comps) ?? Date()
+                        },
+                        set: { newDate in
+                            let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                            viewModel.reminderHour = comps.hour ?? 21
+                            viewModel.reminderMinute = comps.minute ?? 0
+                        }
+                    ),
+                    displayedComponents: .hourAndMinute
+                )
+            }
+        } header: {
+            Label("提醒", systemImage: "bell")
+        }
+    }
+
+    private var disclaimerSection: some View {
+        Section {
+            Toggle("我理解本应用不能替代专业治疗", isOn: $viewModel.hasAcceptedDisclaimer)
+            Text("若你处于危机中，请立即联系专业机构或急救服务。")
+                .font(.caption)
+                .foregroundStyle(Color("TextSecondary"))
+        } header: {
+            Label("免责声明", systemImage: "exclamationmark.triangle")
         }
     }
 }

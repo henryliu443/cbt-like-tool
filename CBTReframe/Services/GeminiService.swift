@@ -67,7 +67,7 @@ struct GeminiService: AIServiceProtocol {
         case 500, 502, 503, 504: throw AIServiceError.httpStatus(httpResponse.statusCode)
         default:
             if let msg = geminiErrorMessage(from: data) {
-                print("[CBTReframe][Gemini] HTTP \(httpResponse.statusCode): \(msg)")
+                AppLogger.network.error("Gemini HTTP \(httpResponse.statusCode): \(msg, privacy: .public)")
             }
             throw AIServiceError.httpStatus(httpResponse.statusCode)
         }

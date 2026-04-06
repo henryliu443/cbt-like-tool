@@ -9,6 +9,9 @@ final class ThoughtJournalViewModel {
     var situation: String = ""
     var selectedEmotion: String = ""
     var intensity: Double = 5
+    var beliefBefore: Double = 50
+    var evidenceFor: String = ""
+    var evidenceAgainst: String = ""
     var showAddSheet: Bool = false
     var isAnalyzing: Bool = false
     var patternReport: ThoughtPatternReport?
@@ -31,7 +34,10 @@ final class ThoughtJournalViewModel {
             content: text,
             situation: situation,
             emotion: selectedEmotion,
-            intensity: Int(intensity)
+            intensity: Int(intensity),
+            beliefBefore: Int(beliefBefore),
+            evidenceFor: evidenceFor,
+            evidenceAgainst: evidenceAgainst
         )
         modelContext.insert(entry)
         try? modelContext.save()
@@ -43,6 +49,9 @@ final class ThoughtJournalViewModel {
         situation = ""
         selectedEmotion = ""
         intensity = 5
+        beliefBefore = 50
+        evidenceFor = ""
+        evidenceAgainst = ""
         showAddSheet = false
     }
 
@@ -63,6 +72,8 @@ final class ThoughtJournalViewModel {
             for entry in unprocessed {
                 entry.isProcessed = true
                 entry.distortionTag = patternReport?.topDistortions.first?.name ?? ""
+                entry.balancedThought = patternReport?.suggestion ?? ""
+                entry.beliefAfter = max(10, entry.beliefBefore - 20)
             }
             try? modelContext.save()
 

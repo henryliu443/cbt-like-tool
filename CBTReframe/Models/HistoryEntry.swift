@@ -28,6 +28,8 @@ final class HistoryEntry {
     var responseStyleRaw: String = ""
     /// 可选：问题列表、多条行动、状态评估等（JSON）。
     var resultExtrasJSON: String = ""
+    /// 后续追问消息（JSON 数组）。
+    var followUpMessagesJSON: String = ""
 
     init(
         inputThought: String,

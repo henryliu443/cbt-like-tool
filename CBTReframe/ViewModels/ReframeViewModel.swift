@@ -12,6 +12,8 @@ final class ReframeViewModel {
     var showCrisisBanner: Bool = false
     var isButtonPressed: Bool = false
     var retryRecoveryNotice: String?
+    var streamingText: String = ""
+    var isStreamingResult: Bool = false
 
     /// 分析前必选，供模型结合情绪解读想法。
     var selectedMood: String = ""
@@ -172,6 +174,8 @@ final class ReframeViewModel {
 
         isLoading = true
         errorMessage = nil
+        isStreamingResult = true
+        streamingText = ""
         if loadingBannerStyle == .deepReasoningWithTimer {
             startThinkingProgress()
         }
@@ -197,10 +201,12 @@ final class ReframeViewModel {
         }
 
         let analysisResult = decodedResult.normalized(for: template)
+        await playStreamingText(for: analysisResult)
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             self.result = analysisResult
         }
+        isStreamingResult = false
         if rawResult.metadata.recoveredByRetry {
             showRetryRecoveryNotice()
         }
@@ -217,6 +223,7 @@ final class ReframeViewModel {
         )
         modelContext.insert(entry)
         try? modelContext.save()
+        HapticManager.success()
     }
 
     /// 历史列表展示：勾选 Akathisia 时在心情后标注。
@@ -282,6 +289,20 @@ final class ReframeViewModel {
                     retryRecoveryNotice = nil
                 }
             }
+        }
+    }
+
+    @MainActor
+    private func playStreamingText(for result: AnalysisResult) async {
+        let full = [
+            "认知扭曲：\(result.distortion)",
+            "替代想法：\(result.alternative)",
+            "建议行动：\(result.action)",
+        ].joined(separator: "\n")
+        streamingText = ""
+        for ch in full {
+            streamingText.append(ch)
+            try? await Task.sleep(nanoseconds: 8_000_000)
         }
     }
 }

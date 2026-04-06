@@ -39,6 +39,42 @@ final class SettingsViewModel {
             UserDefaults.standard.set(useFaceID, forKey: "useFaceID")
         }
     }
+    var dailyReminderEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(dailyReminderEnabled, forKey: "dailyReminderEnabled")
+            Task {
+                if dailyReminderEnabled {
+                    _ = await ReminderService.requestPermission()
+                    let hour = reminderHour
+                    let minute = reminderMinute
+                    await ReminderService.scheduleDailyReminder(hour: hour, minute: minute)
+                } else {
+                    ReminderService.cancelDailyReminder()
+                }
+            }
+        }
+    }
+    var reminderHour: Int {
+        didSet {
+            UserDefaults.standard.set(reminderHour, forKey: "reminderHour")
+            if dailyReminderEnabled {
+                Task { await ReminderService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute) }
+            }
+        }
+    }
+    var reminderMinute: Int {
+        didSet {
+            UserDefaults.standard.set(reminderMinute, forKey: "reminderMinute")
+            if dailyReminderEnabled {
+                Task { await ReminderService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute) }
+            }
+        }
+    }
+    var hasAcceptedDisclaimer: Bool {
+        didSet {
+            UserDefaults.standard.set(hasAcceptedDisclaimer, forKey: "hasAcceptedDisclaimer")
+        }
+    }
 
     func resolvedModels(for provider: AIProvider) -> [AIModel] {
         if provider == .local { return AIProvider.local.fallbackModels }
@@ -63,6 +99,10 @@ final class SettingsViewModel {
         self.selectedModelId = modelId.isEmpty ? provider.defaultModel.id : modelId
 
         self.useFaceID = UserDefaults.standard.bool(forKey: "useFaceID")
+        self.dailyReminderEnabled = UserDefaults.standard.bool(forKey: "dailyReminderEnabled")
+        self.reminderHour = UserDefaults.standard.object(forKey: "reminderHour") as? Int ?? 21
+        self.reminderMinute = UserDefaults.standard.object(forKey: "reminderMinute") as? Int ?? 0
+        self.hasAcceptedDisclaimer = UserDefaults.standard.bool(forKey: "hasAcceptedDisclaimer")
 
         loadModelCacheFromDisk()
         let list = resolvedModels(for: selectedProvider)
@@ -159,6 +199,11 @@ final class SettingsViewModel {
                 modelContext.delete(entry)
             }
         }
+        if let moodEntries = try? modelContext.fetch(FetchDescriptor<MoodCheckIn>()) {
+            for entry in moodEntries {
+                modelContext.delete(entry)
+            }
+        }
 
         try? modelContext.save()
 
@@ -172,6 +217,10 @@ final class SettingsViewModel {
         selectedProvider = .local
         selectedModelId = AIProvider.local.defaultModel.id
         useFaceID = false
+        dailyReminderEnabled = false
+        reminderHour = 21
+        reminderMinute = 0
+        hasAcceptedDisclaimer = false
     }
 
     var hasAPIKey: Bool {

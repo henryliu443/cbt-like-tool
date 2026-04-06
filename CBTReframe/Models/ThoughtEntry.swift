@@ -8,6 +8,11 @@ final class ThoughtEntry {
     var situation: String
     var emotion: String
     var intensity: Int
+    var beliefBefore: Int
+    var beliefAfter: Int
+    var evidenceFor: String
+    var evidenceAgainst: String
+    var balancedThought: String
     var distortionTag: String
     var isProcessed: Bool
     var createdAt: Date
@@ -17,6 +22,11 @@ final class ThoughtEntry {
         situation: String = "",
         emotion: String = "",
         intensity: Int = 5,
+        beliefBefore: Int = 50,
+        beliefAfter: Int = 50,
+        evidenceFor: String = "",
+        evidenceAgainst: String = "",
+        balancedThought: String = "",
         distortionTag: String = "",
         isProcessed: Bool = false
     ) {
@@ -25,6 +35,11 @@ final class ThoughtEntry {
         self.situation = situation
         self.emotion = emotion
         self.intensity = intensity
+        self.beliefBefore = beliefBefore
+        self.beliefAfter = beliefAfter
+        self.evidenceFor = evidenceFor
+        self.evidenceAgainst = evidenceAgainst
+        self.balancedThought = balancedThought
         self.distortionTag = distortionTag
         self.isProcessed = isProcessed
         self.createdAt = Date()

@@ -5,10 +5,13 @@ import UIKit
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var globalSettings: GlobalSettings
+    @Environment(\.colorScheme) private var colorScheme
+    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var moodCheckIns: [MoodCheckIn]
     @Bindable var viewModel: ReframeViewModel
     @State private var isButtonPressed = false
     @State private var showExternalAppChoices = false
     @State private var geminiPulse = false
+    @StateObject private var streakService = StreakService()
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -21,6 +24,7 @@ struct HomeView: View {
                     headerSection
 
                     VStack(spacing: 20) {
+                        moodCheckinCard
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
                         templatePicker
                         MoodTagPicker(selectedMood: $viewModel.selectedMood, isAkathisia: $viewModel.isAkathisia)
@@ -28,6 +32,9 @@ struct HomeView: View {
                     }
 
                     externalMoneySaverSection
+                    if viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.result == nil {
+                        emptyGuideCard
+                    }
 
                     if viewModel.isLoading && viewModel.loadingBannerStyle != .none {
                         analysisLoadingBanner
@@ -66,6 +73,9 @@ struct HomeView: View {
                                     .combined(with: .scale(scale: 0.95)),
                                 removal: .opacity
                             ))
+                    }
+                    if viewModel.isStreamingResult {
+                        StreamingResultView(text: viewModel.streamingText)
                     }
 
                     Spacer(minLength: 60)
@@ -165,12 +175,29 @@ struct HomeView: View {
         return hasText && hasMood && !viewModel.isLoading
     }
 
+    private var emptyGuideCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("不知道怎么开始？")
+                .font(.subheadline.weight(.semibold))
+            Button("试试输入：我觉得自己什么都做不好") {
+                viewModel.inputText = "我觉得自己什么都做不好"
+                HapticManager.tap()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
     private var homeBackground: some View {
+        let glowOpacity = colorScheme == .dark ? 0.04 : 0.07
         ZStack {
             Color(.systemGroupedBackground)
             LinearGradient(
                 colors: [
-                    Color("AccentColor").opacity(0.07),
+                    Color("AccentColor").opacity(glowOpacity),
                     Color.clear,
                     Color(.systemGroupedBackground)
                 ],
@@ -200,6 +227,36 @@ struct HomeView: View {
 
             IntelligenceAnimatedGlyph(systemName: "brain.head.profile", pointSize: 40, weight: .light)
         }
+    }
+
+    private var moodCheckinCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("连续记录 \(streakService.currentStreak) 天")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color("TextPrimary"))
+                Spacer()
+                if let last = moodCheckIns.first {
+                    Text(last.createdAt, style: .date)
+                        .font(.caption)
+                        .foregroundStyle(Color("TextSecondary"))
+                }
+            }
+            HStack {
+                ForEach(1...5, id: \.self) { score in
+                    Button("🙂") {
+                        modelContext.insert(MoodCheckIn(moodScore: score * 2, moodLabel: "今日签到"))
+                        try? modelContext.save()
+                        streakService.markToday()
+                        HapticManager.tap()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(14)
+        .background(Color("CardBackground"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var templatePicker: some View {

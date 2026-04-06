@@ -54,7 +54,7 @@ struct TemplatePickerView: View {
                         selectedTemplate = suggested
                         onTemplateTapped?()
                     }
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    HapticManager.tap()
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "sparkles")
@@ -93,7 +93,7 @@ struct TemplatePickerView: View {
                 selectedTemplate = template
                 onTemplateTapped?()
             }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            HapticManager.tap()
         } label: {
             VStack(spacing: 10) {
                 ZStack {

@@ -47,9 +47,15 @@ struct SafetyBannerView: View {
             Text("\(name)：")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.9))
-            Text(number)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
+            if let url = URL(string: "tel://\(number.replacingOccurrences(of: "-", with: ""))") {
+                Link(number, destination: url)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+            } else {
+                Text(number)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+            }
         }
     }
 }

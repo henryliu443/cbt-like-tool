@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 @main
 struct CBTReframeApp: App {
@@ -10,21 +11,13 @@ struct CBTReframeApp: App {
     let container: ModelContainer
 
     init() {
-        let schema = Schema([HistoryEntry.self, ThoughtEntry.self])
+        let schema = Schema([HistoryEntry.self, ThoughtEntry.self, MoodCheckIn.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: false)
         do {
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
-            print("[CBTReframe] SwiftData schema error, resetting database: \(error)")
-            let urls = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            if let appSupport = urls.first {
-                let storeURL = appSupport.appendingPathComponent("default.store")
-                for suffix in ["", "-shm", "-wal"] {
-                    let fileURL = storeURL.deletingLastPathComponent().appendingPathComponent(storeURL.lastPathComponent + suffix)
-                    try? FileManager.default.removeItem(at: fileURL)
-                }
-            }
-            container = try! ModelContainer(for: schema, configurations: [config])
+            AppLogger.data.error("SwiftData initialization failed: \(error.localizedDescription, privacy: .public)")
+            container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
         }
     }
 
@@ -79,12 +72,24 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
+            MoodInsightsView()
+                .tabItem {
+                    Label("趋势", systemImage: "chart.line.uptrend.xyaxis")
+                }
+                .tag(3)
+
+            ExercisesView()
+                .tabItem {
+                    Label("练习", systemImage: "figure.mind.and.body")
+                }
+                .tag(4)
+
             SettingsView(viewModel: settingsViewModel)
                 .environmentObject(globalSettings)
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
-                .tag(3)
+                .tag(5)
         }
         .tint(Color("AccentColor"))
     }

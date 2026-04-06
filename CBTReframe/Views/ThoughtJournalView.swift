@@ -272,6 +272,12 @@ struct ThoughtRowView: View {
                     .font(.caption2)
                     .foregroundStyle(Color("TextSecondary"))
             }
+
+            if !entry.balancedThought.isEmpty {
+                Text("平衡想法：\(entry.balancedThought)")
+                    .font(.caption)
+                    .foregroundStyle(Color("TextSecondary"))
+            }
         }
         .padding(.vertical, 4)
     }
@@ -374,6 +380,40 @@ struct AddThoughtSheet: View {
 
                         Slider(value: $viewModel.intensity, in: 1...10, step: 1)
                             .tint(Color("AccentColor"))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label("信念强度（分析前）", systemImage: "percent")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color("TextSecondary"))
+                            Spacer()
+                            Text("\(Int(viewModel.beliefBefore))%")
+                                .font(.caption.bold())
+                                .foregroundStyle(Color("AccentColor"))
+                        }
+                        Slider(value: $viewModel.beliefBefore, in: 0...100, step: 1)
+                            .tint(Color("AccentColor"))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("支持这个想法的证据（可选）", systemImage: "plus.circle")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color("TextSecondary"))
+                        TextField("例如：最近确实两次被拒绝", text: $viewModel.evidenceFor)
+                            .padding(12)
+                            .background(Color("CardBackground"))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("反对这个想法的证据（可选）", systemImage: "minus.circle")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color("TextSecondary"))
+                        TextField("例如：上周也完成了一个项目", text: $viewModel.evidenceAgainst)
+                            .padding(12)
+                            .background(Color("CardBackground"))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
                 .padding()

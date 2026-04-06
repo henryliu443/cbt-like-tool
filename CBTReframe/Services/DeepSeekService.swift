@@ -70,7 +70,7 @@ struct DeepSeekService: AIServiceProtocol {
 
         if httpResponse.statusCode != 200 {
             let bodyStr = String(data: data, encoding: .utf8) ?? ""
-            print("[CBTReframe][DeepSeek] HTTP \(httpResponse.statusCode): \(bodyStr)")
+            AppLogger.network.error("DeepSeek HTTP \(httpResponse.statusCode): \(bodyStr, privacy: .public)")
         }
 
         switch httpResponse.statusCode {
@@ -142,20 +142,20 @@ struct DeepSeekService: AIServiceProtocol {
               let choices = json["choices"] as? [[String: Any]],
               let message = choices.first?["message"] as? [String: Any] else {
             let raw = String(data: data, encoding: .utf8) ?? "nil"
-            print("[CBTReframe][DeepSeek] Cannot parse top-level: \(raw.prefix(500))")
+            AppLogger.network.error("DeepSeek cannot parse top-level: \(String(raw.prefix(500)), privacy: .public)")
             throw AIServiceError.invalidResponse
         }
 
         // 仅解析最终 content。reasoning_content 为链式推理，不可当作用户可见结果。
         let finish = (choices.first?["finish_reason"] as? String) ?? (choices.first?["finishReason"] as? String)
         if finish == "length" {
-            print("[CBTReframe][DeepSeek] finish_reason=length (输出可能被截断)")
+            AppLogger.network.warning("DeepSeek finish_reason=length")
         }
 
         guard let content = message["content"] as? String,
               !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             let hasReasoning = (message["reasoning_content"] as? String)?.isEmpty == false
-            print("[CBTReframe][DeepSeek] empty content (has reasoning_content: \(hasReasoning)), finish_reason: \(finish ?? "nil"), keys: \(message.keys)")
+            AppLogger.network.error("DeepSeek empty content. has_reasoning=\(hasReasoning), finish=\(finish ?? "nil", privacy: .public)")
             throw AIServiceError.parseError(
                 "DeepSeek Reasoner 未返回最终正文（推理可能占满 token）。请重试，或改用「DeepSeek Chat」；若仍失败请检查账户额度与 API 文档。"
             )

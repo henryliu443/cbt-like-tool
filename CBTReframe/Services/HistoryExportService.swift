@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// V2.1：将历史记录导出为 JSON，便于备份或在外部工具中查看。
 enum HistoryExportService {
@@ -75,5 +76,77 @@ enum HistoryExportService {
         } catch {
             return nil
         }
+    }
+
+    static func makeTemporaryCSVFile(entries: [HistoryEntry]) -> URL? {
+        let header = "createdAt,inputThought,moodTag,template,distortion,alternative,action,provider,model,isFavorite\n"
+        let rows = entries.map { e in
+            [
+                isoDate(e.createdAt),
+                csvEscape(e.inputThought),
+                csvEscape(e.moodTag),
+                csvEscape(e.therapyTemplateRaw),
+                csvEscape(e.distortion),
+                csvEscape(e.alternative),
+                csvEscape(e.action),
+                csvEscape(e.providerName),
+                csvEscape(e.modelName),
+                e.isFavorite ? "1" : "0",
+            ].joined(separator: ",")
+        }.joined(separator: "\n")
+        let content = header + rows
+        let name = "CBTReframe-History-\(Int(Date().timeIntervalSince1970)).csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try content.write(to: url, atomically: true, encoding: .utf8)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    static func makeTemporaryPDFFile(entries: [HistoryEntry]) -> URL? {
+        let meta: [CFString: Any] = [kCGPDFContextCreator: "CBTReframe", kCGPDFContextTitle: "History Export"]
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = meta as [String: Any]
+        let bounds = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let renderer = UIGraphicsPDFRenderer(bounds: bounds, format: format)
+        let data = renderer.pdfData { ctx in
+            ctx.beginPage()
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineSpacing = 4
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12),
+                .paragraphStyle: paragraph,
+            ]
+            var y: CGFloat = 20
+            for (i, entry) in entries.enumerated() {
+                let line = "\(i + 1). [\(isoDate(entry.createdAt))] \(entry.inputThought)\n扭曲: \(entry.distortion)\n替代: \(entry.alternative)\n行动: \(entry.action)\n\n"
+                let rect = CGRect(x: 20, y: y, width: 555, height: 140)
+                line.draw(in: rect, withAttributes: attrs)
+                y += 130
+                if y > 760 {
+                    ctx.beginPage()
+                    y = 20
+                }
+            }
+        }
+        let name = "CBTReframe-History-\(Int(Date().timeIntervalSince1970)).pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+        do {
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private static func csvEscape(_ value: String) -> String {
+        "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+
+    private static func isoDate(_ date: Date) -> String {
+        let f = ISO8601DateFormatter()
+        return f.string(from: date)
     }
 }
