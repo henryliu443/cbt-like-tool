@@ -93,7 +93,7 @@ final class ReframeViewModel {
         globalSettings: GlobalSettings,
         resolver: AIProviderResolver,
         reframeUseCase: ReframeUseCase,
-        streakService: StreakService = StreakService()
+        streakService: StreakService
     ) {
         self.globalSettings = globalSettings
         self.resolver = resolver
