@@ -1,3 +1,5 @@
 # Xcode — per-user / machine state (always use your local Xcode copy)
 **/xcuserdata/
 *.xcuserstate
+DerivedData/
+.derivedData/

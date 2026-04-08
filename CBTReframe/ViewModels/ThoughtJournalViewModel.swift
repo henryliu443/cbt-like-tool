@@ -17,12 +17,10 @@ final class ThoughtJournalViewModel {
     var patternReport: ThoughtPatternReport?
     var errorMessage: String?
 
-    var settings: SettingsViewModel
-    private let pipeline: AnalysisPipeline
+    private let thoughtPatternPipeline: ThoughtPatternPipeline
 
-    init(settings: SettingsViewModel, pipeline: AnalysisPipeline) {
-        self.settings = settings
-        self.pipeline = pipeline
+    init(thoughtPatternPipeline: ThoughtPatternPipeline) {
+        self.thoughtPatternPipeline = thoughtPatternPipeline
     }
 
     @MainActor
@@ -67,7 +65,7 @@ final class ThoughtJournalViewModel {
         errorMessage = nil
 
         do {
-            patternReport = try await pipeline.analyzeThoughtPatterns(entries: unprocessed)
+            patternReport = try await thoughtPatternPipeline.analyze(entries: unprocessed)
 
             for entry in unprocessed {
                 entry.isProcessed = true

@@ -52,12 +52,22 @@
 		A1100039 /* CBTEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100039 /* CBTEngine.swift */; };
 		A1100040 /* SocraticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100040 /* SocraticEngine.swift */; };
 		A1100041 /* BehavioralEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100041 /* BehavioralEngine.swift */; };
-		A1100042 /* AnalysisPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* AnalysisPipeline.swift */; };
+		A1100042 /* ReframePipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100042 /* ReframePipeline.swift */; };
 		A1100043 /* ReframeRetryExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100043 /* ReframeRetryExecutor.swift */; };
 		A1100044 /* ReframeOutputGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100044 /* ReframeOutputGate.swift */; };
 		A1100045 /* AppleIntelligenceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100045 /* AppleIntelligenceStyle.swift */; };
 		A1100046 /* AppMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100046 /* AppMetadata.swift */; };
 		A1100047 /* HistoryExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100047 /* HistoryExportService.swift */; };
+		A1100048 /* AIServiceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100048 /* AIServiceError.swift */; };
+		A1100049 /* AIServiceFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100049 /* AIServiceFactory.swift */; };
+		A1100050 /* SocraticPipelineValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100050 /* SocraticPipelineValidation.swift */; };
+		A1100051 /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100051 /* ReminderService.swift */; };
+		A1100052 /* AIProviderResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100052 /* AIProviderResolver.swift */; };
+		A1100053 /* RetriableValidatedReframeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100053 /* RetriableValidatedReframeRunner.swift */; };
+		A1100054 /* ThoughtPatternPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100054 /* ThoughtPatternPipeline.swift */; };
+		A1100055 /* ReframeUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100055 /* ReframeUseCase.swift */; };
+		A1100056 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100056 /* StreakService.swift */; };
+		A1100057 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100057 /* HapticManager.swift */; };
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
 		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
@@ -110,12 +120,22 @@
 		A2100039 /* CBTEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBTEngine.swift; sourceTree = "<group>"; };
 		A2100040 /* SocraticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocraticEngine.swift; sourceTree = "<group>"; };
 		A2100041 /* BehavioralEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehavioralEngine.swift; sourceTree = "<group>"; };
-		A2100042 /* AnalysisPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisPipeline.swift; sourceTree = "<group>"; };
+		A2100042 /* ReframePipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframePipeline.swift; sourceTree = "<group>"; };
 		A2100043 /* ReframeRetryExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutor.swift; sourceTree = "<group>"; };
 		A2100044 /* ReframeOutputGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeOutputGate.swift; sourceTree = "<group>"; };
 		A2100045 /* AppleIntelligenceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceStyle.swift; sourceTree = "<group>"; };
 		A2100046 /* AppMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMetadata.swift; sourceTree = "<group>"; };
 		A2100047 /* HistoryExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryExportService.swift; sourceTree = "<group>"; };
+		A2100048 /* AIServiceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceError.swift; sourceTree = "<group>"; };
+		A2100049 /* AIServiceFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceFactory.swift; sourceTree = "<group>"; };
+		A2100050 /* SocraticPipelineValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocraticPipelineValidation.swift; sourceTree = "<group>"; };
+		A2100051 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
+		A2100052 /* AIProviderResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProviderResolver.swift; sourceTree = "<group>"; };
+		A2100053 /* RetriableValidatedReframeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetriableValidatedReframeRunner.swift; sourceTree = "<group>"; };
+		A2100054 /* ThoughtPatternPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtPatternPipeline.swift; sourceTree = "<group>"; };
+		A2100055 /* ReframeUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeUseCase.swift; sourceTree = "<group>"; };
+		A2100056 /* StreakService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
+		A2100057 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -212,10 +232,13 @@
 			isa = PBXGroup;
 			children = (
 				A2100005 /* AIServiceProtocol.swift */,
+				A2100048 /* AIServiceError.swift */,
+				A2100049 /* AIServiceFactory.swift */,
 				A2100006 /* OpenAIService.swift */,
 				A2100007 /* AnthropicService.swift */,
 				A2100008 /* DeepSeekService.swift */,
 				A2100009 /* LocalAnalysisService.swift */,
+				A2100051 /* ReminderService.swift */,
 				A2100010 /* KeychainManager.swift */,
 				A2100011 /* PromptTemplates.swift */,
 				A2100035 /* AnalysisEngine.swift */,
@@ -225,7 +248,7 @@
 				A2100029 /* GeminiService.swift */,
 				A2100030 /* ExternalAIAppLauncher.swift */,
 				A2100031 /* AIModelListService.swift */,
-				A2100042 /* AnalysisPipeline.swift */,
+				A2100042 /* ReframePipeline.swift */,
 				A2100038 /* EngineRouter.swift */,
 				A2100039 /* CBTEngine.swift */,
 				A2100040 /* SocraticEngine.swift */,
@@ -233,6 +256,13 @@
 				A2100037 /* AIServiceLLMProvider.swift */,
 				A2100043 /* ReframeRetryExecutor.swift */,
 				A2100044 /* ReframeOutputGate.swift */,
+				A2100050 /* SocraticPipelineValidation.swift */,
+				A2100052 /* AIProviderResolver.swift */,
+				A2100053 /* RetriableValidatedReframeRunner.swift */,
+				A2100054 /* ThoughtPatternPipeline.swift */,
+				A2100055 /* ReframeUseCase.swift */,
+				A2100056 /* StreakService.swift */,
+				A2100057 /* HapticManager.swift */,
 				A2100047 /* HistoryExportService.swift */,
 			);
 			path = Services;
@@ -427,12 +457,22 @@
 				A1100039 /* CBTEngine.swift in Sources */,
 				A1100040 /* SocraticEngine.swift in Sources */,
 				A1100041 /* BehavioralEngine.swift in Sources */,
-				A1100042 /* AnalysisPipeline.swift in Sources */,
+				A1100042 /* ReframePipeline.swift in Sources */,
 				A1100043 /* ReframeRetryExecutor.swift in Sources */,
 				A1100044 /* ReframeOutputGate.swift in Sources */,
 				A1100045 /* AppleIntelligenceStyle.swift in Sources */,
 				A1100046 /* AppMetadata.swift in Sources */,
 				A1100047 /* HistoryExportService.swift in Sources */,
+				A1100048 /* AIServiceError.swift in Sources */,
+				A1100049 /* AIServiceFactory.swift in Sources */,
+				A1100050 /* SocraticPipelineValidation.swift in Sources */,
+				A1100051 /* ReminderService.swift in Sources */,
+				A1100052 /* AIProviderResolver.swift in Sources */,
+				A1100053 /* RetriableValidatedReframeRunner.swift in Sources */,
+				A1100054 /* ThoughtPatternPipeline.swift in Sources */,
+				A1100055 /* ReframeUseCase.swift in Sources */,
+				A1100056 /* StreakService.swift in Sources */,
+				A1100057 /* HapticManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

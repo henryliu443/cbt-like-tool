@@ -3,12 +3,33 @@ import SwiftUI
 import SwiftData
 import UIKit
 import LocalAuthentication
-import UserNotifications
+
+protocol ReminderScheduling {
+    func requestPermission() async -> Bool
+    func scheduleDailyReminder(hour: Int, minute: Int) async
+    func cancelDailyReminder()
+}
+
+struct DefaultReminderScheduler: ReminderScheduling {
+    func requestPermission() async -> Bool {
+        await ReminderService.requestPermission()
+    }
+
+    func scheduleDailyReminder(hour: Int, minute: Int) async {
+        await ReminderService.scheduleDailyReminder(hour: hour, minute: minute)
+    }
+
+    func cancelDailyReminder() {
+        ReminderService.cancelDailyReminder()
+    }
+}
 
 @MainActor
 @Observable
 final class SettingsViewModel {
     private static let modelCacheKeyPrefix = "cachedModelList."
+    private let reminderScheduler: ReminderScheduling
+    private var reminderSyncTask: Task<Void, Never>?
 
     /// 从 API 拉取并持久化后的模型；无缓存时用 `fallbackModels`。
     private var modelCache: [String: [AIModel]] = [:]
@@ -44,32 +65,19 @@ final class SettingsViewModel {
     var dailyReminderEnabled: Bool {
         didSet {
             UserDefaults.standard.set(dailyReminderEnabled, forKey: "dailyReminderEnabled")
-            Task {
-                if dailyReminderEnabled {
-                    _ = await ReminderService.requestPermission()
-                    let hour = reminderHour
-                    let minute = reminderMinute
-                    await ReminderService.scheduleDailyReminder(hour: hour, minute: minute)
-                } else {
-                    ReminderService.cancelDailyReminder()
-                }
-            }
+            syncReminderSchedule()
         }
     }
     var reminderHour: Int {
         didSet {
             UserDefaults.standard.set(reminderHour, forKey: "reminderHour")
-            if dailyReminderEnabled {
-                Task { await ReminderService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute) }
-            }
+            syncReminderSchedule()
         }
     }
     var reminderMinute: Int {
         didSet {
             UserDefaults.standard.set(reminderMinute, forKey: "reminderMinute")
-            if dailyReminderEnabled {
-                Task { await ReminderService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute) }
-            }
+            syncReminderSchedule()
         }
     }
     var hasAcceptedDisclaimer: Bool {
@@ -92,7 +100,8 @@ final class SettingsViewModel {
             ?? selectedProvider.fallbackModels.first!
     }
 
-    init() {
+    init(reminderScheduler: ReminderScheduling = DefaultReminderScheduler()) {
+        self.reminderScheduler = reminderScheduler
         let providerRaw = UserDefaults.standard.string(forKey: "selectedProvider") ?? AIProvider.gemini.rawValue
         let provider = AIProvider(rawValue: providerRaw) ?? .local
         self.selectedProvider = provider
@@ -246,32 +255,22 @@ final class SettingsViewModel {
             return false
         }
     }
-}
 
-enum ReminderService {
-    static func requestPermission() async -> Bool {
-        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
-    }
+    private func syncReminderSchedule() {
+        reminderSyncTask?.cancel()
+        let enabled = dailyReminderEnabled
+        let hour = reminderHour
+        let minute = reminderMinute
+        let scheduler = reminderScheduler
 
-    static func scheduleDailyReminder(hour: Int, minute: Int) async {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: ["daily.checkin"])
-
-        var comps = DateComponents()
-        comps.hour = hour
-        comps.minute = minute
-
-        let content = UNMutableNotificationContent()
-        content.title = "CBT Reframe"
-        content.body = "今天心情怎么样？花 1 分钟记录一下。"
-        content.sound = .default
-
-        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
-        let req = UNNotificationRequest(identifier: "daily.checkin", content: content, trigger: trigger)
-        try? await center.add(req)
-    }
-
-    static func cancelDailyReminder() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["daily.checkin"])
+        reminderSyncTask = Task {
+            if enabled {
+                _ = await scheduler.requestPermission()
+                guard !Task.isCancelled else { return }
+                await scheduler.scheduleDailyReminder(hour: hour, minute: minute)
+            } else {
+                scheduler.cancelDailyReminder()
+            }
+        }
     }
 }

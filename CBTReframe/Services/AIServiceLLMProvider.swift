@@ -58,10 +58,10 @@ struct ReframeLLMRequest: Codable {
 /// Bridges `LLMProvider` to existing `AIServiceFactory` + `reframe` without modifying service implementations.
 @MainActor
 final class AIServiceLLMProvider: LLMProvider {
-    private let settingsViewModel: SettingsViewModel
+    private let resolver: AIProviderResolver
 
-    init(settingsViewModel: SettingsViewModel) {
-        self.settingsViewModel = settingsViewModel
+    init(resolver: AIProviderResolver) {
+        self.resolver = resolver
     }
 
     func generate(prompt: String) async throws -> LLMGenerationOutput {
@@ -69,28 +69,12 @@ final class AIServiceLLMProvider: LLMProvider {
             throw AIServiceError.parseError("invalid prompt encoding")
         }
         let req = try JSONDecoder().decode(ReframeLLMRequest.self, from: data)
-        let service = AIServiceFactory.service(for: settingsViewModel.selectedProvider)
-
-        let maxAttempts = (req.template == .socratic && req.strategy != .crisis) ? 3 : 2
-        let retried = try await ReframeRetryExecutor.run(maxAttempts: maxAttempts) {
-            var result = try await service.reframe(
-                thought: req.thought,
-                mood: req.mood,
-                hasAkathisia: req.hasAkathisia,
-                model: settingsViewModel.selectedModel,
-                mode: req.mode,
-                style: req.style,
-                template: req.template,
-                strategy: req.strategy
-            )
-            if req.template == .socratic && req.strategy != .crisis {
-                result = try SocraticPipelineValidation.applyingSanitizedQuestions(result)
-            }
-            if req.strategy != .crisis {
-                try ReframeOutputGate.validate(result, template: req.template)
-            }
-            return result
-        }
+        let service = AIServiceFactory.service(for: resolver.selectedProvider)
+        let retried = try await RetriableValidatedReframeRunner.run(
+            service: service,
+            request: req,
+            model: resolver.selectedModel
+        )
 
         let out = try JSONEncoder().encode(retried.value)
         guard let s = String(data: out, encoding: .utf8) else {

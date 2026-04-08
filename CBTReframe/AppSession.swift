@@ -7,9 +7,12 @@ final class AppSession: ObservableObject {
     let journalViewModel: ThoughtJournalViewModel
 
     init(settings: SettingsViewModel, globalSettings: GlobalSettings) {
-        let llmProvider = AIServiceLLMProvider(settingsViewModel: settings)
-        let pipeline = AnalysisPipeline(provider: llmProvider, settingsViewModel: settings)
-        reframeViewModel = ReframeViewModel(settings: settings, globalSettings: globalSettings, pipeline: pipeline)
-        journalViewModel = ThoughtJournalViewModel(settings: settings, pipeline: pipeline)
+        let resolver = SettingsAIProviderResolver(settingsViewModel: settings)
+        let llmProvider = AIServiceLLMProvider(resolver: resolver)
+        let reframePipeline = ReframePipeline(provider: llmProvider)
+        let reframeUseCase = ReframeUseCase(pipeline: reframePipeline, resolver: resolver)
+        let thoughtPatternPipeline = ThoughtPatternPipeline(resolver: resolver)
+        reframeViewModel = ReframeViewModel(globalSettings: globalSettings, resolver: resolver, reframeUseCase: reframeUseCase)
+        journalViewModel = ThoughtJournalViewModel(thoughtPatternPipeline: thoughtPatternPipeline)
     }
 }
