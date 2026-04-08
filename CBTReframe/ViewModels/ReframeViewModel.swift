@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 import SwiftData
-import UIKit
 
 @MainActor
 @Observable
@@ -25,24 +24,13 @@ final class ReframeViewModel {
     private var thinkingTickerTask: Task<Void, Never>?
     private var retryNoticeTask: Task<Void, Never>?
 
-    var settings: SettingsViewModel
     var globalSettings: GlobalSettings
+    private let resolver: AIProviderResolver
+    private let streakService: StreakService
 
     var currentStreak: Int = 0
     var longestStreak: Int = 0
-
-    /// Today's analysis count (reset each calendar day via UserDefaults).
-    var todayAnalysisCount: Int {
-        let key = "todayAnalysisCount"
-        let dateKey = "todayAnalysisDate"
-        let defaults = UserDefaults.standard
-        let today = Calendar.current.startOfDay(for: Date())
-        if let stored = defaults.object(forKey: dateKey) as? Date,
-           Calendar.current.isDate(stored, inSameDayAs: today) {
-            return defaults.integer(forKey: key)
-        }
-        return 0
-    }
+    var todayAnalysisCount: Int = 0
 
     static let quickStartPrompts: [(emoji: String, text: String)] = [
         ("💭", "我觉得自己什么都做不好"),
@@ -52,7 +40,7 @@ final class ReframeViewModel {
         ("🫠", "我太累了，什么都不想做"),
     ]
 
-    private let pipeline: AnalysisPipeline
+    private let reframeUseCase: ReframeUseCase
 
     /// 分析进行中时首页加载条样式（互斥；与 `analyzeThought` 里是否启动计时器一致）。
     enum LoadingBannerStyle: Equatable {
@@ -70,7 +58,7 @@ final class ReframeViewModel {
     }
 
     private var modelIndicatesDeepReasoning: Bool {
-        let id = settings.selectedModel.id.lowercased()
+        let id = resolver.selectedModel.id.lowercased()
         return id.contains("reasoner")
             || id.hasPrefix("o1") || id.hasPrefix("o3") || id.hasPrefix("o4")
             || id.contains("reason")
@@ -78,8 +66,8 @@ final class ReframeViewModel {
     }
 
     private var modelIndicatesGeminiPro: Bool {
-        settings.selectedProvider == .gemini
-            && settings.selectedModel.id.lowercased().contains("pro")
+        resolver.selectedProvider == .gemini
+            && resolver.selectedModel.id.lowercased().contains("pro")
     }
 
     static let thinkingPhrases: [String] = [
@@ -101,11 +89,18 @@ final class ReframeViewModel {
         globalSettings.thinkingTemplate.promptTemplate
     }
 
-    init(settings: SettingsViewModel, globalSettings: GlobalSettings, pipeline: AnalysisPipeline) {
-        self.settings = settings
+    init(
+        globalSettings: GlobalSettings,
+        resolver: AIProviderResolver,
+        reframeUseCase: ReframeUseCase,
+        streakService: StreakService = StreakService()
+    ) {
         self.globalSettings = globalSettings
-        self.pipeline = pipeline
+        self.resolver = resolver
+        self.reframeUseCase = reframeUseCase
+        self.streakService = streakService
         loadStreak()
+        todayAnalysisCount = streakService.todayAnalysisCount()
     }
 
     var greeting: String {
@@ -138,46 +133,19 @@ final class ReframeViewModel {
     }
 
     private func incrementTodayCount() {
-        let key = "todayAnalysisCount"
-        let dateKey = "todayAnalysisDate"
-        let defaults = UserDefaults.standard
-        let today = Calendar.current.startOfDay(for: Date())
-        if let stored = defaults.object(forKey: dateKey) as? Date,
-           Calendar.current.isDate(stored, inSameDayAs: today) {
-            defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
-        } else {
-            defaults.set(today, forKey: dateKey)
-            defaults.set(1, forKey: key)
-        }
+        todayAnalysisCount = streakService.incrementTodayCount()
     }
 
     private func loadStreak() {
-        let defaults = UserDefaults.standard
-        currentStreak = defaults.integer(forKey: "streak.current")
-        longestStreak = defaults.integer(forKey: "streak.longest")
+        let streak = streakService.loadStreak()
+        currentStreak = streak.current
+        longestStreak = streak.longest
     }
 
     private func markStreakToday() {
-        let defaults = UserDefaults.standard
-        let cal = Calendar.current
-        let now = Date()
-        let last = defaults.object(forKey: "streak.lastDate") as? Date
-
-        if let last, cal.isDate(last, inSameDayAs: now) {
-            return
-        }
-
-        if let last,
-           let delta = cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: now)).day,
-           delta == 1 {
-            currentStreak += 1
-        } else {
-            currentStreak = 1
-        }
-        longestStreak = max(longestStreak, currentStreak)
-        defaults.set(currentStreak, forKey: "streak.current")
-        defaults.set(longestStreak, forKey: "streak.longest")
-        defaults.set(now, forKey: "streak.lastDate")
+        let streak = streakService.markToday()
+        currentStreak = streak.current
+        longestStreak = streak.longest
     }
 
     /// 生成与当前设置、风险路由一致的完整提示词，供复制到外站（免 App 内 API 费用）。
@@ -210,39 +178,6 @@ final class ReframeViewModel {
         }
         errorMessage = nil
 
-        let riskLevel = detectRiskLevel(thought)
-        let responseStrategy = routeStrategy(level: riskLevel)
-        showCrisisBanner = (riskLevel == .high)
-
-        let template = globalSettings.thinkingTemplate
-
-        // 高风险：本地关键词已判定，不调用远端 API（避免安全策略无有效输出且产生费用）
-        if shouldUseLocalCrisisOnly(thought) {
-            isLoading = true
-            errorMessage = nil
-            defer { isLoading = false }
-
-            let analysisResult = CrisisLocalSupport.analysisResult
-                .normalized(for: template)
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                self.result = analysisResult
-            }
-            let entry = HistoryEntry(
-                inputThought: thought,
-                result: analysisResult,
-                providerName: CrisisLocalSupport.historyProviderName,
-                modelName: CrisisLocalSupport.historyModelName,
-                moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
-                therapyTemplate: template,
-                analysisDepth: globalSettings.analysisDepth,
-                responseStyle: globalSettings.responseStyle
-            )
-            modelContext.insert(entry)
-            try? modelContext.save()
-            latestHistoryEntryID = entry.id
-            return
-        }
-
         isLoading = true
         errorMessage = nil
         isStreamingResult = true
@@ -255,62 +190,36 @@ final class ReframeViewModel {
             isLoading = false
         }
 
-        let envelope = AnalysisInputEnvelope(
+        let useCaseOutput = await reframeUseCase.analyze(
             thought: thought,
             mood: moodTrimmed,
-            strategy: responseStrategy,
-            hasAkathisia: isAkathisia
+            isAkathisia: isAkathisia,
+            globalSettings: globalSettings,
+            modelContext: modelContext
         )
-        let rawResult = await pipeline.run(envelope: envelope, settings: globalSettings)
-        if let message = rawResult.errorMessage {
+        showCrisisBanner = useCaseOutput.showCrisisBanner
+        if let message = useCaseOutput.errorMessage {
             errorMessage = message
             return
         }
-        guard let decodedResult = rawResult.result else {
+        guard let analysisResult = useCaseOutput.result else {
             errorMessage = "分析失败，请稍后重试"
             return
         }
-
-        let analysisResult = decodedResult.normalized(for: template)
         await playStreamingText(for: analysisResult)
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             self.result = analysisResult
         }
         isStreamingResult = false
-        if rawResult.metadata.recoveredByRetry {
+        if useCaseOutput.recoveredByRetry {
             showRetryRecoveryNotice()
         }
-
-        let entry = HistoryEntry(
-            inputThought: thought,
-            result: analysisResult,
-            providerName: settings.selectedProvider.displayName,
-            modelName: settings.selectedModel.name,
-            moodTag: Self.moodTagForHistory(base: moodTrimmed, isAkathisia: isAkathisia),
-            therapyTemplate: template,
-            analysisDepth: globalSettings.analysisDepth,
-            responseStyle: globalSettings.responseStyle
-        )
-        modelContext.insert(entry)
-
-        let moodScore = MoodTagPicker.score(for: moodTrimmed)
-        let checkin = MoodCheckIn(moodScore: moodScore, moodLabel: moodTrimmed)
-        modelContext.insert(checkin)
-
-        try? modelContext.save()
-        latestHistoryEntryID = entry.id
+        latestHistoryEntryID = useCaseOutput.historyEntryID
 
         markStreakToday()
         incrementTodayCount()
         HapticManager.success()
-    }
-
-    /// 历史列表展示：勾选 Akathisia 时在心情后标注。
-    private static func moodTagForHistory(base: String, isAkathisia: Bool) -> String {
-        guard isAkathisia else { return base }
-        if base == PromptBuilder.akathisiaMoodTag { return base }
-        return "\(base)（Akathisia）"
     }
 
     @MainActor
@@ -385,15 +294,5 @@ final class ReframeViewModel {
             streamingText.append(ch)
             try? await Task.sleep(nanoseconds: 8_000_000)
         }
-    }
-}
-
-enum HapticManager {
-    static func tap() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
-
-    static func success() {
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 }

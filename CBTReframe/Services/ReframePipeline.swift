@@ -43,7 +43,7 @@ struct AnalysisRunMetadata {
     static let `default` = AnalysisRunMetadata(attemptCount: 1, recoveredByRetry: false)
 }
 
-struct AnalysisPipelineOutput {
+struct ReframePipelineOutput {
     let result: AnalysisResult?
     let metadata: AnalysisRunMetadata
     let errorMessage: String?
@@ -51,18 +51,16 @@ struct AnalysisPipelineOutput {
 
 /// Central entry for reframe analysis: ViewModels call this instead of AI services.
 @MainActor
-final class AnalysisPipeline {
+final class ReframePipeline {
     private let router = EngineRouter()
     private let provider: LLMProvider
-    private let settingsViewModel: SettingsViewModel
 
-    init(provider: LLMProvider, settingsViewModel: SettingsViewModel) {
+    init(provider: LLMProvider) {
         self.provider = provider
-        self.settingsViewModel = settingsViewModel
     }
 
     /// Single entry for reframe analysis (typed pipeline request).
-    func run(envelope: AnalysisInputEnvelope, settings: GlobalSettings) async -> AnalysisPipelineOutput {
+    func run(envelope: AnalysisInputEnvelope, settings: GlobalSettings) async -> ReframePipelineOutput {
         let engine = router.resolve(settings: settings)
         let request = AnalysisEngineRequest(envelope: envelope, settings: settings)
         do {
@@ -73,21 +71,21 @@ final class AnalysisPipeline {
                     result = try SocraticPipelineValidation.applyingSanitizedQuestions(result)
                 } catch {
                     let serviceError = AIServiceError.classify(error)
-                    return AnalysisPipelineOutput(
+                    return ReframePipelineOutput(
                         result: nil,
                         metadata: metadata(from: raw),
                         errorMessage: serviceError.userFacingMessage
                     )
                 }
             }
-            return AnalysisPipelineOutput(
+            return ReframePipelineOutput(
                 result: result,
                 metadata: metadata(from: raw),
                 errorMessage: nil
             )
         } catch {
             let serviceError = AIServiceError.classify(error)
-            return AnalysisPipelineOutput(
+            return ReframePipelineOutput(
                 result: nil,
                 metadata: .default,
                 errorMessage: serviceError.userFacingMessage
@@ -96,25 +94,16 @@ final class AnalysisPipeline {
     }
 
     /// Backward-compatible entry for older callers that still pass JSON string payload.
-    func run(input: String, settings: GlobalSettings) async -> AnalysisPipelineOutput {
+    func run(input: String, settings: GlobalSettings) async -> ReframePipelineOutput {
         guard let data = input.data(using: .utf8),
               let envelope = try? JSONDecoder().decode(AnalysisInputEnvelope.self, from: data) else {
-            return AnalysisPipelineOutput(
+            return ReframePipelineOutput(
                 result: nil,
                 metadata: .default,
                 errorMessage: "分析请求格式错误，请稍后重试"
             )
         }
         return await run(envelope: envelope, settings: settings)
-    }
-
-    /// Thought journal pattern analysis — routed here so ViewModels do not call `AIServiceFactory` directly.
-    func analyzeThoughtPatterns(entries: [ThoughtEntry]) async throws -> ThoughtPatternReport {
-        let service = AIServiceFactory.service(for: settingsViewModel.selectedProvider)
-        return try await service.analyzeThoughtPatterns(
-            thoughts: entries,
-            model: settingsViewModel.selectedModel
-        )
     }
 
     private func safeDecode(_ raw: String, strategy: ResponseStrategy) -> AnalysisResult {
