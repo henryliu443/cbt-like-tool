@@ -36,9 +36,10 @@
 
 | 服务商 | 可用模型 |
 |--------|----------|
-| OpenAI | GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, GPT-4o, GPT-4o Mini |
-| Anthropic | Claude Sonnet 4, Claude 3.5 Haiku |
+| OpenAI | GPT - Latest, etc...|
+| Anthropic | Claude Sonnet Latest, Claude Haiku Latest, Claude Opus Latest, etc...|
 | DeepSeek | DeepSeek Chat, DeepSeek Reasoner |
+| Gemini | Gemini Latest, etc...|
 | 本地 | 内置离线分析（无需 API Key） |
 
 ## 系统要求
