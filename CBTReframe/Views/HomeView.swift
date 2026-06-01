@@ -442,6 +442,8 @@ struct HomeView: View {
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
 
+            let container = modelContext.container
+
             Task {
                 if flowStep == .writeThought {
                     guard canAdvanceFromThought else { return }
@@ -457,14 +459,14 @@ struct HomeView: View {
                     return
                 }
                 if flowStep == .chooseMood {
-                    await viewModel.analyzeThought(modelContext: modelContext)
+                    await viewModel.analyzeThought(container: container)
                     if viewModel.result != nil {
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }
                     return
                 }
 
-                await viewModel.analyzeThought(modelContext: modelContext)
+                await viewModel.analyzeThought(container: container)
                 if viewModel.result != nil {
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 }

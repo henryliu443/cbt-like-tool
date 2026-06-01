@@ -71,7 +71,7 @@ enum AIModelListService {
         guard let url = URL(string: "\(baseURL)/models") else { throw AIModelListError.invalidURL }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 30
+        request.timeoutInterval = 30.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AIModelListError.decodeFailed }
@@ -111,7 +111,7 @@ enum AIModelListService {
         var request = URLRequest(url: url)
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        request.timeoutInterval = 30
+        request.timeoutInterval = 30.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AIModelListError.decodeFailed }
@@ -154,7 +154,7 @@ enum AIModelListService {
         guard let url = components.url else { throw AIModelListError.invalidURL }
 
         var request = URLRequest(url: url)
-        request.timeoutInterval = 45
+        request.timeoutInterval = 45.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AIModelListError.decodeFailed }

@@ -2,13 +2,19 @@ import Foundation
 #if !SKIP
 import UserNotifications
 #else
-import AndroidApp
-import AndroidContent
-import AndroidOS
-import AndroidXCoreApp
-import AndroidXWork
-import JavaUtil
-import JavaUtilConcurrent
+import android.content.Context
+import android.app.NotificationManager
+import android.app.NotificationChannel
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.work.Worker
+import androidx.work.ListenableWorker
+import androidx.work.PeriodicWorkRequest
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 #endif
 
 enum ReminderService {
@@ -82,8 +88,10 @@ enum ReminderService {
     }
     
     #if SKIP
-    private static func _getAndroidContext() -> AndroidContent.Context? {
-        // Placeholder: Needs actual context injection, e.g., from Skip UI Application
+    private static func _getAndroidContext() -> android.content.Context? {
+        if let activity = AndroidContextTracker.sharedActivity as? android.content.Context {
+            return activity
+        }
         return nil
     }
     #endif
@@ -91,12 +99,16 @@ enum ReminderService {
 
 #if SKIP
 open class ReminderWorker: Worker {
+    public init(context: android.content.Context, workerParams: androidx.work.WorkerParameters) {
+        super.init(context, workerParams)
+    }
+
     public override func doWork() -> ListenableWorker.Result {
         let context = self.getApplicationContext()
-        let notificationManager = context.getSystemService(AndroidContent.Context.NOTIFICATION_SERVICE) as! NotificationManager
+        let notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as! NotificationManager
 
         let channelId = "cbt_reframe_reminders"
-        if AndroidOS.Build.VERSION.SDK_INT >= AndroidOS.Build.VERSION_CODES.O {
+        if Build.VERSION.SDK_INT >= Build.VERSION_CODES.O {
             let channel = NotificationChannel(
                 channelId,
                 "Daily Check-in",
@@ -107,7 +119,7 @@ open class ReminderWorker: Worker {
 
         let notification = NotificationCompat.Builder(context, channelId)
             // Note: Replace with an actual app drawable resource id
-            .setSmallIcon(AndroidApp.R.drawable.ic_dialog_info) 
+            .setSmallIcon(android.R.drawable.ic_dialog_info) 
             .setContentTitle("CBT Reframe")
             .setContentText("今天心情怎么样？花 1 分钟记录一下。")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

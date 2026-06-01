@@ -38,7 +38,11 @@ struct HomeView: View {
                     }
 
                     VStack(spacing: 20) {
+                        #if !SKIP
                         ThoughtInputCard(text: $viewModel.inputText, isFocused: $isInputFocused)
+                        #else
+                        ThoughtInputCard(text: $viewModel.inputText)
+                        #endif
                         if flowStep.rawValue >= HomeFlowStep.chooseMode.rawValue {
                             templatePicker
                                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -382,7 +386,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSubmitAnalysis)
-            .opacity(canSubmitAnalysis ? 1 : 0.55)
+            .opacity(canSubmitAnalysis ? 1.0 : 0.55)
         }
         .padding(16)
         .background(
@@ -538,8 +542,8 @@ struct HomeView: View {
             }
         }
         .disabled(!buttonEnabled)
-        .opacity(buttonEnabled ? 1 : 0.6)
-        .scaleEffect(isButtonPressed ? 0.98 : 1)
+        .opacity(buttonEnabled ? 1.0 : 0.6)
+        .scaleEffect(isButtonPressed ? 0.98 : 1.0)
 #if !SKIP
         .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
             withAnimation(.easeInOut(duration: 0.15)) {

@@ -47,10 +47,16 @@ struct ResultCardView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
+                #if !SKIP
                 .background(.ultraThinMaterial)
                 .clipShape(Capsule())
                 .offset(y: -12)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+                #else
+                .background(Color("CardBackground"))
+                .clipShape(Capsule())
+                .offset(y: -12)
+                #endif
             }
         }
         .sheet(isPresented: $showFollowUp) {
@@ -204,8 +210,8 @@ struct ResultCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .opacity(reveal ? 1 : 0.1)
-        .offset(y: reveal ? 0 : 8)
+        .opacity(reveal ? 1.0 : 0.1)
+        .offset(y: reveal ? 0.0 : 8.0)
         .animation(.easeOut(duration: 0.3), value: reveal)
     }
 

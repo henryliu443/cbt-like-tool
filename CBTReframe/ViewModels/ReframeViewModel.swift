@@ -167,7 +167,7 @@ final class ReframeViewModel {
     }
 
     @MainActor
-    func analyzeThought(modelContext: ModelContext) async {
+    func analyzeThought(container: ModelContainer) async {
         let thought = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !thought.isEmpty else { return }
 
@@ -194,8 +194,7 @@ final class ReframeViewModel {
             thought: thought,
             mood: moodTrimmed,
             isAkathisia: isAkathisia,
-            globalSettings: globalSettings,
-            modelContext: modelContext
+            globalSettings: globalSettings
         )
         showCrisisBanner = useCaseOutput.showCrisisBanner
         if let message = useCaseOutput.errorMessage {
@@ -215,7 +214,31 @@ final class ReframeViewModel {
         if useCaseOutput.recoveredByRetry {
             showRetryRecoveryNotice()
         }
-        latestHistoryEntryID = useCaseOutput.historyEntryID
+        
+        if let providerName = useCaseOutput.historyProviderName,
+           let modelName = useCaseOutput.historyModelName,
+           let moodTag = useCaseOutput.moodTag {
+            let entry = HistoryEntry(
+                inputThought: thought,
+                result: analysisResult,
+                providerName: providerName,
+                modelName: modelName,
+                moodTag: moodTag,
+                therapyTemplate: globalSettings.thinkingTemplate,
+                analysisDepth: globalSettings.analysisDepth,
+                responseStyle: globalSettings.responseStyle
+            )
+            container.mainContext.insert(entry)
+
+            let moodScore = MoodTagPicker.score(for: moodTrimmed)
+            let checkin = MoodCheckIn(moodScore: moodScore, moodLabel: moodTrimmed)
+            container.mainContext.insert(checkin)
+
+            try? container.mainContext.save()
+            latestHistoryEntryID = entry.id
+        } else {
+            latestHistoryEntryID = nil
+        }
 
         markStreakToday()
         incrementTodayCount()

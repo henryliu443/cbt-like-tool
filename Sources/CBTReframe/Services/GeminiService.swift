@@ -130,7 +130,7 @@ struct GeminiService: AIServiceProtocol {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 600
+        request.timeoutInterval = 600.0
 
         return try await Self.generateSession.data(for: request)
     }

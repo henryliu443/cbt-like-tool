@@ -124,6 +124,7 @@ struct TemplatePickerView: View {
                         isActive: isSelected
                     )
 
+                    #if !SKIP
                     Circle()
                         .fill(.ultraThinMaterial)
                         .overlay {
@@ -139,6 +140,19 @@ struct TemplatePickerView: View {
                             Circle()
                                 .stroke(Color.white.opacity(isSelected ? 0.25 : 0.12), lineWidth: 1)
                         }
+                    #else
+                    Circle()
+                        .fill(
+                            isSelected
+                                ? Color("AccentColor").opacity(0.92)
+                                : Color("AccentColor").opacity(isSuggested ? 0.16 : 0.1)
+                        )
+                        .frame(width: Self.iconCircle, height: Self.iconCircle)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(isSelected ? 0.25 : 0.12), lineWidth: 1.0)
+                        )
+                    #endif
 
                     Image(systemName: template.icon)
                         .font(.system(size: 19, weight: .semibold))
@@ -171,9 +185,13 @@ struct TemplatePickerView: View {
             .frame(width: Self.columnWidth)
         }
         .buttonStyle(.plain)
-        .scaleEffect(isSelected ? 1.02 : 1)
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        #if !SKIP
         .animation(.spring(response: 0.28, dampingFraction: 0.78), value: isSelected)
+        #endif
         .accessibilityLabel(template.shortLabel)
+        #if !SKIP
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        #endif
     }
 }

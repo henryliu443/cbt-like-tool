@@ -230,49 +230,29 @@ struct AndroidMoodTrendChart: View {
     let points: [DailyMoodPoint]
     
     var body: some View {
-        Canvas { context, size in
-            guard !points.isEmpty else { return }
-            
-            let maxScore: Double = 10
-            let minScore: Double = 0
-            
-            let width = size.width
-            let height = size.height
-            
-            let pointSpacing = points.count > 1 ? width / CGFloat(points.count - 1) : width
-            
-            var path = Path()
-            var pointLocs: [CGPoint] = []
-            
-            for (i, pt) in points.enumerated() {
-                let x = CGFloat(i) * pointSpacing
-                let y = height - CGFloat((pt.avgScore - minScore) / (maxScore - minScore)) * height
-                let point = CGPoint(x: x, y: y)
-                pointLocs.append(point)
-                
-                if i == 0 {
-                    path.move(to: point)
-                } else {
-                    path.addLine(to: point)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .bottom, spacing: 12) {
+                ForEach(points) { item in
+                    VStack(spacing: 4) {
+                        Text(MoodTagPicker.emoji(for: item.moodLabel))
+                            .font(.caption2)
+                        
+                        VStack {
+                            Spacer()
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color("AccentColor"))
+                                .frame(width: 8, height: max(CGFloat(item.avgScore) * 15, 2))
+                        }
+                        .frame(height: 160)
+                        
+                        Text(String(format: "%.1f", item.avgScore))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            
-            var areaPath = path
-            areaPath.addLine(to: CGPoint(x: width, y: height))
-            areaPath.addLine(to: CGPoint(x: 0, y: height))
-            areaPath.closeSubpath()
-            context.fill(areaPath, with: GraphicsContext.Shading.color(Color("AccentColor").opacity(0.1)))
-            
-            context.stroke(path, with: GraphicsContext.Shading.color(Color("AccentColor")), lineWidth: 2)
-            
-            for (i, loc) in pointLocs.enumerated() {
-                let rect = CGRect(x: loc.x - 3, y: loc.y - 3, width: 6, height: 6)
-                context.fill(Path(ellipseIn: rect), with: GraphicsContext.Shading.color(Color("AccentColor")))
-                
-                let emoji = MoodTagPicker.emoji(for: points[i].moodLabel)
-                let text = context.resolve(Text(emoji).font(.caption2))
-                context.draw(text, at: CGPoint(x: loc.x, y: loc.y - 12))
-            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
         .frame(height: 220)
     }
@@ -282,25 +262,40 @@ struct AndroidAnalysisCountChart: View {
     let counts: [(Date, Int)]
     
     var body: some View {
-        Canvas { context, size in
-            guard !counts.isEmpty else { return }
-            
-            let maxCount = counts.map { $0.1 }.max() ?? 1
-            let width = size.width
-            let height = size.height
-            let barWidth = max(width / CGFloat(counts.count) - 4, 4)
-            let spacing = width / CGFloat(counts.count)
-            
-            for (i, item) in counts.enumerated() {
-                let barHeight = CGFloat(item.1) / CGFloat(maxCount) * height
-                let x = CGFloat(i) * spacing + (spacing - barWidth) / 2
-                let y = height - barHeight
-                
-                let rect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
-                context.fill(Path(roundedRect: rect, cornerRadius: 4), with: GraphicsContext.Shading.color(Color("AccentColor").opacity(0.7)))
+        let maxCount = counts.map { $0.1 }.max() ?? 1
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .bottom, spacing: 16) {
+                ForEach(0..<counts.count, id: \.self) { i in
+                    let item = counts[i]
+                    VStack(spacing: 4) {
+                        Text("\(item.1)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        
+                        VStack {
+                            Spacer()
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color("AccentColor").opacity(0.7))
+                                .frame(width: 16, height: max(CGFloat(item.1) / CGFloat(maxCount) * 120, 2))
+                        }
+                        .frame(height: 120)
+                        
+                        Text(dayAbbreviation(for: item.0))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
         .frame(height: 180)
+    }
+    
+    private func dayAbbreviation(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd"
+        return formatter.string(from: date)
     }
 }
 #endif
