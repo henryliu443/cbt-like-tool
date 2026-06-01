@@ -4,6 +4,7 @@ struct OnboardingView: View {
     @Bindable var settingsViewModel: SettingsViewModel
     @Binding var hasCompletedOnboarding: Bool
     @State private var currentPage = 0
+    @State private var showDisclaimerSheet = false
 
     var body: some View {
         ZStack {
@@ -22,6 +23,9 @@ struct OnboardingView: View {
                 pageIndicator
                 bottomButtons
             }
+        }
+        .sheet(isPresented: $showDisclaimerSheet) {
+            DisclaimerDetailView(isSheet: true)
         }
     }
 
@@ -164,7 +168,19 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
 
-            Toggle("我理解本应用仅用于自助练习，不能替代专业治疗", isOn: $settingsViewModel.hasAcceptedDisclaimer)
+            Button {
+                showDisclaimerSheet = true
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                    Text("查看完整的《免责声明与服务协议》")
+                }
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(Color("AccentColor"))
+            }
+            .buttonStyle(.plain)
+
+            Toggle("我理解并同意上述免责声明与服务协议", isOn: $settingsViewModel.hasAcceptedDisclaimer)
                 .font(.footnote)
                 .padding(.horizontal, 24)
 

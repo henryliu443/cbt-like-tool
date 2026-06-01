@@ -394,6 +394,12 @@ struct SettingsView: View {
 
     private var disclaimerSection: some View {
         Section {
+            NavigationLink {
+                DisclaimerDetailView(isSheet: false)
+            } label: {
+                Label("阅读完整免责声明与服务协议", systemImage: "doc.text.magnifyingglass")
+            }
+
             Toggle(isOn: Binding(
                 get: { viewModel.hasAcceptedDisclaimer },
                 set: { newValue in
@@ -404,13 +410,13 @@ struct SettingsView: View {
                     }
                 }
             )) {
-                Text("我理解本应用不能替代专业治疗")
+                Text("我同意本应用免责声明与服务协议")
             }
             Text("若你处于危机中，请立即联系专业机构或急救服务。")
                 .font(.caption)
                 .foregroundStyle(Color("TextSecondary"))
         } header: {
-            Label("免责声明", systemImage: "exclamationmark.triangle")
+            Label("免责声明与服务协议", systemImage: "exclamationmark.triangle")
         }
     }
 
