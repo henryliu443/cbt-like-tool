@@ -1,42 +1,16 @@
 import SwiftUI
-import SwiftData
 import Charts
 
 struct MoodInsightsView: View {
-    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var checkins: [MoodCheckIn]
-    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
+    @Bindable var viewModel: MoodInsightsViewModel
     @State private var range: Int = 30
-
-    private struct DailyMoodPoint: Identifiable {
-        let day: Date
-        let avgScore: Double
-        let moodLabel: String
-        let count: Int
-        var id: Date { day }
-    }
-
-    private var points: [DailyMoodPoint] {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast
-        let validLabels = Set(MoodTagPicker.sharedMoods.map(\.label))
-        let filtered = checkins.filter {
-            $0.createdAt >= cutoff && validLabels.contains($0.moodLabel)
-        }
-        let grouped = Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.createdAt) }
-
-        return grouped.keys.sorted().compactMap { day in
-            guard let items = grouped[day], !items.isEmpty else { return nil }
-            let avg = Double(items.map(\.moodScore).reduce(0, +)) / Double(items.count)
-            let label = items
-                .reduce(into: [String: Int]()) { dict, item in
-                    dict[item.moodLabel, default: 0] += 1
-                }
-                .max(by: { $0.value < $1.value })?
-                .key ?? "未记录"
-            return DailyMoodPoint(day: day, avgScore: avg, moodLabel: label, count: items.count)
-        }
-    }
-
+    
     var body: some View {
+        let currentPoints = viewModel.points(for: range)
+        let currentAvgScore = viewModel.avgScore(for: currentPoints)
+        let currentBreakdown = viewModel.moodBreakdown(for: range)
+        let currentCounts = viewModel.analysisCounts(for: range)
+        
         NavigationStack {
             List {
                 Section("时间范围") {
@@ -48,26 +22,96 @@ struct MoodInsightsView: View {
                     .pickerStyle(.segmented)
                 }
 
+                if !currentPoints.isEmpty {
+                    Section("概览") {
+                        HStack(spacing: 0) {
+                            VStack(spacing: 4) {
+                                Text(String(format: "%.1f", currentAvgScore))
+                                    .font(.title.bold().monospacedDigit())
+                                    .foregroundStyle(Color("AccentColor"))
+                                Text("平均心情")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color("TextSecondary"))
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            Rectangle().fill(Color(.separator).opacity(0.2)).frame(width: 1, height: 36)
+
+                            VStack(spacing: 4) {
+                                Text("\(viewModel.checkins.filter { $0.createdAt >= (Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast) }.count)")
+                                    .font(.title.bold().monospacedDigit())
+                                    .foregroundStyle(Color("TextPrimary"))
+                                Text("签到次数")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color("TextSecondary"))
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            Rectangle().fill(Color(.separator).opacity(0.2)).frame(width: 1, height: 36)
+
+                            VStack(spacing: 4) {
+                                Text("\(currentPoints.count)")
+                                    .font(.title.bold().monospacedDigit())
+                                    .foregroundStyle(Color("TextPrimary"))
+                                Text("活跃天数")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color("TextSecondary"))
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.vertical, 6)
+                    }
+                }
+
                 Section("情绪趋势") {
-                    if points.isEmpty {
-                        Text("暂无心情签到数据")
-                            .foregroundStyle(.secondary)
+                    if currentPoints.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.largeTitle)
+                                .foregroundStyle(Color("TextSecondary").opacity(0.3))
+                            Text("还没有心情数据")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text("完成一次分析后，心情会自动记录")
+                                .font(.caption)
+                                .foregroundStyle(Color("TextSecondary"))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
                     } else {
-                        Chart(points) { item in
+                        Chart(currentPoints) { item in
                             LineMark(
                                 x: .value("日期", item.day),
                                 y: .value("心情", item.avgScore)
                             )
                             .foregroundStyle(Color("AccentColor"))
+                            .interpolationMethod(.catmullRom)
+                            AreaMark(
+                                x: .value("日期", item.day),
+                                y: .value("心情", item.avgScore)
+                            )
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color("AccentColor").opacity(0.2), Color("AccentColor").opacity(0.02)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .interpolationMethod(.catmullRom)
                             PointMark(
                                 x: .value("日期", item.day),
                                 y: .value("心情", item.avgScore)
                             )
                             .foregroundStyle(Color("AccentColor"))
+                            .annotation(position: .top, spacing: 4) {
+                                Text(MoodTagPicker.emoji(for: item.moodLabel))
+                                    .font(.caption2)
+                            }
                         }
+                        .chartYScale(domain: 0...10)
                         .frame(height: 220)
 
-                        ForEach(points.reversed()) { item in
+                        ForEach(currentPoints.suffix(7).reversed()) { item in
                             HStack(spacing: 10) {
                                 Text(MoodTagPicker.emoji(for: item.moodLabel))
                                 Text(item.moodLabel)
@@ -84,21 +128,49 @@ struct MoodInsightsView: View {
                     }
                 }
 
-                Section("本期分析次数") {
-                    let grouped = Dictionary(grouping: historyEntries.filter {
-                        $0.createdAt >= (Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast)
-                    }) { Calendar.current.startOfDay(for: $0.createdAt) }
-                    let counts = grouped.keys.sorted().map { ($0, grouped[$0]?.count ?? 0) }
-                    Chart(counts, id: \.0) { item in
-                        BarMark(
-                            x: .value("日期", item.0),
-                            y: .value("次数", item.1)
-                        )
+                if !currentBreakdown.isEmpty {
+                    Section("情绪分布") {
+                        ForEach(currentBreakdown, id: \.label) { item in
+                            HStack(spacing: 10) {
+                                Text(item.emoji)
+                                Text(item.label)
+                                    .font(.subheadline.weight(.medium))
+                                Spacer()
+                                Text("\(item.count) 次")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(Color("TextSecondary"))
+                                Text(String(format: "%.0f%%", item.pct))
+                                    .font(.caption.bold().monospacedDigit())
+                                    .foregroundStyle(Color("AccentColor"))
+                                    .frame(width: 36, alignment: .trailing)
+                            }
+                        }
                     }
-                    .frame(height: 180)
+                }
+
+                Section("本期分析次数") {
+                    if currentCounts.isEmpty {
+                        Text("暂无分析数据")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Chart(currentCounts, id: \.0) { item in
+                            BarMark(
+                                x: .value("日期", item.0),
+                                y: .value("次数", item.1)
+                            )
+                            .foregroundStyle(Color("AccentColor").opacity(0.7))
+                            .cornerRadius(4)
+                        }
+                        .frame(height: 180)
+                    }
                 }
             }
             .navigationTitle("情绪趋势")
+            .onAppear {
+                Task {
+                    await viewModel.loadData()
+                }
+            }
         }
     }
 }

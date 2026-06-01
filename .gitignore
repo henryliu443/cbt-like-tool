@@ -1,5 +1,40 @@
-# Xcode — per-user / machine state (always use your local Xcode copy)
-**/xcuserdata/
-*.xcuserstate
+# Xcode & macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
 DerivedData/
 .derivedData/
+**/xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Build & Package Management
+.build/
+.swiftpm/
+.gradle/
+local.properties
+**/build/
+Android/.gradle/
+Android/build/
+Android/app/build/
+*.apk
+
+# Environment & IDE
+.env
+.env.*
+.claude/
+.codex/
+.cursor/
+.cursor-cache/
+
+# Logs & Crashes
+*.log
+logs/
+*.crash
+*.ips
+
+# Metadata
+.metadata/

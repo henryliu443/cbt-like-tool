@@ -1,0 +1,4 @@
+# Skip configuration for CBTReframeTests module
+
+#build:
+#  contents:

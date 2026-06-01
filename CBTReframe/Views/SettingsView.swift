@@ -43,7 +43,7 @@ struct SettingsView: View {
             }
             .alert("确认清除", isPresented: $showClearConfirmation) {
                 Button("清除所有数据", role: .destructive) {
-                    viewModel.clearAllData(modelContext: modelContext)
+                    viewModel.clearAllData()
                     globalSettings.resetToDefaults()
                 }
                 Button("取消", role: .cancel) {}
