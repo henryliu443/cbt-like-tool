@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 import SwiftData
-import UIKit
 import LocalAuthentication
 
 protocol ReminderScheduling {
@@ -27,6 +26,10 @@ struct DefaultReminderScheduler: ReminderScheduling {
 @MainActor
 @Observable
 final class SettingsViewModel {
+    private let historyRepository: HistoryRepository
+    private let thoughtRepository: ThoughtRepository
+    private let moodRepository: MoodRepository
+
     private static let modelCacheKeyPrefix = "cachedModelList."
     private let reminderScheduler: ReminderScheduling
     private var reminderSyncTask: Task<Void, Never>?
@@ -100,7 +103,15 @@ final class SettingsViewModel {
             ?? selectedProvider.fallbackModels.first!
     }
 
-    init(reminderScheduler: ReminderScheduling = DefaultReminderScheduler()) {
+    init(
+        historyRepository: HistoryRepository,
+        thoughtRepository: ThoughtRepository,
+        moodRepository: MoodRepository,
+        reminderScheduler: ReminderScheduling = DefaultReminderScheduler()
+    ) {
+        self.historyRepository = historyRepository
+        self.thoughtRepository = thoughtRepository
+        self.moodRepository = moodRepository
         self.reminderScheduler = reminderScheduler
         let providerRaw = UserDefaults.standard.string(forKey: "selectedProvider") ?? AIProvider.gemini.rawValue
         let provider = AIProvider(rawValue: providerRaw) ?? .local
@@ -189,34 +200,20 @@ final class SettingsViewModel {
                 }
             }.value
             isSavingAPIKey = false
-            let feedback = UINotificationFeedbackGenerator()
-            feedback.notificationOccurred(.success)
+            HapticManager.success()
             await refreshModels()
         }
     }
 
-    func clearAllData(modelContext: ModelContext) {
+    func clearAllData() {
         KeychainManager.shared.deleteAll()
         apiKeyInput = ""
 
-        if let historyEntries = try? modelContext.fetch(FetchDescriptor<HistoryEntry>()) {
-            for entry in historyEntries {
-                modelContext.delete(entry)
-            }
+        Task {
+            try? await historyRepository.deleteAll()
+            try? await thoughtRepository.deleteAll()
+            try? await moodRepository.deleteAll()
         }
-
-        if let thoughtEntries = try? modelContext.fetch(FetchDescriptor<ThoughtEntry>()) {
-            for entry in thoughtEntries {
-                modelContext.delete(entry)
-            }
-        }
-        if let moodEntries = try? modelContext.fetch(FetchDescriptor<MoodCheckIn>()) {
-            for entry in moodEntries {
-                modelContext.delete(entry)
-            }
-        }
-
-        try? modelContext.save()
 
         for p in AIProvider.allCases where p.requiresAPIKey {
             UserDefaults.standard.removeObject(forKey: Self.modelCacheKeyPrefix + p.rawValue)
