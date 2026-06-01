@@ -6,7 +6,9 @@ struct TemplatePickerView: View {
     private static let ringDiameter: CGFloat = 56
     private static let ringLineWidth: CGFloat = 2.5
 
+#if !SKIP
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+#endif
 
     @Binding var selectedTemplate: ThinkingTemplate
     var suggestedTemplate: ThinkingTemplate?
@@ -16,35 +18,39 @@ struct TemplatePickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
 
-            templatePickerContent
-        }
-    }
-
-    @ViewBuilder
-    private var templatePickerContent: some View {
 #if !SKIP
-        TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.06)) { context in
-            let gradientAngle = rainbowGradientAngle(at: context.date)
-            templateList(gradientAngle: gradientAngle)
-        }
-#else
-        templateList(gradientAngle: .degrees(28))
-#endif
-    }
+            TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.06)) { context in
+                let gradientAngle = rainbowGradientAngle(at: context.date)
 
-    private func templateList(gradientAngle: Angle) -> some View {
-        LiquidGlassPanel(cornerRadius: 22) {
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(spacing: 4) {
-                    ForEach(ThinkingTemplate.allCases) { template in
-                        templateColumn(template, gradientAngle: gradientAngle)
+                LiquidGlassPanel(cornerRadius: 22) {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        HStack(spacing: 4) {
+                            ForEach(ThinkingTemplate.allCases) { template in
+                                templateColumn(template, gradientAngle: gradientAngle)
+                            }
+                        }
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, 18)
+                    .padding(.horizontal, 10)
                 }
-                Spacer(minLength: 0)
             }
-            .padding(.vertical, 18)
-            .padding(.horizontal, 10)
+#else
+            LiquidGlassPanel(cornerRadius: 22) {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    HStack(spacing: 4) {
+                        ForEach(ThinkingTemplate.allCases) { template in
+                            templateColumn(template, gradientAngle: .degrees(0))
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 18)
+                .padding(.horizontal, 10)
+            }
+#endif
         }
     }
 
@@ -66,7 +72,7 @@ struct TemplatePickerView: View {
                         selectedTemplate = suggested
                         onTemplateTapped?()
                     }
-                    HapticManager.tap()
+                    HapticManager.shared.impact(style: .light)
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "sparkles")
@@ -87,6 +93,7 @@ struct TemplatePickerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+#if !SKIP
     private func rainbowGradientAngle(at date: Date) -> Angle {
         if accessibilityReduceMotion {
             return .degrees(28)
@@ -95,6 +102,7 @@ struct TemplatePickerView: View {
         let deg = (t * IntelligenceRainbow.rotationSpeed).truncatingRemainder(dividingBy: 360)
         return .degrees(deg)
     }
+#endif
 
     private func templateColumn(_ template: ThinkingTemplate, gradientAngle: Angle) -> some View {
         let isSelected = selectedTemplate == template
@@ -105,7 +113,7 @@ struct TemplatePickerView: View {
                 selectedTemplate = template
                 onTemplateTapped?()
             }
-            HapticManager.tap()
+            HapticManager.shared.impact(style: .light)
         } label: {
             VStack(spacing: 10) {
                 ZStack {
@@ -144,7 +152,9 @@ struct TemplatePickerView: View {
                     .foregroundStyle(isSelected ? Color("TextPrimary") : Color("TextSecondary"))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
+#if !SKIP
                     .fixedSize(horizontal: false, vertical: true)
+#endif
 
                 if isSuggested {
                     Text("推荐")

@@ -14,6 +14,7 @@ enum IntelligenceRainbow {
         Color(red: 0.98, green: 0.32, blue: 0.55),
     ]
 
+#if !SKIP
     static func angularGradient(angle: Angle) -> AngularGradient {
         AngularGradient(
             gradient: Gradient(colors: spectrum),
@@ -21,6 +22,7 @@ enum IntelligenceRainbow {
             angle: angle
         )
     }
+#endif
 
     /// Degrees per second when animating.
     static let rotationSpeed: Double = 38
@@ -56,13 +58,7 @@ struct LiquidGlassPanel<Content: View>: View {
                     )
             }
 #else
-        content()
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-            }
+        content().background(RoundedRectangle(cornerRadius: cornerRadius).fill(Color.gray.opacity(0.1)))
 #endif
     }
 }
@@ -87,14 +83,7 @@ struct RainbowOrbitalRing: View {
             .opacity(isActive ? 1 : 0)
             .animation(.easeOut(duration: 0.2), value: isActive)
 #else
-        Circle()
-            .strokeBorder(
-                Color("AccentColor"),
-                lineWidth: lineWidth
-            )
-            .frame(width: diameter, height: diameter)
-            .opacity(isActive ? 1 : 0)
-            .animation(.easeOut(duration: 0.2), value: isActive)
+        EmptyView()
 #endif
     }
 }
@@ -102,8 +91,10 @@ struct RainbowOrbitalRing: View {
 // MARK: - Home: soft ambient wash
 
 struct IntelligenceAmbientBackground: View {
+#if !SKIP
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
+#endif
 
     var body: some View {
 #if !SKIP
@@ -127,8 +118,7 @@ struct IntelligenceAmbientBackground: View {
             .allowsHitTesting(false)
         }
 #else
-        Color("AccentColor").opacity(colorScheme == .dark ? 0.05 : 0.03)
-            .allowsHitTesting(false)
+        EmptyView()
 #endif
     }
 }
@@ -159,13 +149,7 @@ extension View {
                 )
         }
 #else
-        overlay {
-            RainbowEdgeGlow(cornerRadius: cornerRadius)
-                .stroke(
-                    Color("AccentColor"),
-                    lineWidth: lineWidth
-                )
-        }
+        self
 #endif
     }
 }
@@ -177,7 +161,9 @@ struct IntelligenceAnimatedGlyph: View {
     var pointSize: CGFloat
     var weight: Font.Weight = .light
 
+#if !SKIP
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+#endif
 
     var body: some View {
 #if !SKIP
@@ -191,10 +177,7 @@ struct IntelligenceAnimatedGlyph: View {
         }
         .accessibilityHidden(true)
 #else
-        Image(systemName: systemName)
-            .font(.system(size: pointSize, weight: weight))
-            .foregroundStyle(Color("AccentColor"))
-            .accessibilityHidden(true)
+        Image(systemName: systemName).font(.system(size: pointSize, weight: weight)).foregroundColor(.accentColor)
 #endif
     }
 }
@@ -203,7 +186,9 @@ struct IntelligenceRainbowCardStroke: View {
     var cornerRadius: CGFloat
     var lineWidth: CGFloat = 1.75
 
+#if !SKIP
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+#endif
 
     var body: some View {
 #if !SKIP
@@ -220,9 +205,7 @@ struct IntelligenceRainbowCardStroke: View {
         }
         .allowsHitTesting(false)
 #else
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .stroke(Color("AccentColor"), lineWidth: lineWidth)
-            .allowsHitTesting(false)
+        RoundedRectangle(cornerRadius: cornerRadius).stroke(Color.accentColor, lineWidth: lineWidth)
 #endif
     }
 }

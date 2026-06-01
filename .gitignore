@@ -5,3 +5,14 @@ DerivedData/
 .derivedData/
 .DS_Store
 **/.DS_Store
+
+# Skip / Android build artifacts
+.build/
+Android/.gradle/
+Android/app/build/
+Android/build/
+Android/local.properties
+*.apk
+
+# SPM
+.swiftpm/
