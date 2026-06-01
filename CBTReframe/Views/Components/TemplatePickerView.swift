@@ -16,35 +16,23 @@ struct TemplatePickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
 
-            templatePickerContent
-        }
-    }
+            TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.06)) { context in
+                let gradientAngle = rainbowGradientAngle(at: context.date)
 
-    @ViewBuilder
-    private var templatePickerContent: some View {
-#if !SKIP
-        TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.06)) { context in
-            let gradientAngle = rainbowGradientAngle(at: context.date)
-            templateList(gradientAngle: gradientAngle)
-        }
-#else
-        templateList(gradientAngle: .degrees(28))
-#endif
-    }
-
-    private func templateList(gradientAngle: Angle) -> some View {
-        LiquidGlassPanel(cornerRadius: 22) {
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(spacing: 4) {
-                    ForEach(ThinkingTemplate.allCases) { template in
-                        templateColumn(template, gradientAngle: gradientAngle)
+                LiquidGlassPanel(cornerRadius: 22) {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        HStack(spacing: 4) {
+                            ForEach(ThinkingTemplate.allCases) { template in
+                                templateColumn(template, gradientAngle: gradientAngle)
+                            }
+                        }
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, 18)
+                    .padding(.horizontal, 10)
                 }
-                Spacer(minLength: 0)
             }
-            .padding(.vertical, 18)
-            .padding(.horizontal, 10)
         }
     }
 

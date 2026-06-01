@@ -4,30 +4,30 @@ import SwiftData
 
 @MainActor
 final class SwiftDataHistoryRepository: HistoryRepository {
-    private let container: ModelContainer
+    private let context: ModelContext
     
-    init(container: ModelContainer) {
-        self.container = container
+    init(context: ModelContext) {
+        self.context = context
     }
     
     func fetchAll() async throws -> [HistoryEntry] {
         let descriptor = FetchDescriptor<HistoryEntry>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        return try container.mainContext.fetch(descriptor)
+        return try context.fetch(descriptor)
     }
     
     func insert(_ entry: HistoryEntry) async throws {
-        container.mainContext.insert(entry)
-        try container.mainContext.save()
+        context.insert(entry)
+        try context.save()
     }
     
     func toggleFavorite(_ entry: HistoryEntry) async throws {
         entry.isFavorite.toggle()
-        try container.mainContext.save()
+        try context.save()
     }
     
     func deleteAll() async throws {
-        try container.mainContext.delete(model: HistoryEntry.self)
-        try container.mainContext.save()
+        try context.delete(model: HistoryEntry.self)
+        try context.save()
     }
 }
 #endif

@@ -106,20 +106,10 @@ cbt-like-tool-2/
 
 ### 核心协作原则
 - **动态路由与拆分**：所有任务默认先进行复杂度评估与拆分，优先采用多智能体协作而非单模型串行执行。根据任务规模动态路由至对应能力层级（Low→简单执行与信息收集，Medium→中等复杂分析与实现，High/Primary→架构设计、最终决策与全局协调）。
-- **任务细化与断点反馈**：Primary 发送给 Executor (如 Codex) 的 MCP 任务信息应清晰分点（推荐使用 `/goal` 格式细化）。Executor 每完成一个点，必须保存一次当前状态/进度，并向 Primary 发送一条进度反馈消息 (msg)。
 - **职责分离原则**：每个子任务必须包含明确的 **Executor（执行者）** 与 **Verifier（验证者）** 角色。严禁由同一 Agent 自我验收。
 - **验收闭环机制**：任何任务状态不得以“Executor 声明完成”为完成依据，只有 Verifier 确认满足验收标准后方可进入下一阶段。Primary Agent 必须读取并确认 Verifier 反馈，而非直接读取 Executor 结论。
 - **固定任务流转**：流程固定为 `Plan → Execute → Verify → Approve → Continue`。任何阶段验收失败均返回上一阶段修正。
 - **输出规范**：所有 Agent 输出均需附带：`完成状态`、`未解决问题`、`风险项` 与 `置信度`。
-- **Build Green 准则**：
-  - 编译通过仅代表当前实现满足编译约束。编译成功不得自动视为任务完成。
-  - **Build Green ≠ Mission Complete**
-  - **Build Green ≠ Architecture Correct**
-  - Verifier 必须额外检查：
-    - 是否满足原始需求
-    - 是否符合架构约束
-    - 是否违反 `AGENTS.md`
-    - 是否引入临时绕过方案
 
 ### 角色分配
 
@@ -127,7 +117,7 @@ cbt-like-tool-2/
 |------|--------------|----------------|
 | **Primary Agent (Coordinator/Approver)** | Antigravity (Gemini Pro - High) | 负责全局协调、仲裁与最终批准。**不应亲自执行可下放的任务**，以最大化并行度、成本效率与结果可靠性。 |
 | **Executor** | 子智能体 (Codex, Gemini Low) | 负责根据计划产出代码结果，执行单一或中低复杂度的开发/收集任务。 |
-| **Verifier** | 独立的子智能体 (不限于 Codex，可以是 Haiku、自带的 Gemini Low 或任何其他小模型) | 负责独立验收 Executor 的产出。优先使用独立模型，若首选不可用则降级至备用池。**例外机制**：若所有备用 Verifier 均不可用（如额度耗尽），则作为最后手段，由 Primary Agent 亲自承担验证职责。 |
+| **Verifier** | 独立的子智能体 (Codex, Gemini Low) | 负责独立验收 Executor 的产出。优先使用独立模型，若首选不可用则降级至备用池。**例外机制**：若所有备用 Verifier 均不可用（如额度耗尽），则作为最后手段，由 Primary Agent 亲自承担验证职责。 |
 
 ### 执行与验证流程
 
@@ -153,24 +143,6 @@ Primary Agent 制定计划 (Plan)
 | 推送 | UNUserNotificationCenter | WorkManager + NotificationCompat |
 | 图表 | Swift Charts | Vico 或 Canvas 自绘 |
 | 架构 | MVVM + @Observable | 同左（Skip 转译）|
-
----
-
-## 常见坑位与排雷指南 (Skip & SwiftUI 平台适配经验)
-
-根据过往跨平台踩坑经验，任何接手此项目的 Agent 必须牢记以下红线与规避方案：
-
-1. **`swift build` 环境靶向陷阱**
-   - **坑位**：本项目同时支持 iOS / macOS，但在 Mac 上执行 `swift build` 时，默认的编译目标是 **macOS**。
-   - **解法**：如果使用了纯 iOS 独占 API（如 `UIPasteboard`、`UIImpactFeedbackGenerator`、`UIColor` / `.separator`、`.navigationBarTrailing`、`.insetGrouped`），**绝对不能**仅仅使用 `#if !SKIP` 包裹，必须使用 `#if os(iOS)` 来进行双重隔离，否则会导致 Mac 端编译直接爆炸。
-
-2. **Skip AST 解析器 (SwiftSyntax) 脆弱性**
-   - **坑位**：在 SwiftUI 的 ViewBuilder 链式修饰符中间（例如 `.padding()` 和 `.listStyle()` 之间）直接插入 `#if !SKIP` 宏，极易导致 Skip 的语法树解析崩溃或产生类型推断失效。
-   - **解法**：避免在修饰符链中进行 `#if` 阻断。应当采用“物理隔离”，即将该 UI 模块提取为一个外部的 `@ViewBuilder` 或 helper function，然后在定义层使用 `#if !SKIP`。例如，不要 `#if` 掉 `Text(..., style: .relative)` 的 `.relative` 参数，而是写一个 `relativeTimeView()` 函数独立包装它。
-
-3. **`@Bindable` 动态成员查找 (Dynamic Member Lookup) 冲突**
-   - **坑位**：Swift 5.10 下，当在 `Task` 闭包或按钮 Action 中直接调用 `@Bindable var viewModel` 的异步方法时，编译器偶尔会因为推断混乱抛出 `cannot call value of non-function type 'Binding<Subject>'`。
-   - **解法**：在闭包外部先捕获原对象：`let vm = viewModel`，然后在闭包内使用 `vm.analyzePatterns()`，避开 `@Bindable` 的隐式 Binding 包装。
 
 ---
 

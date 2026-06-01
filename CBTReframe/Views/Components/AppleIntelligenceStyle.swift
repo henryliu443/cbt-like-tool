@@ -33,7 +33,6 @@ struct LiquidGlassPanel<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-#if !SKIP
         content()
             .frame(maxWidth: .infinity)
             .background {
@@ -55,15 +54,6 @@ struct LiquidGlassPanel<Content: View>: View {
                         lineWidth: 1
                     )
             }
-#else
-        content()
-            .frame(maxWidth: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-            }
-#endif
     }
 }
 
@@ -77,7 +67,6 @@ struct RainbowOrbitalRing: View {
     var isActive: Bool
 
     var body: some View {
-#if !SKIP
         Circle()
             .strokeBorder(
                 IntelligenceRainbow.angularGradient(angle: gradientRotation),
@@ -86,16 +75,6 @@ struct RainbowOrbitalRing: View {
             .frame(width: diameter, height: diameter)
             .opacity(isActive ? 1 : 0)
             .animation(.easeOut(duration: 0.2), value: isActive)
-#else
-        Circle()
-            .strokeBorder(
-                Color("AccentColor"),
-                lineWidth: lineWidth
-            )
-            .frame(width: diameter, height: diameter)
-            .opacity(isActive ? 1 : 0)
-            .animation(.easeOut(duration: 0.2), value: isActive)
-#endif
     }
 }
 
@@ -106,7 +85,6 @@ struct IntelligenceAmbientBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-#if !SKIP
         TimelineView(.animation(minimumInterval: reduceMotion ? 1.0 : 0.12)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let angle = reduceMotion ? Angle(degrees: 24) : Angle(degrees: (t * 12).truncatingRemainder(dividingBy: 360))
@@ -126,10 +104,6 @@ struct IntelligenceAmbientBackground: View {
             }
             .allowsHitTesting(false)
         }
-#else
-        Color("AccentColor").opacity(colorScheme == .dark ? 0.05 : 0.03)
-            .allowsHitTesting(false)
-#endif
     }
 }
 
@@ -150,7 +124,6 @@ extension View {
         lineWidth: CGFloat = 1.5,
         gradientRotation: Angle
     ) -> some View {
-#if !SKIP
         overlay {
             RainbowEdgeGlow(cornerRadius: cornerRadius)
                 .stroke(
@@ -158,15 +131,6 @@ extension View {
                     lineWidth: lineWidth
                 )
         }
-#else
-        overlay {
-            RainbowEdgeGlow(cornerRadius: cornerRadius)
-                .stroke(
-                    Color("AccentColor"),
-                    lineWidth: lineWidth
-                )
-        }
-#endif
     }
 }
 
@@ -180,7 +144,6 @@ struct IntelligenceAnimatedGlyph: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-#if !SKIP
         TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.1)) { context in
             let deg = accessibilityReduceMotion
                 ? 32.0
@@ -190,12 +153,6 @@ struct IntelligenceAnimatedGlyph: View {
                 .foregroundStyle(IntelligenceRainbow.angularGradient(angle: .degrees(deg)))
         }
         .accessibilityHidden(true)
-#else
-        Image(systemName: systemName)
-            .font(.system(size: pointSize, weight: weight))
-            .foregroundStyle(Color("AccentColor"))
-            .accessibilityHidden(true)
-#endif
     }
 }
 
@@ -206,7 +163,6 @@ struct IntelligenceRainbowCardStroke: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-#if !SKIP
         TimelineView(.animation(minimumInterval: accessibilityReduceMotion ? 1.0 : 0.08)) { context in
             let deg = accessibilityReduceMotion
                 ? 40.0
@@ -219,10 +175,5 @@ struct IntelligenceRainbowCardStroke: View {
                 )
         }
         .allowsHitTesting(false)
-#else
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .stroke(Color("AccentColor"), lineWidth: lineWidth)
-            .allowsHitTesting(false)
-#endif
     }
 }
