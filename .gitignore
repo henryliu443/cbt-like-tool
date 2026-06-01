@@ -1,18 +1,40 @@
-# Xcode — per-user / machine state (always use your local Xcode copy)
-**/xcuserdata/
-*.xcuserstate
-DerivedData/
-.derivedData/
+# Xcode & macOS
 .DS_Store
 **/.DS_Store
+.AppleDouble
+.LSOverride
+DerivedData/
+.derivedData/
+**/xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
 
-# Skip / Android build artifacts
+# Build & Package Management
 .build/
+.swiftpm/
+.gradle/
+local.properties
+**/build/
 Android/.gradle/
-Android/app/build/
 Android/build/
-Android/local.properties
+Android/app/build/
 *.apk
 
-# SPM
-.swiftpm/
+# Environment & IDE
+.env
+.env.*
+.claude/
+.codex/
+.cursor/
+.cursor-cache/
+
+# Logs & Crashes
+*.log
+logs/
+*.crash
+*.ips
+
+# Metadata
+.metadata/
