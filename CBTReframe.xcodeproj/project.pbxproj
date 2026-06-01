@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		031750227DD79EC1AA737934 /* MoodRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCD91B139582D9A9AB7D35B /* MoodRepository.swift */; };
+		1EC5D8794A542AC730010333 /* SwiftDataHistoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D4F3698AE392124B5A813E /* SwiftDataHistoryRepository.swift */; };
+		26647AC7A7FD990E87C1F9A8 /* SwiftDataThoughtRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B634158421EEE858F5E6FA66 /* SwiftDataThoughtRepository.swift */; };
+		57EA4ED39C3E68E996E5BF4A /* ThoughtRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965221E453EBFB2647614384 /* ThoughtRepository.swift */; };
 		A1000001 /* CBTReframeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* CBTReframeApp.swift */; };
 		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* ContentView.swift */; };
 		A1000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000003 /* Assets.xcassets */; };
@@ -72,9 +76,26 @@
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
 		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
+		C44F101BE852CB5E5E94C656 /* HistoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D72F17FB3EDA43589BD1B23 /* HistoryRepository.swift */; };
+		E43933DEEDAB9FB77E700BE2 /* SwiftDataMoodRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = CABE26514234714A9028FF5F /* SwiftDataMoodRepository.swift */; };
+		EDE65328461538F5E7DBFCF4 /* MoodInsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6293FA5082A82740F4AC0114 /* MoodInsightsViewModel.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A1300001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5000001;
+			remoteInfo = CBTReframe;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		1D72F17FB3EDA43589BD1B23 /* HistoryRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryRepository.swift; sourceTree = "<group>"; };
+		6293FA5082A82740F4AC0114 /* MoodInsightsViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoodInsightsViewModel.swift; sourceTree = "<group>"; };
+		94D4F3698AE392124B5A813E /* SwiftDataHistoryRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataHistoryRepository.swift; sourceTree = "<group>"; };
+		965221E453EBFB2647614384 /* ThoughtRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ThoughtRepository.swift; sourceTree = "<group>"; };
 		A2000001 /* CBTReframeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBTReframeApp.swift; sourceTree = "<group>"; };
 		A2000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A2000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -142,6 +163,9 @@
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2200004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		B634158421EEE858F5E6FA66 /* SwiftDataThoughtRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataThoughtRepository.swift; sourceTree = "<group>"; };
+		BDCD91B139582D9A9AB7D35B /* MoodRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MoodRepository.swift; sourceTree = "<group>"; };
+		CABE26514234714A9028FF5F /* SwiftDataMoodRepository.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SwiftDataMoodRepository.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -162,17 +186,20 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
-/* Begin PBXContainerItemProxy section */
-		A1300001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A5000001;
-			remoteInfo = CBTReframe;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXGroup section */
+		54164A2C219B33DC5DB26E95 /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				BDCD91B139582D9A9AB7D35B /* MoodRepository.swift */,
+				965221E453EBFB2647614384 /* ThoughtRepository.swift */,
+				B634158421EEE858F5E6FA66 /* SwiftDataThoughtRepository.swift */,
+				94D4F3698AE392124B5A813E /* SwiftDataHistoryRepository.swift */,
+				1D72F17FB3EDA43589BD1B23 /* HistoryRepository.swift */,
+				CABE26514234714A9028FF5F /* SwiftDataMoodRepository.swift */,
+			);
+			name = Repositories;
+			sourceTree = "<group>";
+		};
 		A4000001 = {
 			isa = PBXGroup;
 			children = (
@@ -195,6 +222,7 @@
 				A4100004 /* Views */,
 				A2000003 /* Assets.xcassets */,
 				A4000004 /* Preview Content */,
+				54164A2C219B33DC5DB26E95 /* Repositories */,
 			);
 			path = CBTReframe;
 			sourceTree = "<group>";
@@ -277,6 +305,7 @@
 				A2100013 /* SettingsViewModel.swift */,
 				A2100014 /* HistoryViewModel.swift */,
 				A2100025 /* ThoughtJournalViewModel.swift */,
+				6293FA5082A82740F4AC0114 /* MoodInsightsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -392,14 +421,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXTargetDependency section */
-		A1400001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A5000001 /* CBTReframe */;
-			targetProxy = A1300001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXResourcesBuildPhase section */
 		A6000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -477,6 +498,13 @@
 				A1100056 /* StreakService.swift in Sources */,
 				A1100057 /* HapticManager.swift in Sources */,
 				A1100058 /* DisclaimerDetailView.swift in Sources */,
+				EDE65328461538F5E7DBFCF4 /* MoodInsightsViewModel.swift in Sources */,
+				031750227DD79EC1AA737934 /* MoodRepository.swift in Sources */,
+				57EA4ED39C3E68E996E5BF4A /* ThoughtRepository.swift in Sources */,
+				26647AC7A7FD990E87C1F9A8 /* SwiftDataThoughtRepository.swift in Sources */,
+				1EC5D8794A542AC730010333 /* SwiftDataHistoryRepository.swift in Sources */,
+				C44F101BE852CB5E5E94C656 /* HistoryRepository.swift in Sources */,
+				E43933DEEDAB9FB77E700BE2 /* SwiftDataMoodRepository.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -490,6 +518,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1400001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5000001 /* CBTReframe */;
+			targetProxy = A1300001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A9000001 /* Debug */ = {

@@ -372,7 +372,7 @@ struct HistoryRowView: View {
                 Spacer(minLength: 12)
 
                 Button {
-                    viewModel.toggleFavorite(entry, modelContext: modelContext)
+                    viewModel.toggleFavorite(entry)
                 } label: {
                     Image(systemName: entry.isFavorite ? "star.fill" : "star")
                         .foregroundStyle(entry.isFavorite ? .yellow : Color("TextSecondary").opacity(0.3))

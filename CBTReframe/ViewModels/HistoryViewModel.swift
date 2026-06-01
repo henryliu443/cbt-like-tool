@@ -4,8 +4,13 @@ import SwiftUI
 
 @Observable
 final class HistoryViewModel {
+    private let historyRepository: HistoryRepository
     var searchText: String = ""
     var showFavoritesOnly: Bool = false
+
+    init(historyRepository: HistoryRepository) {
+        self.historyRepository = historyRepository
+    }
 
     func filteredEntries(_ entries: [HistoryEntry]) -> [HistoryEntry] {
         var result = entries
@@ -53,8 +58,9 @@ final class HistoryViewModel {
         return (thisWeek.count, favorites.count)
     }
 
-    func toggleFavorite(_ entry: HistoryEntry, modelContext: ModelContext) {
-        entry.isFavorite.toggle()
-        try? modelContext.save()
+    func toggleFavorite(_ entry: HistoryEntry) {
+        Task {
+            try? await historyRepository.toggleFavorite(entry)
+        }
     }
 }
