@@ -2,7 +2,11 @@ import SwiftUI
 
 struct ThoughtInputCard: View {
     @Binding var text: String
+    #if !SKIP
     @FocusState.Binding var isFocused: Bool
+    #else
+    private var isFocused: Bool { false }
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -25,12 +29,19 @@ struct ThoughtInputCard: View {
                         .padding(.vertical, 10)
                 }
 
+                #if !SKIP
                 TextEditor(text: $text)
                     .focused($isFocused)
                     .font(.body)
                     .frame(minHeight: 128)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
+                #else
+                TextEditor(text: $text)
+                    .font(.body)
+                    .frame(minHeight: 128)
+                    .background(Color.clear)
+                #endif
             }
         }
         .padding(18)
@@ -45,7 +56,7 @@ struct ThoughtInputCard: View {
                     isFocused
                         ? Color("AccentColor").opacity(0.45)
                         : Color("TextSecondary").opacity(0.08),
-                    lineWidth: isFocused ? 2 : 1
+                    lineWidth: isFocused ? 2.0 : 1.0
                 )
         )
     }

@@ -1,5 +1,6 @@
+#if !SKIP
 import Foundation
-#if os(iOS) && !SKIP
+#if os(iOS)
 import UIKit
 #endif
 
@@ -108,7 +109,7 @@ enum HistoryExportService {
     }
 
     static func makeTemporaryPDFFile(entries: [HistoryEntry]) -> URL? {
-        #if os(iOS) && !SKIP
+        #if os(iOS)
         let meta: [CFString: Any] = [kCGPDFContextCreator: "CBTReframe", kCGPDFContextTitle: "History Export"]
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = meta as [String: Any]
@@ -157,3 +158,13 @@ enum HistoryExportService {
         return f.string(from: date)
     }
 }
+
+#else
+import Foundation
+
+enum HistoryExportService {
+    static func makeTemporaryJSONFile(entries: [HistoryEntry]) -> URL? { return nil }
+    static func makeTemporaryCSVFile(entries: [HistoryEntry]) -> URL? { return nil }
+    static func makeTemporaryPDFFile(entries: [HistoryEntry]) -> URL? { return nil }
+}
+#endif

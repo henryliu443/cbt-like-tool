@@ -1,12 +1,14 @@
 # Skip configuration for CBTReframe module
 #
 # Kotlin dependencies and Gradle build options for this module can be configured here
-#build:
-#  contents:
-#    - block: 'dependencies'
-#      contents:
-#        - 'implementation("androidx.compose.runtime:runtime")'
+build:
+  contents:
+    - block: 'dependencies'
+      contents:
+        - 'implementation("androidx.biometric:biometric:1.2.0-alpha05")'
+        - 'implementation("androidx.security:security-crypto:1.1.0-alpha06")'
 
 # this is a transpiled Skip Lite module
 skip:
   mode: 'transpiled'
+

@@ -7,7 +7,6 @@ import LocalAuthentication
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import java.lang.CharSequence
 #endif
 
 @MainActor
@@ -269,7 +268,7 @@ final class SettingsViewModel {
             // Fallback for Android via Skip
             // Assuming we can retrieve the current FragmentActivity. In a complete Skip App, 
             // the activity is accessible or injected. Here we provide the standard BiometricPrompt structure.
-            guard let activity = Skip.App.currentActivity as? androidx.fragment.app.FragmentActivity else {
+            guard let activity = AndroidContextTracker.sharedActivity as? androidx.fragment.app.FragmentActivity else {
                 continuation.resume(returning: false)
                 return
             }
@@ -314,7 +313,8 @@ class BiometricCallback: androidx.biometric.BiometricPrompt.AuthenticationCallba
     var didResume = false
     init(_ cont: CheckedContinuation<Bool, Never>) { self.cont = cont }
     
-    override func onAuthenticationError(_ errorCode: Int32, _ errString: java.lang.CharSequence) {
+    // SKIP REPLACE: override fun onAuthenticationError(errorCode: Int, errString: CharSequence) { if (!didResume) { didResume = true; cont.resume(returning = false) } }
+    override func onAuthenticationError(_ errorCode: Int, _ errString: Any) {
         if !didResume { didResume = true; cont.resume(returning: false) }
     }
     override func onAuthenticationSucceeded(_ result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
@@ -323,5 +323,9 @@ class BiometricCallback: androidx.biometric.BiometricPrompt.AuthenticationCallba
     override func onAuthenticationFailed() {
         // Do nothing on fail, let the user retry
     }
+}
+
+public class AndroidContextTracker {
+    public static var sharedActivity: Any? = nil
 }
 #endif

@@ -20,12 +20,12 @@ struct CBTReframeApp: App {
             container = try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
         }
         
-        let histRepo = SwiftDataHistoryRepository(context: container.mainContext)
-        let thoughtRepo = SwiftDataThoughtRepository(context: container.mainContext)
-        let moodRepo = SwiftDataMoodRepository(context: container.mainContext)
+        let thoughtRepo = SwiftDataThoughtRepository(container: container)
+        let historyRepo = SwiftDataHistoryRepository(container: container)
+        let moodRepo = SwiftDataMoodRepository(container: container)
         
         _settingsViewModel = State(wrappedValue: SettingsViewModel(
-            historyRepository: histRepo,
+            historyRepository: historyRepo,
             thoughtRepository: thoughtRepo,
             moodRepository: moodRepo
         ))

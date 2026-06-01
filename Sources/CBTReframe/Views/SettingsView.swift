@@ -1,5 +1,7 @@
 import SwiftUI
+#if !SKIP
 import Darwin
+#endif
 
 struct SettingsView: View {
 #if !SKIP
@@ -65,9 +67,13 @@ struct SettingsView: View {
                 }
                 Button("关闭并退出 App", role: .destructive) {
                     viewModel.hasAcceptedDisclaimer = false
+                    #if !SKIP
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         exit(0)
                     }
+                    #else
+                    java.lang.System.exit(0)
+                    #endif
                 }
             } message: {
                 Text("关闭后将立即退出 App。")

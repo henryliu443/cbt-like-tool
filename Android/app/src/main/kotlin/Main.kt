@@ -55,6 +55,7 @@ open class MainActivity: AppCompatActivity {
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        AndroidContextTracker.sharedActivity = this
         logger.info("starting activity")
         UIApplication.launch(this)
         enableEdgeToEdge()
@@ -103,6 +104,9 @@ open class MainActivity: AppCompatActivity {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (AndroidContextTracker.sharedActivity === this) {
+            AndroidContextTracker.sharedActivity = null
+        }
         AppDelegate.shared.onDestroy()
     }
 

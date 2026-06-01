@@ -4,25 +4,25 @@ import SwiftData
 
 @MainActor
 final class SwiftDataMoodRepository: MoodRepository {
-    private let context: ModelContext
+    private let container: ModelContainer
     
-    init(context: ModelContext) {
-        self.context = context
+    init(container: ModelContainer) {
+        self.container = container
     }
     
     func fetchAll() async throws -> [MoodCheckIn] {
         let descriptor = FetchDescriptor<MoodCheckIn>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        return try context.fetch(descriptor)
+        return try container.mainContext.fetch(descriptor)
     }
     
     func insert(_ checkIn: MoodCheckIn) async throws {
-        context.insert(checkIn)
-        try context.save()
+        container.mainContext.insert(checkIn)
+        try container.mainContext.save()
     }
     
     func deleteAll() async throws {
-        try context.delete(model: MoodCheckIn.self)
-        try context.save()
+        try container.mainContext.delete(model: MoodCheckIn.self)
+        try container.mainContext.save()
     }
 }
 #endif

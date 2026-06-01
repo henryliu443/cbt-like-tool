@@ -4,25 +4,25 @@ import SwiftData
 
 @MainActor
 final class SwiftDataThoughtRepository: ThoughtRepository {
-    private let context: ModelContext
+    private let container: ModelContainer
     
-    init(context: ModelContext) {
-        self.context = context
+    init(container: ModelContainer) {
+        self.container = container
     }
     
     func fetchAll() async throws -> [ThoughtEntry] {
         let descriptor = FetchDescriptor<ThoughtEntry>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        return try context.fetch(descriptor)
+        return try container.mainContext.fetch(descriptor)
     }
     
     func insert(_ entry: ThoughtEntry) async throws {
-        context.insert(entry)
-        try context.save()
+        container.mainContext.insert(entry)
+        try container.mainContext.save()
     }
     
     func deleteAll() async throws {
-        try context.delete(model: ThoughtEntry.self)
-        try context.save()
+        try container.mainContext.delete(model: ThoughtEntry.self)
+        try container.mainContext.save()
     }
 }
 #endif

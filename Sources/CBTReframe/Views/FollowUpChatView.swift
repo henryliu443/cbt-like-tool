@@ -33,7 +33,11 @@ struct FollowUpChatView: View {
                 }
             }
             .padding()
+            #if !SKIP
             .background(.ultraThinMaterial)
+            #else
+            .background(Color("CardBackground").opacity(0.95))
+            #endif
         }
         .navigationTitle("继续探索")
     }

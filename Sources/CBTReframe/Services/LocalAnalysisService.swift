@@ -107,8 +107,8 @@ struct LocalAnalysisService: AIServiceProtocol {
     }
 
     private static func stableIndex(for text: String, count: Int) -> Int {
-        let hash = text.unicodeScalars.reduce(into: UInt64(5381)) { partialResult, scalar in
-            partialResult = ((partialResult << 5) &+ partialResult) &+ UInt64(scalar.value)
+        let hash = text.utf8.reduce(into: UInt64(5381)) { partialResult, byte in
+            partialResult = ((partialResult << 5) &+ partialResult) &+ UInt64(byte)
         }
         return Int(hash % UInt64(count))
     }

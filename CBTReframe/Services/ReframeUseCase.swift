@@ -6,7 +6,9 @@ struct ReframeUseCaseOutput {
     let errorMessage: String?
     let showCrisisBanner: Bool
     let recoveredByRetry: Bool
-    let historyEntryID: UUID?
+    let historyProviderName: String?
+    let historyModelName: String?
+    let moodTag: String?
 }
 
 @MainActor
@@ -23,8 +25,7 @@ final class ReframeUseCase {
         thought: String,
         mood: String,
         isAkathisia: Bool,
-        globalSettings: GlobalSettings,
-        modelContext: ModelContext
+        globalSettings: GlobalSettings
     ) async -> ReframeUseCaseOutput {
         let riskLevel = detectRiskLevel(thought)
         let responseStrategy = routeStrategy(level: riskLevel)
@@ -34,24 +35,14 @@ final class ReframeUseCase {
         // 高风险：本地关键词已判定，不调用远端 API（避免安全策略无有效输出且产生费用）
         if shouldUseLocalCrisisOnly(thought) {
             let analysisResult = CrisisLocalSupport.analysisResult.normalized(for: template)
-            let entry = HistoryEntry(
-                inputThought: thought,
-                result: analysisResult,
-                providerName: CrisisLocalSupport.historyProviderName,
-                modelName: CrisisLocalSupport.historyModelName,
-                moodTag: ReframeUseCase.moodTagForHistory(base: mood, isAkathisia: isAkathisia),
-                therapyTemplate: template,
-                analysisDepth: globalSettings.analysisDepth,
-                responseStyle: globalSettings.responseStyle
-            )
-            modelContext.insert(entry)
-            try? modelContext.save()
             return ReframeUseCaseOutput(
                 result: analysisResult,
                 errorMessage: nil,
                 showCrisisBanner: showCrisisBanner,
                 recoveredByRetry: false,
-                historyEntryID: entry.id
+                historyProviderName: CrisisLocalSupport.historyProviderName,
+                historyModelName: CrisisLocalSupport.historyModelName,
+                moodTag: ReframeUseCase.moodTagForHistory(base: mood, isAkathisia: isAkathisia)
             )
         }
 
@@ -68,7 +59,9 @@ final class ReframeUseCase {
                 errorMessage: message,
                 showCrisisBanner: showCrisisBanner,
                 recoveredByRetry: false,
-                historyEntryID: nil
+                historyProviderName: nil,
+                historyModelName: nil,
+                moodTag: nil
             )
         }
         guard let decodedResult = rawResult.result else {
@@ -77,34 +70,21 @@ final class ReframeUseCase {
                 errorMessage: "分析失败，请稍后重试",
                 showCrisisBanner: showCrisisBanner,
                 recoveredByRetry: false,
-                historyEntryID: nil
+                historyProviderName: nil,
+                historyModelName: nil,
+                moodTag: nil
             )
         }
 
         let analysisResult = decodedResult.normalized(for: template)
-        let entry = HistoryEntry(
-            inputThought: thought,
-            result: analysisResult,
-            providerName: resolver.selectedProvider.displayName,
-            modelName: resolver.selectedModel.name,
-            moodTag: ReframeUseCase.moodTagForHistory(base: mood, isAkathisia: isAkathisia),
-            therapyTemplate: template,
-            analysisDepth: globalSettings.analysisDepth,
-            responseStyle: globalSettings.responseStyle
-        )
-        modelContext.insert(entry)
-
-        let moodScore = MoodTagPicker.score(for: mood)
-        let checkin = MoodCheckIn(moodScore: moodScore, moodLabel: mood)
-        modelContext.insert(checkin)
-
-        try? modelContext.save()
         return ReframeUseCaseOutput(
             result: analysisResult,
             errorMessage: nil,
             showCrisisBanner: showCrisisBanner,
             recoveredByRetry: rawResult.metadata.recoveredByRetry,
-            historyEntryID: entry.id
+            historyProviderName: resolver.selectedProvider.displayName,
+            historyModelName: resolver.selectedModel.name,
+            moodTag: ReframeUseCase.moodTagForHistory(base: mood, isAkathisia: isAkathisia)
         )
     }
 

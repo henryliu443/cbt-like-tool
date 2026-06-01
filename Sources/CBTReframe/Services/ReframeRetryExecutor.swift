@@ -9,7 +9,7 @@ struct RetryExecutionResult<Value> {
 enum ReframeRetryExecutor {
     static func run<Value>(
         maxAttempts: Int = 2,
-        retryDelayNanoseconds: UInt64 = 800_000_000,
+        retryDelayNanoseconds: Int = 800_000_000,
         operation: () async throws -> Value
     ) async throws -> RetryExecutionResult<Value> {
         precondition(maxAttempts >= 1, "maxAttempts must be >= 1")
@@ -29,7 +29,7 @@ enum ReframeRetryExecutor {
                 let shouldRetry = attempt < maxAttempts && serviceError.isRetriable
                 if shouldRetry {
                     if retryDelayNanoseconds > 0 {
-                        try? await Task.sleep(nanoseconds: retryDelayNanoseconds)
+                        try? await Task.sleep(nanoseconds: UInt64(retryDelayNanoseconds))
                     }
                     continue
                 }

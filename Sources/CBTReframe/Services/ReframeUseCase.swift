@@ -1,5 +1,7 @@
 import Foundation
+#if !SKIP
 import SwiftData
+#endif
 
 struct ReframeUseCaseOutput {
     let result: AnalysisResult?
@@ -44,8 +46,10 @@ final class ReframeUseCase {
                 analysisDepth: globalSettings.analysisDepth,
                 responseStyle: globalSettings.responseStyle
             )
+            #if !SKIP
             modelContext.insert(entry)
             try? modelContext.save()
+            #endif
             return ReframeUseCaseOutput(
                 result: analysisResult,
                 errorMessage: nil,
@@ -92,6 +96,7 @@ final class ReframeUseCase {
             analysisDepth: globalSettings.analysisDepth,
             responseStyle: globalSettings.responseStyle
         )
+        #if !SKIP
         modelContext.insert(entry)
 
         let moodScore = MoodTagPicker.score(for: mood)
@@ -99,6 +104,7 @@ final class ReframeUseCase {
         modelContext.insert(checkin)
 
         try? modelContext.save()
+        #endif
         return ReframeUseCaseOutput(
             result: analysisResult,
             errorMessage: nil,
@@ -115,3 +121,7 @@ final class ReframeUseCase {
         return "\(base)（Akathisia）"
     }
 }
+
+#if SKIP
+public class ModelContext {}
+#endif

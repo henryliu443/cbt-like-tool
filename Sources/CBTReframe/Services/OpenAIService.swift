@@ -43,7 +43,7 @@ struct OpenAIService: AIServiceProtocol {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -86,7 +86,7 @@ struct OpenAIService: AIServiceProtocol {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -194,7 +194,7 @@ func parseJSONContent(_ content: String) throws -> AnalysisResult {
         )
     }
 
-    let lines = content.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    let lines = content.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     if lines.count >= 3 {
         return AnalysisResult(
             distortion: lines[0].trimmingCharacters(in: .whitespacesAndNewlines),

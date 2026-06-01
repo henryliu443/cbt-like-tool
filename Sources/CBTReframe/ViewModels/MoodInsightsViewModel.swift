@@ -85,7 +85,7 @@ final class MoodInsightsViewModel {
     }
     
     func avgScore(for points: [DailyMoodPoint]) -> Double {
-        guard !points.isEmpty else { return 0 }
-        return points.map(\.avgScore).reduce(0, +) / Double(points.count)
+        guard !points.isEmpty else { return 0.0 }
+        return points.map(\.avgScore).reduce(0.0, +) / Double(points.count)
     }
 }

@@ -43,7 +43,7 @@ struct AnthropicService: AIServiceProtocol {
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -85,7 +85,7 @@ struct AnthropicService: AIServiceProtocol {
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

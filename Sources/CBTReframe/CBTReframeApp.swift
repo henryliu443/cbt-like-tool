@@ -12,12 +12,14 @@ let logger: Logger = Logger(subsystem: "com.cbt.reframe", category: "CBTReframe"
 /// The shared top-level view for the app, loaded from the platform-specific App delegates.
 public struct CBTReframeRootView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    #if !SKIP
     @State private var settingsViewModel: SettingsViewModel
     @StateObject private var globalSettings = GlobalSettings()
+    #if !SKIP
     let container: ModelContainer
+    #endif
 
     public init() {
+        #if !SKIP
         let schema = Schema([HistoryEntry.self, ThoughtEntry.self, MoodCheckIn.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: false)
         do {
@@ -36,10 +38,22 @@ public struct CBTReframeRootView: View {
             thoughtRepository: thoughtRepo,
             moodRepository: moodRepo
         ))
+        #else
+        let histRepo = MockHistoryRepository()
+        let thoughtRepo = MockThoughtRepository()
+        let moodRepo = MockMoodRepository()
+
+        _settingsViewModel = State(wrappedValue: SettingsViewModel(
+            historyRepository: histRepo,
+            thoughtRepository: thoughtRepo,
+            moodRepository: moodRepo
+        ))
+        #endif
     }
 
     public var body: some View {
         Group {
+            #if !SKIP
             if hasCompletedOnboarding {
                 MainTabView(settingsViewModel: settingsViewModel, globalSettings: globalSettings, container: container)
                     .environmentObject(globalSettings)
@@ -50,35 +64,27 @@ public struct CBTReframeRootView: View {
                 )
                 .environmentObject(globalSettings)
             }
+            #else
+            // Android uses mock repositories initialized in init()
+            if hasCompletedOnboarding {
+                MainTabView(settingsViewModel: settingsViewModel, globalSettings: globalSettings)
+                    .environmentObject(globalSettings)
+            } else {
+                OnboardingView(
+                    settingsViewModel: settingsViewModel,
+                    hasCompletedOnboarding: $hasCompletedOnboarding
+                )
+                .environmentObject(globalSettings)
+            }
+            #endif
         }
+        #if !SKIP
         .modelContainer(container)
+        #endif
         .task {
             logger.info("CBTReframe app launched")
         }
     }
-    #else
-    // Android placeholder — will be implemented in Phase 3
-    @State private var settingsViewModel: SettingsViewModel
-    @StateObject private var globalSettings = GlobalSettings()
-
-    public init() {
-        let histRepo = MockHistoryRepository()
-        let thoughtRepo = MockThoughtRepository()
-        let moodRepo = MockMoodRepository()
-        _settingsViewModel = State(wrappedValue: SettingsViewModel(
-            historyRepository: histRepo,
-            thoughtRepository: thoughtRepo,
-            moodRepository: moodRepo
-        ))
-    }
-
-    public var body: some View {
-        Text("CBTReframe — Android version coming soon")
-            .task {
-                logger.info("Android mock init complete")
-            }
-    }
-    #endif
 }
 
 /// Global application delegate functions.
@@ -239,7 +245,6 @@ struct ExerciseGuideView: View {
 
 // MARK: - Main Tab View
 
-#if !SKIP
 struct MainTabView: View {
     @Bindable var settingsViewModel: SettingsViewModel
     @ObservedObject var globalSettings: GlobalSettings
@@ -248,6 +253,7 @@ struct MainTabView: View {
     @State private var moodInsightsViewModel: MoodInsightsViewModel
     @State private var selectedTab = 0
 
+    #if !SKIP
     init(settingsViewModel: SettingsViewModel, globalSettings: GlobalSettings, container: ModelContainer) {
         self.settingsViewModel = settingsViewModel
         self.globalSettings = globalSettings
@@ -258,6 +264,18 @@ struct MainTabView: View {
         _historyViewModel = State(wrappedValue: HistoryViewModel(historyRepository: histRepo))
         _moodInsightsViewModel = State(wrappedValue: MoodInsightsViewModel(moodRepository: moodRepo, historyRepository: histRepo))
     }
+    #else
+    init(settingsViewModel: SettingsViewModel, globalSettings: GlobalSettings) {
+        self.settingsViewModel = settingsViewModel
+        self.globalSettings = globalSettings
+        _session = StateObject(wrappedValue: AppSession(settings: settingsViewModel, globalSettings: globalSettings))
+
+        let histRepo = MockHistoryRepository()
+        let moodRepo = MockMoodRepository()
+        _historyViewModel = State(wrappedValue: HistoryViewModel(historyRepository: histRepo))
+        _moodInsightsViewModel = State(wrappedValue: MoodInsightsViewModel(moodRepository: moodRepo, historyRepository: histRepo))
+    }
+    #endif
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -302,4 +320,3 @@ struct MainTabView: View {
         .tint(Color("AccentColor"))
     }
 }
-#endif

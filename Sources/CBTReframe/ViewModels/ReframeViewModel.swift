@@ -220,7 +220,8 @@ final class ReframeViewModel {
             thought: thought,
             mood: moodTrimmed,
             isAkathisia: isAkathisia,
-            globalSettings: globalSettings
+            globalSettings: globalSettings,
+            modelContext: ModelContext()
         )
         await processOutput(useCaseOutput)
         #endif
@@ -323,7 +324,7 @@ final class ReframeViewModel {
         ].joined(separator: "\n")
         streamingText = ""
         for ch in full {
-            streamingText.append(ch)
+            streamingText = streamingText + String(ch)
             try? await Task.sleep(nanoseconds: 8_000_000)
         }
     }

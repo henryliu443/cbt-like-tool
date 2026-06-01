@@ -12,5 +12,7 @@
 		<string>kimi</string>
 		<string>moonshot</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>本应用需要使用 Face ID 以保护您的历史记录和隐私安全。</string>
 </dict>
 </plist>

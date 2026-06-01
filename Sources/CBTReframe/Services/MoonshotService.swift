@@ -45,7 +45,7 @@ struct MoonshotService: AIServiceProtocol {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let isThinking = model.id.lowercased().contains("thinking")
-        request.timeoutInterval = isThinking ? 120 : 60
+        request.timeoutInterval = isThinking ? 120.0 : 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -87,7 +87,7 @@ struct MoonshotService: AIServiceProtocol {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 60.0
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

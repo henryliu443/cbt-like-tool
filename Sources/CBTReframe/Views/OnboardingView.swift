@@ -194,7 +194,7 @@ struct OnboardingView: View {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
                     .fill(currentPage == index ? Color("AccentColor") : Color("TextSecondary").opacity(0.3))
-                    .frame(width: currentPage == index ? 10 : 7, height: currentPage == index ? 10 : 7)
+                    .frame(width: currentPage == index ? 10.0 : 7.0, height: currentPage == index ? 10.0 : 7.0)
                     .animation(.spring(response: 0.3), value: currentPage)
             }
         }
