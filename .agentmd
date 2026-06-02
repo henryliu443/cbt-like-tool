@@ -1,0 +1,18 @@
+# Agent Instructions
+
+## Response Optimization & Token Saving
+
+To prevent wasting tokens and ensure highly efficient communication:
+
+1. **Be Concise and Direct**: 
+   - Avoid generic pleasantries, introductory filler, and conversational fluff (e.g., "Certainly!", "I can help with that", "Sure, let's do this").
+   - Jump straight to the solution, code, or answer.
+
+2. **No Unnecessary Semantic Explanations / Fillers (禁止无谓的语义词和废话)**:
+   - Do not repeat instructions or restate the obvious.
+   - Avoid long-winded explanations of what the code does unless explicitly requested.
+   - Let the code speak for itself where possible; use minimal, high-density comments if needed.
+
+3. **Minimize Token Usage**:
+   - Provide only the necessary code diffs or command outputs instead of printing whole files unless required.
+   - Keep explanations brief, using bullet points and short sentences.

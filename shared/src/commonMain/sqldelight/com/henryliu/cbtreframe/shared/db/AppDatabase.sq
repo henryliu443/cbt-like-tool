@@ -1,20 +1,60 @@
 CREATE TABLE HistoryEntity (
     id TEXT NOT NULL PRIMARY KEY,
-    originalThought TEXT NOT NULL,
-    reframedThought TEXT NOT NULL,
+    inputThought TEXT NOT NULL,
+    distortion TEXT NOT NULL,
+    alternative TEXT NOT NULL,
+    action TEXT NOT NULL,
+    isFavorite INTEGER NOT NULL,
+    createdAt INTEGER NOT NULL,
+    providerName TEXT NOT NULL,
     modelName TEXT NOT NULL,
-    timestamp INTEGER NOT NULL
+    moodTag TEXT NOT NULL,
+    therapyTemplateRaw TEXT NOT NULL,
+    analysisDepthRaw TEXT NOT NULL,
+    responseStyleRaw TEXT NOT NULL,
+    resultExtrasJSON TEXT NOT NULL,
+    followUpMessagesJSON TEXT NOT NULL
 );
 
-selectAll:
-SELECT * FROM HistoryEntity ORDER BY timestamp DESC;
+CREATE TABLE ThoughtEntry (
+    id TEXT NOT NULL PRIMARY KEY,
+    content TEXT NOT NULL,
+    situation TEXT NOT NULL,
+    emotion TEXT NOT NULL,
+    intensity INTEGER NOT NULL,
+    beliefBefore INTEGER NOT NULL,
+    beliefAfter INTEGER NOT NULL,
+    evidenceFor TEXT NOT NULL,
+    evidenceAgainst TEXT NOT NULL,
+    balancedThought TEXT NOT NULL,
+    distortionTag TEXT NOT NULL,
+    isProcessed INTEGER NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE MoodCheckIn (
+    id TEXT NOT NULL PRIMARY KEY,
+    createdAt INTEGER NOT NULL,
+    moodScore INTEGER NOT NULL,
+    moodLabel TEXT NOT NULL,
+    note TEXT NOT NULL
+);
+
+selectAllHistory:
+SELECT * FROM HistoryEntity ORDER BY createdAt DESC;
 
 insertHistory:
-INSERT OR REPLACE INTO HistoryEntity(id, originalThought, reframedThought, modelName, timestamp)
-VALUES (?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO HistoryEntity(
+    id, inputThought, distortion, alternative, action, isFavorite, createdAt,
+    providerName, modelName, moodTag, therapyTemplateRaw, analysisDepthRaw,
+    responseStyleRaw, resultExtrasJSON, followUpMessagesJSON
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-deleteById:
+deleteHistoryById:
 DELETE FROM HistoryEntity WHERE id = ?;
 
-deleteAll:
+deleteAllHistory:
 DELETE FROM HistoryEntity;
+
+updateFavorite:
+UPDATE HistoryEntity SET isFavorite = ? WHERE id = ?;
