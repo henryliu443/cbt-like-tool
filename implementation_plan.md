@@ -1,71 +1,50 @@
-# Android 迁移与分支重组多智能体计划
+# Android KMP 重构执行计划 (终局垂直切片版)
 
-根据最新的 `AGENT.md` 规范，本次迁移被严格拆分为明确的 Stage 和 Phase。每个 Phase 严格遵循 `Plan → Execute → Verify → Approve` 的流转机制。
+经过多轮工作坊的深度推演与 Codex (DeepSeek V4 Pro) 的架构纠偏，我们摒弃了“先写纯逻辑再写UI”这种容易导致“盲写期过长、无法端到端测试”的水平分层架构，转向**极度务实的“垂直切片 (Vertical Slicing)”敏捷开发模式**。
 
-> **自我反省机制**：在每个 Stage 结束时，所有相关的 Agent 必须回顾 `AGENT.md` 和本计划，灵魂拷问：我现在要干嘛？之前在干嘛？我的职责边界在哪里？
-
-## 严格角色边界分配
-- **Primary Agent (Gemini 3.1 Pro High, 我)**：**仅治理不开发**。负责拆分任务、制定和更新此计划文档、定义验收标准、审阅 Verifier 结果并决定 Approve 或 Reject。绝对禁止我直接使用终端或修改代码文件。
-- **Executor**：**负责干活**。
-  - **默认通道 (Gemini Flash)**：用于简单的 Git 分支重命名、文件删除、读目录等基础操作。
-  - **升级通道 (MCP Codex, DeepSeek V4 Pro)**：仅当涉及 Android 架构搭建、多文件代码生成时才被唤醒使用。
-- **Verifier (Gemini 3.5 Flash)**：**只验收不设计**。负责执行检查命令，判断 PASS / FAIL。严禁其修改代码或提出架构新建议。
+## 架构核心共识
+1. **ViewModel 与 Business 合二为一**：在 KMP 中，`ViewModel`（基于 `StateFlow`）本身就是纯粹的 Kotlin 业务层，不属于视图层。强行在 Repository 和 ViewModel 之间抽离“纯业务层”是过度设计。
+2. **UI 框架维持双端原生**：Android 端使用 Jetpack Compose，iOS 端保留原生的 SwiftUI。只共享业务逻辑 (Shared Core) 而不共享 UI，风险最低。
+3. **每个阶段必须是 Runnable Demo**：避免长时间憋大招，每个 Phase 结束时都必须能在设备上跑出画面，第一时间暴露架构问题。
 
 ---
 
-## Stage 1: 分支备份与工作区清理 (Git Branch & Backup)
+## 垂直切片执行路径 (Vertical Slice Execution Path)
 
-本阶段主要是基础的 Git 命令和文件删除操作，属于简单任务，**Executor 默认采用 Gemini Flash**。
+### Phase 1 (MVP 切片): 最简核心链路跑通
+**目标**：证明在共享架构下，AI 的流式渲染 (SSE) 能在安卓上稳定跳动。
+- **Shared Core (`shared`)**:
+  - `AIProvider` 与 `AIModel` 枚举。
+  - `AIService` 接口设计（返回 `Flow<String>`）。
+  - **网络层落地**：优先使用 Ktor Client 底层的 `bodyAsChannel()` 手动硬解析大模型流式响应（避开不稳定的 SSE 插件）。若遇阻，即刻降级为工厂模式封装 Android `OkHttp`。
+  - 最简 `ReframeViewModel`（剥离数据库依赖，只处理网络回包状态）。
+- **Android UI (`androidApp`)**:
+  - 搭建极简的 Compose 骨架（一个输入框，一个输出流渲染框），通过 `collectAsState()` 订阅 ViewModel。
+*验收标准*：能在模拟器发出测试请求，看到大模型文字逐字流式渲染，证明【网络 -> ViewModel -> UI】主干打通。
 
-### Phase 1.1: 备份当前 iOS 状态
-- **Execute (Gemini Flash)**: 执行 `git branch -m main ios` 将当前主分支更名为 `ios` 作为永久备份。
-- **Verify (Gemini 3.5 Flash)**: 运行 `git branch` 确认 `ios` 分支存在且为当前分支。输出 PASS/FAIL。
-- **Approve (Primary)**: 阅读 Verifier 报告，确认 iOS 代码备份万无一失。
+### Phase 2 (MVP+ 切片): 本地持久化与复杂业务
+**目标**：把临时数据转为持久化数据，补全历史记录拼图。
+- **Shared Core (`shared`)**:
+  - 引入 **SQLDelight** 搭建跨平台数据库，全量映射原先的 `SwiftData` 结构。
+  - 完善 `HistoryRepository` 和 `HistoryViewModel`。
+- **Android UI (`androidApp`)**:
+  - 用 Compose 开发完整的历史记录列表页、卡片 UI 还原。
+*验收标准*：AI 的返回结果能落入数据库，App 重启后历史记录依然可见。
 
-### Phase 1.2: 新开 Android 分支与清理
-- **Execute (Gemini Flash)**:
-  1. 执行 `git checkout -b android` 创建并切换到安卓专属分支。
-  2. 执行 `git rm -rf CBTReframe CBTReframe.xcodeproj CBTReframeTests README.md`，清理工作区中的 iOS 特有文件。
-- **Verify (Gemini 3.5 Flash)**: 运行 `ls -la` 和 `git status` 确认当前处于 `android` 分支且目录纯净。输出 PASS/FAIL。
-- **Approve (Primary)**: 确认工作区已对 Android 迁移处于"纯净"状态。
-
----
-
-## Stage 2: Android 基础工程搭建 (Initialization)
-
-本阶段涉及平台迁移和大量的样板代码生成联动，复杂度高，**Executor 允许升级调用 MCP Codex**。
-
-### Phase 2.1: 构建系统与根目录配置
-- **Execute (MCP Codex)**:
-  1. 创建 `settings.gradle.kts`，配置项目名。
-  2. 创建根目录 `build.gradle.kts`，配置 Kotlin、Android 插件版本。
-  3. 创建基础 Gradle 运行库文件。
-- **Verify (Gemini 3.5 Flash)**: 验证生成的构建脚本语法是否正确。输出 PASS/FAIL/FAIL REASON。
-- **Approve (Primary)**: 确认根目录结构符合现代 Android 规范。
-
-### Phase 2.2: App 模块与 Jetpack Compose 接入
-- **Execute (MCP Codex)**:
-  1. 创建 `app/build.gradle.kts`，配置包名 `com.henryliu.cbtreframe` 和 Jetpack Compose。
-  2. 创建 `AndroidManifest.xml` 和 `MainActivity.kt` 包含空白启动界面。
-- **Verify (Gemini 3.5 Flash)**: 运行 `gradlew clean assembleDebug` 执行 **Build Green** 检查。输出 PASS/FAIL。
-- **Approve (Primary)**: 确认编译通过。
+### Phase 3 (Polish 润色): 平台特性与安全基建
+**目标**：填补必须调用操作系统底层 API 的空白。
+- **Shared Core (`shared`)**:
+  - 引入 `Multiplatform-Settings (Encrypted)` 取代 iOS Keychain 存储 API Key。
+  - 抽象 `BiometricAuthProvider` 接口。
+  - 引入 `Koin` 进行依赖注入的全局统筹。
+- **Android UI (`androidApp`)**:
+  - 编写基于 Android `BiometricPrompt` 的真实实现并经 Koin 注入。
+  - 补齐全套卡片渐变、弹性动画和过渡效果。
+*验收标准*：能够实现首次启动引导配置 Key、能够通过人脸/指纹解锁私密记录。
 
 ---
 
-## Stage 3: 快照更新与阶段总结 (Snapshot & Continue)
-
-### Phase 3.1: 提交与流转记录
-- **Execute (Gemini Flash)**: 执行 `git add .` 和 `git commit -m "chore: setup android jetpack compose project"`。
-- **Verify (Gemini 3.5 Flash)**: 检查 Git 提交历史。
-- **Approve (Primary)**: 更新进度快照。
-
----
-
-## User Review Required
-
-> [!IMPORTANT]
-> 1. 已将您的 3 条绝对红线规则写入 `AGENT.md` 和本计划。
-> 2. 计划中明确了 Stage 1（Git）由于较简单分配给 Gemini Flash，Stage 2（安卓搭建）较复杂分配给 Codex。
-> 3. 我（Primary）已交出执行权，完全回到治理者位面。
->
-> 如果规则落实到位，请随时发令启动执行，我们将严格按此秩序推进。
+## Agent 协作纪律回顾
+- **Primary Agent (Antigravity)** 负责拆解 Phase、发布断点检查指令、做最终 Approve。
+- **Executor** 负责基于本路线图逐个切片编写代码，默认通道 Flash，硬核代码升 Codex。
+- **Verifier** 在每个切片完结时独立运行 `gradle assembleDebug`，只要不能 Run 的代码一律打回。
