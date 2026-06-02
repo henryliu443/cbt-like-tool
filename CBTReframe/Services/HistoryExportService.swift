@@ -68,7 +68,7 @@ enum HistoryExportService {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         guard let data = try? encoder.encode(envelope) else { return nil }
-        let name = "CBTReframe-History-\(Int(Date().timeIntervalSince1970)).json"
+        let name = "history_export.json"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try data.write(to: url, options: .atomic)
@@ -95,7 +95,7 @@ enum HistoryExportService {
             ].joined(separator: ",")
         }.joined(separator: "\n")
         let content = header + rows
-        let name = "CBTReframe-History-\(Int(Date().timeIntervalSince1970)).csv"
+        let name = "history_export.csv"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try content.write(to: url, atomically: true, encoding: .utf8)
@@ -131,7 +131,7 @@ enum HistoryExportService {
                 }
             }
         }
-        let name = "CBTReframe-History-\(Int(Date().timeIntervalSince1970)).pdf"
+        let name = "history_export.pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try data.write(to: url)

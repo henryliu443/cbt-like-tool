@@ -12,17 +12,42 @@ struct ExercisesView: View {
         NavigationStack {
             List {
                 ForEach(items, id: \.0) { item in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label(item.0, systemImage: item.1)
-                            .font(.headline)
-                        Text(item.2)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 6)
+                    ExerciseRowView(item: item)
                 }
             }
             .navigationTitle("练习")
         }
+    }
+}
+
+struct ExerciseRowView: View {
+    let item: (String, String, String)
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Label(item.0, systemImage: item.1)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
+            .buttonStyle(.plain)
+            
+            if isExpanded {
+                Text(item.2)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.vertical, 6)
     }
 }
