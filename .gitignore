@@ -3,3 +3,8 @@
 *.xcuserstate
 DerivedData/
 .derivedData/
+local.properties
+
+build/
+.gradle/
+app/build/
