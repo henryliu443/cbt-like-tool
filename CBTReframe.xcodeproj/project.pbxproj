@@ -71,8 +71,17 @@
 		A1100058 /* DisclaimerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2100058 /* DisclaimerDetailView.swift */; };
 		A1200001 /* AIServiceErrorRetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200001 /* AIServiceErrorRetryPolicyTests.swift */; };
 		A1200002 /* ReframeRetryExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2200002 /* ReframeRetryExecutorTests.swift */; };
-		A1200003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2200004 /* XCTest.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A1300001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5000001;
+			remoteInfo = CBTReframe;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A2000001 /* CBTReframeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CBTReframeApp.swift; sourceTree = "<group>"; };
@@ -141,7 +150,6 @@
 		A2200001 /* AIServiceErrorRetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceErrorRetryPolicyTests.swift; sourceTree = "<group>"; };
 		A2200002 /* ReframeRetryExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReframeRetryExecutorTests.swift; sourceTree = "<group>"; };
 		A2200003 /* CBTReframeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CBTReframeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A2200004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -156,21 +164,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1200003 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXContainerItemProxy section */
-		A1300001 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A8000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A5000001;
-			remoteInfo = CBTReframe;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXGroup section */
 		A4000001 = {
@@ -179,6 +176,7 @@
 				A4000002 /* CBTReframe */,
 				A4200001 /* CBTReframeTests */,
 				A4000003 /* Products */,
+				BA4D00682FCEA43900DFAD19 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -317,6 +315,13 @@
 			path = CBTReframeTests;
 			sourceTree = "<group>";
 		};
+		BA4D00682FCEA43900DFAD19 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -391,14 +396,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXTargetDependency section */
-		A1400001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A5000001 /* CBTReframe */;
-			targetProxy = A1300001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A6000002 /* Resources */ = {
@@ -490,6 +487,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1400001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5000001 /* CBTReframe */;
+			targetProxy = A1300001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A9000001 /* Debug */ = {

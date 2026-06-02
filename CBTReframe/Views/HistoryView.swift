@@ -130,6 +130,15 @@ struct HistoryView: View {
             }
             .padding(.top, 8)
 
+            Button {
+                settingsViewModel.useFaceID = false
+                isUnlocked = true
+            } label: {
+                Text("禁用锁定并进入")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)

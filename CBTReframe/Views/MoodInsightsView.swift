@@ -2,29 +2,22 @@ import SwiftUI
 import SwiftData
 import Charts
 
-struct MoodInsightsView: View {
-    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var checkins: [MoodCheckIn]
-    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
-    @State private var range: Int = 30
+@Observable
+class MoodInsightsViewModel {
+    var points: [DailyMoodPoint] = []
+    var analysisCounts: [(Date, Int)] = []
 
-    private struct DailyMoodPoint: Identifiable {
-        let day: Date
-        let avgScore: Double
-        let moodLabel: String
-        let count: Int
-        var id: Date { day }
-    }
-
-    private var points: [DailyMoodPoint] {
+    func calculate(checkins: [MoodCheckIn], historyEntries: [HistoryEntry], range: Int) {
         let cutoff = Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast
         let validLabels = Set(MoodTagPicker.sharedMoods.map(\.label))
-        let filtered = checkins.filter {
+        
+        let filteredCheckins = checkins.filter {
             $0.createdAt >= cutoff && validLabels.contains($0.moodLabel)
         }
-        let grouped = Dictionary(grouping: filtered) { Calendar.current.startOfDay(for: $0.createdAt) }
-
-        return grouped.keys.sorted().compactMap { day in
-            guard let items = grouped[day], !items.isEmpty else { return nil }
+        let groupedCheckins = Dictionary(grouping: filteredCheckins) { Calendar.current.startOfDay(for: $0.createdAt) }
+        
+        self.points = groupedCheckins.keys.sorted().compactMap { day in
+            guard let items = groupedCheckins[day], !items.isEmpty else { return nil }
             let avg = Double(items.map(\.moodScore).reduce(0, +)) / Double(items.count)
             let label = items
                 .reduce(into: [String: Int]()) { dict, item in
@@ -34,7 +27,26 @@ struct MoodInsightsView: View {
                 .key ?? "未记录"
             return DailyMoodPoint(day: day, avgScore: avg, moodLabel: label, count: items.count)
         }
+        
+        let filteredEntries = historyEntries.filter { $0.createdAt >= cutoff }
+        let groupedEntries = Dictionary(grouping: filteredEntries) { Calendar.current.startOfDay(for: $0.createdAt) }
+        self.analysisCounts = groupedEntries.keys.sorted().map { ($0, groupedEntries[$0]?.count ?? 0) }
     }
+}
+
+struct DailyMoodPoint: Identifiable {
+    let day: Date
+    let avgScore: Double
+    let moodLabel: String
+    let count: Int
+    var id: Date { day }
+}
+
+struct MoodInsightsView: View {
+    @Query(sort: \MoodCheckIn.createdAt, order: .reverse) private var checkins: [MoodCheckIn]
+    @Query(sort: \HistoryEntry.createdAt, order: .reverse) private var historyEntries: [HistoryEntry]
+    @State private var range: Int = 30
+    @State private var viewModel = MoodInsightsViewModel()
 
     var body: some View {
         NavigationStack {
@@ -49,11 +61,11 @@ struct MoodInsightsView: View {
                 }
 
                 Section("情绪趋势") {
-                    if points.isEmpty {
+                    if viewModel.points.isEmpty {
                         Text("暂无心情签到数据")
                             .foregroundStyle(.secondary)
                     } else {
-                        Chart(points) { item in
+                        Chart(viewModel.points) { item in
                             LineMark(
                                 x: .value("日期", item.day),
                                 y: .value("心情", item.avgScore)
@@ -67,7 +79,7 @@ struct MoodInsightsView: View {
                         }
                         .frame(height: 220)
 
-                        ForEach(points.reversed()) { item in
+                        ForEach(viewModel.points.reversed()) { item in
                             HStack(spacing: 10) {
                                 Text(MoodTagPicker.emoji(for: item.moodLabel))
                                 Text(item.moodLabel)
@@ -85,11 +97,7 @@ struct MoodInsightsView: View {
                 }
 
                 Section("本期分析次数") {
-                    let grouped = Dictionary(grouping: historyEntries.filter {
-                        $0.createdAt >= (Calendar.current.date(byAdding: .day, value: -range, to: Date()) ?? .distantPast)
-                    }) { Calendar.current.startOfDay(for: $0.createdAt) }
-                    let counts = grouped.keys.sorted().map { ($0, grouped[$0]?.count ?? 0) }
-                    Chart(counts, id: \.0) { item in
+                    Chart(viewModel.analysisCounts, id: \.0) { item in
                         BarMark(
                             x: .value("日期", item.0),
                             y: .value("次数", item.1)
@@ -99,6 +107,18 @@ struct MoodInsightsView: View {
                 }
             }
             .navigationTitle("情绪趋势")
+            .onChange(of: range) { _, newValue in
+                viewModel.calculate(checkins: checkins, historyEntries: historyEntries, range: newValue)
+            }
+            .onChange(of: checkins) { _, _ in
+                viewModel.calculate(checkins: checkins, historyEntries: historyEntries, range: range)
+            }
+            .onChange(of: historyEntries) { _, _ in
+                viewModel.calculate(checkins: checkins, historyEntries: historyEntries, range: range)
+            }
+            .onAppear {
+                viewModel.calculate(checkins: checkins, historyEntries: historyEntries, range: range)
+            }
         }
     }
 }

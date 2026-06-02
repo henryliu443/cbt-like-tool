@@ -9,3 +9,15 @@ build/
 .gradle/
 app/build/
 snapshot_stages/
+
+# Temp / generated
+implementation_plan.md
+snapshot_stages/
+*.py
+build_out.log
+*.hprof
+.agentmd
+AGENT.md
+graphify-out/
+**/graphify-out/
+.DS_Store

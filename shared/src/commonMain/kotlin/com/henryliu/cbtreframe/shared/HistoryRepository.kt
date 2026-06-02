@@ -12,14 +12,19 @@ class HistoryRepository(private val database: AppDatabase) {
     private val queries = database.appDatabaseQueries
 
     fun getHistory(): Flow<List<HistoryEntity>> {
-        return queries.selectAll().asFlow().mapToList(Dispatchers.IO)
+        return queries.selectAllHistory().asFlow().mapToList(Dispatchers.IO)
     }
 
-    fun addHistory(id: String, originalThought: String, reframedThought: String, modelName: String, timestamp: Long) {
-        queries.insertHistory(id, originalThought, reframedThought, modelName, timestamp)
+    fun addHistory(
+        id: String,
+        inputText: String,
+        aiResponse: String?,
+        timestamp: Long
+    ) {
+        queries.insertHistory(id, inputText, aiResponse, timestamp)
     }
 
     fun deleteHistory(id: String) {
-        queries.deleteById(id)
+        queries.deleteHistoryById(id)
     }
 }

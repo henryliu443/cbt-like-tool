@@ -1,20 +1,43 @@
 CREATE TABLE HistoryEntity (
     id TEXT NOT NULL PRIMARY KEY,
-    originalThought TEXT NOT NULL,
-    reframedThought TEXT NOT NULL,
-    modelName TEXT NOT NULL,
+    inputText TEXT NOT NULL,
+    aiResponse TEXT,
     timestamp INTEGER NOT NULL
 );
 
-selectAll:
+insertHistory:
+INSERT OR REPLACE INTO HistoryEntity(id, inputText, aiResponse, timestamp)
+VALUES (?, ?, ?, ?);
+
+selectAllHistory:
 SELECT * FROM HistoryEntity ORDER BY timestamp DESC;
 
-insertHistory:
-INSERT OR REPLACE INTO HistoryEntity(id, originalThought, reframedThought, modelName, timestamp)
-VALUES (?, ?, ?, ?, ?);
-
-deleteById:
+deleteHistoryById:
 DELETE FROM HistoryEntity WHERE id = ?;
 
-deleteAll:
+deleteAllHistory:
 DELETE FROM HistoryEntity;
+
+CREATE TABLE MoodCheckInEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    emotion TEXT,
+    intensity INTEGER,
+    timestamp INTEGER NOT NULL
+);
+
+insertMoodCheckIn:
+INSERT OR REPLACE INTO MoodCheckInEntity(id, emotion, intensity, timestamp)
+VALUES (?, ?, ?, ?);
+
+selectAllMoodCheckIns:
+SELECT * FROM MoodCheckInEntity ORDER BY timestamp DESC;
+
+getMoodInsightsGroupedByDate:
+SELECT 
+    strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch', :offsetModifier) AS dateLabel,
+    AVG(intensity) AS avgIntensity,
+    COUNT(id) AS reframeFrequency
+FROM MoodCheckInEntity
+WHERE timestamp >= :sinceTimestamp
+GROUP BY dateLabel
+ORDER BY dateLabel ASC;

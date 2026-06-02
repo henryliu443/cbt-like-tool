@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.multiplatform")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
     id("app.cash.sqldelight") version "2.0.1"
 }
 
@@ -45,6 +46,7 @@ kotlin {
                 implementation("app.cash.sqldelight:android-driver:2.0.1")
                 implementation("io.insert-koin:koin-android:3.5.3")
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
+                implementation("androidx.biometric:biometric:1.2.0-alpha05")
             }
         }
         val iosX64Main by getting
