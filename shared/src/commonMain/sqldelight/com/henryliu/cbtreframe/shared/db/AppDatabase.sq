@@ -1,0 +1,20 @@
+CREATE TABLE HistoryEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    originalThought TEXT NOT NULL,
+    reframedThought TEXT NOT NULL,
+    modelName TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM HistoryEntity ORDER BY timestamp DESC;
+
+insertHistory:
+INSERT OR REPLACE INTO HistoryEntity(id, originalThought, reframedThought, modelName, timestamp)
+VALUES (?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM HistoryEntity WHERE id = ?;
+
+deleteAll:
+DELETE FROM HistoryEntity;
