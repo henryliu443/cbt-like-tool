@@ -21,16 +21,18 @@ import com.henryliu.cbtreframe.shared.ReframeViewModel
 import com.henryliu.cbtreframe.shared.viewmodels.HistoryViewModel
 import com.henryliu.cbtreframe.shared.SettingsViewModel
 import com.henryliu.cbtreframe.shared.GlobalSettings
-import com.henryliu.cbtreframe.ui.HomeScreen
-import com.henryliu.cbtreframe.ui.HistoryScreen
+import com.henryliu.cbtreframe.android.ui.HomeView
 import com.henryliu.cbtreframe.ui.SettingsScreen
 import com.henryliu.cbtreframe.ui.OnboardingScreen
-import com.henryliu.cbtreframe.ui.ThoughtJournalScreen
-import com.henryliu.cbtreframe.ui.MoodInsightsScreen
+import com.henryliu.cbtreframe.android.ui.HistoryView
+import com.henryliu.cbtreframe.android.ui.ThoughtJournalView
+import com.henryliu.cbtreframe.android.ui.MoodInsightsView
+import com.henryliu.cbtreframe.android.ui.ExercisesView
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Build
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,10 +74,11 @@ fun AppNavigation() {
     // ── Normal app (disclaimer accepted) ──
     val navController = rememberNavController()
 
-    val reframeViewModel: ReframeViewModel = koinInject()
-    val historyViewModel: HistoryViewModel = koinInject()
-
-    var globalSettings by remember { mutableStateOf(GlobalSettings.Default) }
+    val globalSettingsSaver = androidx.compose.runtime.saveable.Saver<GlobalSettings, String>(
+        save = { kotlinx.serialization.json.Json.encodeToString(GlobalSettings.serializer(), it) },
+        restore = { kotlinx.serialization.json.Json.decodeFromString(GlobalSettings.serializer(), it) }
+    )
+    var globalSettings by androidx.compose.runtime.saveable.rememberSaveable(stateSaver = globalSettingsSaver) { mutableStateOf(GlobalSettings.Default) }
 
     Scaffold(
         bottomBar = {
@@ -90,8 +93,12 @@ fun AppNavigation() {
                     onClick = {
                         if (currentRoute != "home") {
                             navController.navigate("home") {
-                                popUpTo("home") { inclusive = false }
+                                popUpTo(navController.graph.startDestinationId) { 
+                                    saveState = true
+                                    inclusive = false 
+                                }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         }
                     }
@@ -103,8 +110,9 @@ fun AppNavigation() {
                     onClick = {
                         if (currentRoute != "records") {
                             navController.navigate("records") { 
-                                popUpTo("home") 
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         }
                     }
@@ -116,8 +124,9 @@ fun AppNavigation() {
                     onClick = {
                         if (currentRoute != "history") {
                             navController.navigate("history") { 
-                                popUpTo("home") 
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         }
                     }
@@ -129,8 +138,23 @@ fun AppNavigation() {
                     onClick = {
                         if (currentRoute != "trends") {
                             navController.navigate("trends") { 
-                                popUpTo("home") 
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Build, contentDescription = "Practice") },
+                    label = { Text("Practice") },
+                    selected = currentRoute == "practice",
+                    onClick = {
+                        if (currentRoute != "practice") {
+                            navController.navigate("practice") { 
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
                         }
                     }
@@ -142,8 +166,9 @@ fun AppNavigation() {
                     onClick = {
                         if (currentRoute != "settings") {
                             navController.navigate("settings") { 
-                                popUpTo("home") 
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         }
                     }
@@ -157,24 +182,27 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") {
-                HomeScreen(
+                val reframeViewModel: ReframeViewModel = koinInject()
+                val historyViewModel: HistoryViewModel = koinInject()
+                val history by historyViewModel.history.collectAsState()
+                HomeView(
                     viewModel = reframeViewModel,
                     globalSettings = globalSettings,
-                    onGlobalSettingsChange = { globalSettings = it }
+                    recentHistory = history.sortedByDescending { it.timestamp },
+                    onTemplateChanged = { newTemplate -> globalSettings = globalSettings.copy(thinkingTemplate = newTemplate) }
                 )
             }
             composable("records") {
-                ThoughtJournalScreen()
+                ThoughtJournalView()
             }
             composable("history") {
-                HistoryScreen(
-                    viewModel = historyViewModel,
-                    settingsViewModel = settingsViewModel,
-                    globalSettings = globalSettings
-                )
+                HistoryView()
             }
             composable("trends") {
-                MoodInsightsScreen()
+                MoodInsightsView()
+            }
+            composable("practice") {
+                ExercisesView()
             }
             composable("settings") {
                 SettingsScreen(
