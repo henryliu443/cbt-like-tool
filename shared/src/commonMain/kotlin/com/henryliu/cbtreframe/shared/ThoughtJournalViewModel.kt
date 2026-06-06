@@ -24,13 +24,20 @@ data class ThoughtJournalUiState(
 
 class ThoughtJournalViewModel(
     private val settingsManager: SettingsManager,
+    private val repository: ThoughtJournalRepository,
+    private val reframeUseCase: ReframeUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
 ) {
     private val _uiState = MutableStateFlow(ThoughtJournalUiState())
     val uiState: StateFlow<ThoughtJournalUiState> = _uiState.asStateFlow()
 
-    // The entries list is managed externally and passed in — this VM is stateless for persistence
-    // Platforms inject the entries list and pass them to the analyze method
+    init {
+        scope.launch {
+            repository.getThoughts().collect { entries ->
+                _uiState.value = _uiState.value.copy(entries = entries)
+            }
+        }
+    }
 
     fun clear() {
         scope.cancel()
@@ -72,13 +79,9 @@ class ThoughtJournalViewModel(
 
     // ── Quick capture ──────────────────────────────────────────────────
 
-    /**
-     * Build a [ThoughtEntry] from the current form state.
-     * The caller (platform) is responsible for persisting it.
-     */
-    fun buildQuickCaptureEntry(): ThoughtEntry? {
+    fun saveQuickCaptureEntry() {
         val text = _uiState.value.quickInput.trim()
-        if (text.isEmpty()) return null
+        if (text.isEmpty()) return
 
         val entry = ThoughtEntry(
             id = uuid4().toString(),
@@ -93,8 +96,16 @@ class ThoughtJournalViewModel(
             createdAt = Clock.System.now().toEpochMilliseconds(),
         )
 
+        repository.addThought(entry)
         resetForm()
-        return entry
+    }
+
+    fun updateThought(entry: ThoughtEntry) {
+        repository.updateThought(entry)
+    }
+
+    fun deleteThought(id: String) {
+        repository.deleteThought(id)
     }
 
     private fun resetForm() {
@@ -112,15 +123,8 @@ class ThoughtJournalViewModel(
 
     // ── Pattern analysis ───────────────────────────────────────────────
 
-    /**
-     * Analyze thought patterns for the given entries.
-     * [analyzer] is a suspend function that takes entries and returns a [ThoughtPatternReport].
-     * Platforms wire this to [ReframeOrchestrator.runPatternAnalysis] or similar.
-     */
-    fun analyzePatterns(
-        allEntries: List<ThoughtEntry>,
-        analyzer: suspend (List<ThoughtEntry>) -> ThoughtPatternReport,
-    ) {
+    fun analyzePatterns() {
+        val allEntries = _uiState.value.entries
         val unprocessed = allEntries.filter { !it.isProcessed }
         if (unprocessed.isEmpty()) {
             _uiState.value = _uiState.value.copy(errorMessage = "没有待整理的想法")
@@ -131,11 +135,16 @@ class ThoughtJournalViewModel(
 
         scope.launch {
             try {
-                val report = analyzer(unprocessed)
+                val report = reframeUseCase.analyzePatterns(
+                    thoughts = unprocessed,
+                    provider = settingsManager.getSelectedProvider(),
+                    modelName = settingsManager.getSelectedModelId()
+                )
                 _uiState.value = _uiState.value.copy(
                     patternReport = report,
                     isAnalyzing = false,
                 )
+                applyAnalysisToEntries(unprocessed, report)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "分析失败：${e.message}",
@@ -145,28 +154,25 @@ class ThoughtJournalViewModel(
         }
     }
 
-    /**
-     * Build updated entries after analysis: mark as processed,
-     * tag with top distortion, set balanced thought and belief after.
-     */
-    fun applyAnalysisToEntries(
+    private fun applyAnalysisToEntries(
         entries: List<ThoughtEntry>,
         report: ThoughtPatternReport,
-    ): List<ThoughtEntry> {
+    ) {
         val topDistortion = report.topDistortions.firstOrNull()?.name ?: ""
         val suggestion = report.suggestion
 
-        return entries.map { entry ->
-            entry.copy(
+        entries.forEach { entry ->
+            val updated = entry.copy(
                 isProcessed = true,
                 distortionTag = topDistortion,
                 balancedThought = suggestion,
                 beliefAfter = (entry.beliefBefore - 20).coerceAtLeast(10),
             )
+            repository.updateThought(updated)
         }
     }
 
-    fun setEntries(entries: List<ThoughtEntry>) {
-        _uiState.value = _uiState.value.copy(entries = entries)
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.henryliu.cbtreframe.shared.AIProvider
 import com.henryliu.cbtreframe.shared.SettingsViewModel
 import com.henryliu.cbtreframe.shared.requiresApiKey
+import kotlinx.coroutines.launch
 
 // ── Onboarding flow ──────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ fun OnboardingScreen(
     onOnboardingComplete: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     var currentStep by remember { mutableIntStateOf(0) }
     val totalSteps = 3
@@ -54,95 +56,245 @@ fun OnboardingScreen(
     // Step 3 disclaimer acceptance
     var disclaimerAccepted by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // ── Progress indicator ──
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = { if (currentStep > 0) currentStep-- },
-                enabled = currentStep > 0,
-            ) {
-                Text(if (currentStep > 0) "← 上一步" else "")
-            }
+    // Initialization states
+    var isInitializing by remember { mutableStateOf(false) }
+    var initializationError by remember { mutableStateOf<String?>(null) }
 
-            Spacer(Modifier.weight(1f))
-
-            repeat(totalSteps) { idx ->
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp)
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (idx <= currentStep) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
-                        )
-                )
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            TextButton(
-                onClick = {
-                    if (currentStep < totalSteps - 1) currentStep++
-                },
-                enabled = when (currentStep) {
-                    0 -> true  // any next from welcome
-                    1 -> selectedProvider == AIProvider.LOCAL ||
-                         (selectedProvider.requiresApiKey() && apiKey.isNotBlank())
-                    2 -> disclaimerAccepted
-                    else -> false
-                },
-            ) {
-                Text(if (currentStep < totalSteps - 1) "下一步 →" else "完成 ✓")
+    val runInitialization = {
+        isInitializing = true
+        initializationError = null
+        coroutineScope.launch {
+            val result = viewModel.initializeOnboarding(selectedProvider, apiKey)
+            if (result.isSuccess) {
+                onOnboardingComplete()
+            } else {
+                initializationError = result.exceptionOrNull()?.message ?: "Unknown error"
             }
         }
+    }
 
-        // ── Horizontal pager (manual) ──
-        AnimatedContent(
-            targetState = currentStep,
-            modifier = Modifier.weight(1f),
-            transitionSpec = {
-                val dir = if (targetState > initialState) 1 else -1
-                slideInHorizontally { width -> dir * width } togetherWith
-                    slideOutHorizontally { width -> -dir * width }
-            },
-            label = "onboarding-step",
-        ) { step ->
-            when (step) {
-                0 -> StepWelcome()
-                1 -> StepProviderAndKey(
-                    selectedProvider = selectedProvider,
-                    onProviderChanged = { provider ->
-                        selectedProvider = provider
-                        if (!provider.requiresApiKey()) {
-                            apiKey = ""
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isInitializing) {
+            InitializationOverlay(
+                error = initializationError,
+                onRetry = {
+                    isInitializing = true
+                    initializationError = null
+                    coroutineScope.launch {
+                        val result = viewModel.initializeOnboarding(selectedProvider, apiKey)
+                        if (result.isSuccess) {
+                            onOnboardingComplete()
+                        } else {
+                            initializationError = result.exceptionOrNull()?.message ?: "Unknown error"
                         }
-                    },
-                    apiKey = apiKey,
-                    onApiKeyChanged = { apiKey = it },
-                    showKey = showKey,
-                    onToggleShowKey = { showKey = !showKey },
-                )
-                2 -> StepDisclaimer(
-                    accepted = disclaimerAccepted,
-                    onAcceptChanged = { disclaimerAccepted = it },
-                    onComplete = {
-                        // Persist selections made in step 2
-                        viewModel.selectProvider(selectedProvider)
-                        if (selectedProvider.requiresApiKey() && apiKey.isNotBlank()) {
-                            viewModel.updateApiKeyInput(apiKey)
-                            viewModel.saveAPIKey()
-                        }
-                        viewModel.setHasAcceptedDisclaimer(true)
+                    }
+                },
+                onSwitchToLocal = {
+                    coroutineScope.launch {
+                        viewModel.initializeOnboarding(AIProvider.LOCAL, "")
                         onOnboardingComplete()
+                    }
+                },
+                onBackToConfig = {
+                    isInitializing = false
+                    initializationError = null
+                    currentStep = 1
+                }
+            )
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // ── Progress indicator ──
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = { if (currentStep > 0) currentStep-- },
+                        enabled = currentStep > 0,
+                    ) {
+                        Text(if (currentStep > 0) "← 上一步" else "")
+                    }
+
+                    Spacer(Modifier.weight(1f))
+
+                    repeat(totalSteps) { idx ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (idx <= currentStep) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                        )
+                    }
+
+                    Spacer(Modifier.weight(1f))
+
+                    TextButton(
+                        onClick = {
+                            if (currentStep < totalSteps - 1) {
+                                currentStep++
+                            } else {
+                                runInitialization()
+                            }
+                        },
+                        enabled = when (currentStep) {
+                            0 -> true  // any next from welcome
+                            1 -> selectedProvider == AIProvider.LOCAL ||
+                                 (selectedProvider.requiresApiKey() && apiKey.isNotBlank())
+                            2 -> disclaimerAccepted
+                            else -> false
+                        },
+                    ) {
+                        Text(if (currentStep < totalSteps - 1) "下一步 →" else "完成 ✓")
+                    }
+                }
+
+                // ── Horizontal pager (manual) ──
+                AnimatedContent(
+                    targetState = currentStep,
+                    modifier = Modifier.weight(1f),
+                    transitionSpec = {
+                        val dir = if (targetState > initialState) 1 else -1
+                        slideInHorizontally { width -> dir * width } togetherWith
+                            slideOutHorizontally { width -> -dir * width }
                     },
-                    canComplete = disclaimerAccepted,
+                    label = "onboarding-step",
+                ) { step ->
+                    when (step) {
+                        0 -> StepWelcome()
+                        1 -> StepProviderAndKey(
+                            selectedProvider = selectedProvider,
+                            onProviderChanged = { provider ->
+                                selectedProvider = provider
+                                if (!provider.requiresApiKey()) {
+                                    apiKey = ""
+                                }
+                            },
+                            apiKey = apiKey,
+                            onApiKeyChanged = { apiKey = it },
+                            showKey = showKey,
+                            onToggleShowKey = { showKey = !showKey },
+                        )
+                        2 -> StepDisclaimer(
+                            accepted = disclaimerAccepted,
+                            onAcceptChanged = { disclaimerAccepted = it },
+                            onComplete = {
+                                runInitialization()
+                            },
+                            canComplete = disclaimerAccepted,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InitializationOverlay(
+    error: String?,
+    onRetry: () -> Unit,
+    onSwitchToLocal: () -> Unit,
+    onBackToConfig: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (error != null) {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(64.dp)
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                "初始化未完成",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Text(
+                error,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            Button(
+                onClick = onRetry,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("重试同步", fontSize = 16.sp)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            FilledTonalButton(
+                onClick = onSwitchToLocal,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("切换为本地离线模式", fontSize = 15.sp)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            TextButton(onClick = onBackToConfig) {
+                Text("返回修改 API Key", color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                "正在初始化应用环境...",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    "正在保存服务商与 API Key 配置",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "正在从服务商同步模型列表",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

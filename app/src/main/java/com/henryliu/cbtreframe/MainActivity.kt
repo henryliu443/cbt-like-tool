@@ -80,99 +80,102 @@ fun AppNavigation() {
     )
     var globalSettings by androidx.compose.runtime.saveable.rememberSaveable(stateSaver = globalSettingsSaver) { mutableStateOf(GlobalSettings.Default) }
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute != "disclaimer_detail"
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text("首页") },
-                    selected = currentRoute == "home",
-                    onClick = {
-                        if (currentRoute != "home") {
-                            navController.navigate("home") {
-                                popUpTo(navController.graph.startDestinationId) { 
-                                    saveState = true
-                                    inclusive = false 
+            if (showBottomBar) {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text("首页") },
+                        selected = currentRoute == "home",
+                        onClick = {
+                            if (currentRoute != "home") {
+                                navController.navigate("home") {
+                                    popUpTo(navController.graph.startDestinationId) { 
+                                        saveState = true
+                                        inclusive = false 
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Create, contentDescription = "Records") },
-                    label = { Text("记录") },
-                    selected = currentRoute == "records",
-                    onClick = {
-                        if (currentRoute != "records") {
-                            navController.navigate("records") { 
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Create, contentDescription = "Records") },
+                        label = { Text("记录") },
+                        selected = currentRoute == "records",
+                        onClick = {
+                            if (currentRoute != "records") {
+                                navController.navigate("records") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = "History") },
-                    label = { Text("历史") },
-                    selected = currentRoute == "history",
-                    onClick = {
-                        if (currentRoute != "history") {
-                            navController.navigate("history") { 
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.DateRange, contentDescription = "History") },
+                        label = { Text("历史") },
+                        selected = currentRoute == "history",
+                        onClick = {
+                            if (currentRoute != "history") {
+                                navController.navigate("history") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Trends") },
-                    label = { Text("趋势") },
-                    selected = currentRoute == "trends",
-                    onClick = {
-                        if (currentRoute != "trends") {
-                            navController.navigate("trends") { 
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Star, contentDescription = "Trends") },
+                        label = { Text("趋势") },
+                        selected = currentRoute == "trends",
+                        onClick = {
+                            if (currentRoute != "trends") {
+                                navController.navigate("trends") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Build, contentDescription = "Practice") },
-                    label = { Text("Practice") },
-                    selected = currentRoute == "practice",
-                    onClick = {
-                        if (currentRoute != "practice") {
-                            navController.navigate("practice") { 
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Build, contentDescription = "Practice") },
+                        label = { Text("Practice") },
+                        selected = currentRoute == "practice",
+                        onClick = {
+                            if (currentRoute != "practice") {
+                                navController.navigate("practice") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.MoreVert, contentDescription = "More") },
-                    label = { Text("更多") },
-                    selected = currentRoute == "settings",
-                    onClick = {
-                        if (currentRoute != "settings") {
-                            navController.navigate("settings") { 
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.MoreVert, contentDescription = "More") },
+                        label = { Text("更多") },
+                        selected = currentRoute == "settings",
+                        onClick = {
+                            if (currentRoute != "settings") {
+                                navController.navigate("settings") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -205,10 +208,22 @@ fun AppNavigation() {
                 ExercisesView()
             }
             composable("settings") {
+                val historyRepository: com.henryliu.cbtreframe.shared.HistoryRepository = koinInject()
                 SettingsScreen(
                     viewModel = settingsViewModel,
                     globalSettings = globalSettings,
-                    onGlobalSettingsChange = { globalSettings = it }
+                    onGlobalSettingsChange = { globalSettings = it },
+                    onReadDisclaimerClick = { navController.navigate("disclaimer_detail") },
+                    onClearDatabase = {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            historyRepository.deleteAllHistory()
+                        }
+                    }
+                )
+            }
+            composable("disclaimer_detail") {
+                com.henryliu.cbtreframe.ui.DisclaimerDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }

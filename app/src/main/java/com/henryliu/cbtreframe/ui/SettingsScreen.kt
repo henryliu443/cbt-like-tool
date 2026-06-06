@@ -9,34 +9,56 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import com.henryliu.cbtreframe.shared.AIProvider
 import com.henryliu.cbtreframe.shared.GlobalSettings
 import com.henryliu.cbtreframe.shared.SettingsViewModel
+import com.henryliu.cbtreframe.shared.ThinkingTemplate
 import com.henryliu.cbtreframe.shared.ThinkingTemplate.AnalysisDepth
 import com.henryliu.cbtreframe.shared.ThinkingTemplate.AppResponseStyle
+import com.henryliu.cbtreframe.shared.requiresApiKey
+import com.henryliu.cbtreframe.shared.defaultModelId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     globalSettings: GlobalSettings,
-    onGlobalSettingsChange: (GlobalSettings) -> Unit
+    onGlobalSettingsChange: (GlobalSettings) -> Unit,
+    onReadDisclaimerClick: () -> Unit,
+    onClearDatabase: suspend () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDisableDisclaimerConfirm by remember { mutableStateOf(false) }
+    var showFaceIDDisableBlockedAlert by remember { mutableStateOf(false) }
+    var showKeyField by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    
+    val versionName = remember(context) {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
+        } catch (e: Exception) {
+            "1.0.0"
+        }
+    }
     
     // Auto-fetch models when API key is saved and updated
     LaunchedEffect(uiState.hasAPIKey) {
@@ -51,7 +73,26 @@ fun SettingsScreen(
                 title = { Text("设置", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
-                )
+                ),
+                actions = {
+                    if (uiState.isRefreshingModels) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "获取模型中",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -63,7 +104,7 @@ fun SettingsScreen(
         ) {
             
             // ── AI Provider ──
-            SettingsSectionHeader("AI 服务商")
+            SettingsSectionHeader("AI 服务商", Icons.Default.Memory)
             InsetGroup {
                 AIProvider.entries.forEach { provider ->
                     Row(
@@ -73,9 +114,22 @@ fun SettingsScreen(
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(provider.displayName(), modifier = Modifier.weight(1f))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(provider.displayName(), style = MaterialTheme.typography.bodyLarge)
+                            if (!provider.requiresApiKey()) {
+                                Text(
+                                    "无需 API Key，离线可用",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         if (uiState.selectedProvider == provider) {
-                            Icon(Icons.Default.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Selected",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                     if (provider != AIProvider.entries.last()) {
@@ -83,10 +137,10 @@ fun SettingsScreen(
                     }
                 }
             }
-
+            
             // ── API Key & Model ──
             if (uiState.selectedProvider != AIProvider.LOCAL) {
-                SettingsSectionHeader("API 设置")
+                SettingsSectionHeader("API 设置", Icons.Default.VpnKey)
                 InsetGroup {
                     Column(modifier = Modifier.padding(16.dp)) {
                         OutlinedTextField(
@@ -94,7 +148,16 @@ fun SettingsScreen(
                             onValueChange = { viewModel.updateApiKeyInput(it) },
                             label = { Text("API Key") },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            visualTransformation = if (showKeyField) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showKeyField = !showKeyField }) {
+                                    Icon(
+                                        imageVector = if (showKeyField) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = if (showKeyField) "隐藏" else "显示"
+                                    )
+                                }
+                            }
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(
@@ -111,27 +174,76 @@ fun SettingsScreen(
                                 Text(if (uiState.isSavingAPIKey) "保存中..." else "保存 Key")
                             }
                         }
+                        if (uiState.hasAPIKey) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Security,
+                                    contentDescription = "Secure",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "已安全加密存储在系统 KeyStore 保护区",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
+                }
+                Column(
+                    modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (uiState.isRefreshingModels && uiState.hasAPIKey) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "正在从服务商获取可用模型…",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Key 仅存储在你设备的 KeyStore 本地加密区中，不会上传到任何服务器。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        lineHeight = 16.sp
+                    )
                 }
             }
             
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
-            SettingsSectionHeader("模型选择")
+            SettingsSectionHeader("模型选择", Icons.Default.Category)
             InsetGroup {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    if (uiState.selectedProvider != AIProvider.LOCAL && uiState.hasAPIKey) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Text("可用模型", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            TextButton(
-                                onClick = { coroutineScope.launch { viewModel.refreshModels() } },
-                                enabled = !uiState.isRefreshingModels
-                            ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("刷新模型列表")
+                    if (uiState.isRefreshingModels) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("正在获取模型列表", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                Text("请稍候，完成后可在此选择模型", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
+                        Spacer(Modifier.height(12.dp))
                     }
                     
                     if (uiState.resolvedModels.isEmpty()) {
@@ -141,78 +253,179 @@ fun SettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { viewModel.selectModel(model.modelName) }
+                                    .clickable(enabled = !uiState.isRefreshingModels) { viewModel.selectModel(model.modelName) }
                                     .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = uiState.selectedModelId == model.modelName,
-                                    onClick = { viewModel.selectModel(model.modelName) }
+                                    onClick = { viewModel.selectModel(model.modelName) },
+                                    enabled = !uiState.isRefreshingModels
                                 )
-                                Text(model.modelName, modifier = Modifier.weight(1f))
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    model.displayName,
+                                    modifier = Modifier.weight(1f),
+                                    color = if (uiState.isRefreshingModels) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                    
+                    if (uiState.selectedProvider != AIProvider.LOCAL) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.End,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            TextButton(
+                                onClick = { coroutineScope.launch { viewModel.refreshModels() } },
+                                enabled = !uiState.isRefreshingModels && uiState.hasAPIKey
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("刷新模型列表")
                             }
                         }
                     }
                 }
             }
+            
+            val modelFooterText = when {
+                uiState.isRefreshingModels -> "正在连接服务商并拉取当前账号可用的模型，完成后列表会自动更新。"
+                uiState.modelsListError != null -> uiState.modelsListError ?: ""
+                uiState.selectedProvider != AIProvider.LOCAL -> "保存 API Key 后会自动从服务商拉取最新可用模型并缓存在本机；也可手动刷新。拉取失败时使用内置备选列表。"
+                else -> ""
+            }
+            if (modelFooterText.isNotEmpty()) {
+                SettingsSectionFooter(modelFooterText)
+            }
 
-            // ── Preferences ──
-            SettingsSectionHeader("偏好设置")
+            // ── Preferences (Analysis Depth) ──
+            SettingsSectionHeader("分析深度", Icons.Default.Tune)
             InsetGroup {
-                // Analysis Depth
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Text("分析深度", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                        AnalysisDepth.entries.forEach { depth ->
-                            val isSelected = globalSettings.analysisDepth == depth
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onGlobalSettingsChange(globalSettings.copy(analysisDepth = depth)) },
-                                label = { Text(depth.name) }
-                            )
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    AnalysisDepth.entries.forEach { depth ->
+                        val isSelected = globalSettings.analysisDepth == depth
+                        val icon = when (depth) {
+                            AnalysisDepth.fast -> Icons.Default.FlashOn
+                            AnalysisDepth.balanced -> Icons.Default.Tune
+                            AnalysisDepth.deep -> Icons.Default.Psychology
                         }
-                    }
-                }
-                InsetDivider()
-                // Response Style
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Text("回应风格", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                        AppResponseStyle.entries.forEach { style ->
-                            val isSelected = globalSettings.responseStyle == style
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onGlobalSettingsChange(globalSettings.copy(responseStyle = style)) },
-                                label = { Text(style.name) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onGlobalSettingsChange(globalSettings.copy(analysisDepth = depth)) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
                             )
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(depth.displayName(), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    depth.description(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        if (depth != AnalysisDepth.entries.last()) {
+                            InsetDivider()
                         }
                     }
                 }
             }
             
-            // ── Prompt Template / Thinking Template ──
-            SettingsSectionHeader("Prompt / 思考模板")
+            // ── App Response Style ──
+            SettingsSectionHeader("回应风格", Icons.Default.ChatBubble)
             InsetGroup {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Text("思考模板", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                        com.henryliu.cbtreframe.shared.ThinkingTemplate.entries.forEach { template ->
-                            val isSelected = globalSettings.thinkingTemplate == template
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AppResponseStyle.entries.forEach { style ->
+                            val isSelected = globalSettings.responseStyle == style
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { onGlobalSettingsChange(globalSettings.copy(thinkingTemplate = template)) },
-                                label = { Text(template.name) }
+                                onClick = { onGlobalSettingsChange(globalSettings.copy(responseStyle = style)) },
+                                label = { Text(style.displayName()) },
+                                modifier = Modifier.weight(1f)
                             )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = globalSettings.responseStyle.description(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // ── Thinking Template ──
+            SettingsSectionHeader("思维模板", Icons.Default.Description)
+            InsetGroup {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    ThinkingTemplate.entries.forEach { template ->
+                        val isSelected = globalSettings.thinkingTemplate == template
+                        val icon = when (template) {
+                            ThinkingTemplate.cbt -> Icons.Default.Autorenew
+                            ThinkingTemplate.socratic -> Icons.Default.QuestionAnswer
+                            ThinkingTemplate.behavioral -> Icons.AutoMirrored.Filled.DirectionsRun
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onGlobalSettingsChange(globalSettings.copy(thinkingTemplate = template)) }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(template.displayName(), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    template.description(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        if (template != ThinkingTemplate.entries.last()) {
+                            InsetDivider()
                         }
                     }
                 }
             }
             
             // ── Privacy & Security ──
-            SettingsSectionHeader("隐私与安全")
+            SettingsSectionHeader("隐私与安全", Icons.Default.Security)
             InsetGroup {
                 Row(
                     modifier = Modifier
@@ -220,22 +433,31 @@ fun SettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("历史记录保护 (Biometrics)", modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text("生物识别保护历史记录 (Biometrics)", modifier = Modifier.weight(1f))
                     Switch(
                         checked = uiState.useFaceID,
                         onCheckedChange = { checked ->
-                            if (checked) {
-                                coroutineScope.launch {
-                                    val success = viewModel.authenticateWithBiometrics("验证以开启历史保护")
+                            coroutineScope.launch {
+                                if (checked) {
+                                    val success = viewModel.authenticateWithBiometrics("验证以开启历史记录保护")
                                     if (success) {
                                         viewModel.setUseFaceID(true)
+                                    } else {
+                                        Toast.makeText(context, "验证失败，无法修改设置", Toast.LENGTH_SHORT).show()
                                     }
-                                }
-                            } else {
-                                coroutineScope.launch {
-                                    val success = viewModel.authenticateWithBiometrics("验证以关闭历史保护")
+                                } else {
+                                    val success = viewModel.authenticateWithBiometrics("验证以关闭历史记录保护")
                                     if (success) {
                                         viewModel.setUseFaceID(false)
+                                    } else {
+                                        showFaceIDDisableBlockedAlert = true
                                     }
                                 }
                             }
@@ -245,7 +467,7 @@ fun SettingsScreen(
             }
             
             // ── Notifications ──
-            SettingsSectionHeader("通知")
+            SettingsSectionHeader("通知", Icons.Default.Notifications)
             InsetGroup {
                 Row(
                     modifier = Modifier
@@ -253,6 +475,13 @@ fun SettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
                     Text("开启每日提醒", modifier = Modifier.weight(1f))
                     Switch(
                         checked = uiState.dailyReminderEnabled,
@@ -264,20 +493,60 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable {
+                                android.app.TimePickerDialog(
+                                    context,
+                                    { _, hourOfDay, minute ->
+                                        viewModel.setReminderHour(hourOfDay)
+                                        viewModel.setReminderMinute(minute)
+                                    },
+                                    uiState.reminderHour,
+                                    uiState.reminderMinute,
+                                    true
+                                ).show()
+                            }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Spacer(Modifier.width(36.dp))
                         Text("提醒时间", modifier = Modifier.weight(1f))
                         Text(String.format("%02d:%02d", uiState.reminderHour, uiState.reminderMinute))
                     }
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
+            SettingsSectionFooter("每日提醒通过系统本地通知发送。请在系统设置里允许通知。")
 
             // ── Disclaimer Section ──
-            SettingsSectionHeader("免责声明与服务协议")
+            SettingsSectionHeader("免责声明与服务协议", Icons.Default.Warning)
             InsetGroup {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onReadDisclaimerClick() }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "阅读完整免责声明与服务协议",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "查看",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+                
+                InsetDivider()
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -306,6 +575,7 @@ fun SettingsScreen(
             }
 
             // ── Danger Zone ──
+            SettingsSectionHeader("危险区域", Icons.Default.Delete)
             InsetGroup {
                 TextButton(
                     onClick = { showClearConfirmation = true },
@@ -316,7 +586,7 @@ fun SettingsScreen(
             }
 
             // ── About ──
-            SettingsSectionHeader("关于")
+            SettingsSectionHeader("关于", Icons.Default.Info)
             InsetGroup {
                 Row(
                     modifier = Modifier
@@ -325,9 +595,34 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("版本", modifier = Modifier.weight(1f))
-                    Text("1.0.0", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(versionName, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                InsetDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("当前服务商", modifier = Modifier.weight(1f))
+                    Text(uiState.selectedProvider.displayName(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                InsetDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("当前模型", modifier = Modifier.weight(1f))
+                    val currentModelName = uiState.selectedModel.displayName.ifEmpty { null }
+                        ?: uiState.selectedModel.modelName.ifEmpty { null }
+                        ?: uiState.selectedModelId.ifEmpty { null }
+                        ?: uiState.selectedProvider.defaultModelId()
+                    Text(currentModelName, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            SettingsSectionFooter("在「历史」可搜索与收藏记录，并导出当前列表为 JSON（V2.1）。")
 
             Spacer(Modifier.height(32.dp))
         }
@@ -343,7 +638,7 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showClearConfirmation = false
-                        viewModel.clearAllData { /* clear database */ }
+                        viewModel.clearAllData(onClearDatabase)
                         onGlobalSettingsChange(GlobalSettings.Default)
                     }
                 ) {
@@ -368,6 +663,7 @@ fun SettingsScreen(
                     onClick = {
                         showDisableDisclaimerConfirm = false
                         viewModel.setHasAcceptedDisclaimer(false)
+                        (context as? android.app.Activity)?.finishAffinity()
                     }
                 ) {
                     Text("关闭并退出 App", color = MaterialTheme.colorScheme.error)
@@ -383,15 +679,51 @@ fun SettingsScreen(
             }
         )
     }
+
+    if (showFaceIDDisableBlockedAlert) {
+        AlertDialog(
+            onDismissRequest = { showFaceIDDisableBlockedAlert = false },
+            title = { Text("无法关闭历史记录保护") },
+            text = { Text("请先通过生物识别验证，才能关闭历史记录保护。") },
+            confirmButton = {
+                TextButton(onClick = { showFaceIDDisableBlockedAlert = false }) {
+                    Text("我知道了")
+                }
+            }
+        )
+    }
 }
 
+@Composable
+private fun SettingsSectionHeader(title: String, icon: ImageVector? = null) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = 32.dp, top = 24.dp, bottom = 8.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 @Composable
-private fun SettingsSectionHeader(title: String) {
+private fun SettingsSectionFooter(text: String) {
     Text(
-        text = title,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 32.dp, top = 24.dp, bottom = 8.dp)
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
+        lineHeight = 16.sp
     )
 }

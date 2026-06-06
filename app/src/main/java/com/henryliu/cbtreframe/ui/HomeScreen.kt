@@ -72,17 +72,15 @@ val MOOD_OPTIONS = listOf(
 
 // ── Hoisted HomeUiState ───────────────────────────
 
-enum class InputFlowStep { WRITE_THOUGHT, CHOOSE_MODE, CHOOSE_MOOD }
-
 data class HomeUiState(
     // Input
     val inputText: String = "",
     val selectedMoodLabel: String = "",
     val isAkathisia: Boolean = false,
-    val selectedTemplate: ThinkingTemplate = ThinkingTemplate.cbt,
+    val selectedTemplate: ThinkingTemplate? = null,
+    val homeStage: HomeStage = HomeStage.QuickStart,
     // Flow
     val currentStep: HomeFlowStep = HomeFlowStep.INPUT,
-    val inputFlowStep: InputFlowStep = InputFlowStep.WRITE_THOUGHT,
     // Loading
     val analysisElapsedSeconds: Int = 0,
     val thinkingPhraseIndex: Int = 0,
@@ -142,7 +140,6 @@ fun HomeScreen(
     val vmState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     var isInputFocused by remember { mutableStateOf(false) }
-    var inputFlowStep by remember { mutableStateOf(InputFlowStep.WRITE_THOUGHT) }
 
     // ── Mapping ViewModel state → HomeUiState ──
     val uiState = remember(vmState, globalSettings) {
@@ -150,7 +147,8 @@ fun HomeScreen(
             inputText = vmState.inputText,
             selectedMoodLabel = vmState.selectedMood,
             isAkathisia = vmState.isAkathisia,
-            selectedTemplate = globalSettings.thinkingTemplate,
+            selectedTemplate = vmState.selectedTemplate,
+            homeStage = vmState.homeStage,
             currentStep = when {
                 vmState.isLoading -> HomeFlowStep.LOADING
                 vmState.result != null && !vmState.isStreamingResult -> HomeFlowStep.RESULT
@@ -187,6 +185,7 @@ fun HomeScreen(
             onAkathisiaToggled = { viewModel.setAkathisia(it) },
             onTemplateSelected = { tpl ->
                 onGlobalSettingsChange(globalSettings.copy(thinkingTemplate = tpl))
+                viewModel.setSelectedTemplate(tpl)
             },
             onAnalyzeClicked = { viewModel.analyzeThought(globalSettings) },
             onResetClicked = { viewModel.reset() },
@@ -219,8 +218,6 @@ fun HomeScreen(
                     isInputFocused = isInputFocused,
                     onFocusChanged = { isInputFocused = it },
                     focusManager = focusManager,
-                    inputFlowStep = inputFlowStep,
-                    onInputFlowStepChanged = { inputFlowStep = it },
                 )
             }
             HomeFlowStep.LOADING -> {
@@ -252,13 +249,12 @@ private fun InputStep(
     isInputFocused: Boolean,
     onFocusChanged: (Boolean) -> Unit,
     focusManager: androidx.compose.ui.focus.FocusManager,
-    inputFlowStep: InputFlowStep,
-    onInputFlowStepChanged: (InputFlowStep) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .animateContentSize(animationSpec = tween(350, easing = FastOutSlowInEasing))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -277,17 +273,24 @@ private fun InputStep(
             AsymmetricDashboard(uiState = uiState)
 
             // ── Quick Start prompts ──
-            QuickStartSection(
-                prompts = uiState.quickStartPrompts,
-                onPromptSelected = { text ->
-                    callbacks.onInputTextChanged(text)
-                }
-            )
+            AnimatedVisibility(
+                visible = uiState.homeStage is HomeStage.QuickStart,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+            ) {
+                QuickStartSection(
+                    prompts = uiState.quickStartPrompts,
+                    onPromptSelected = { text ->
+                        callbacks.onInputTextChanged(text)
+                    }
+                )
+            }
 
             // ── Mood Picker ──
             AnimatedVisibility(
-                visible = inputFlowStep >= InputFlowStep.CHOOSE_MOOD,
-                enter = expandVertically() + fadeIn()
+                visible = uiState.homeStage >= HomeStage.ChoosingMood,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     MoodPickerSection(
@@ -303,15 +306,15 @@ private fun InputStep(
 
             // ── Template Picker ──
             AnimatedVisibility(
-                visible = inputFlowStep >= InputFlowStep.CHOOSE_MODE,
-                enter = expandVertically() + fadeIn()
+                visible = uiState.homeStage >= HomeStage.WritingThought,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
                 TemplatePickerSection(
                     selectedTemplate = uiState.selectedTemplate,
                     suggestedTemplate = uiState.suggestedTemplate,
                     onTemplateSelected = {
                         callbacks.onTemplateSelected(it)
-                        onInputFlowStepChanged(InputFlowStep.CHOOSE_MOOD)
                     },
                 )
             }
@@ -321,9 +324,6 @@ private fun InputStep(
                 inputText = uiState.inputText,
                 onInputChanged = { 
                     callbacks.onInputTextChanged(it)
-                    if (it.isNotBlank() && inputFlowStep == InputFlowStep.WRITE_THOUGHT) {
-                        onInputFlowStepChanged(InputFlowStep.CHOOSE_MODE)
-                    }
                 },
                 isFocused = isInputFocused,
                 onFocusChanged = onFocusChanged,
@@ -331,10 +331,7 @@ private fun InputStep(
 
             // ── Analyze Button ──
             DynamicAnalyzeButton(
-                inputFlowStep = inputFlowStep,
-                canAdvanceFromThought = uiState.inputText.isNotBlank(),
-                canSubmitAnalysis = uiState.inputText.isNotBlank() && uiState.selectedMoodLabel.isNotBlank(),
-                onAdvanceStep = { onInputFlowStepChanged(it) },
+                homeStage = uiState.homeStage,
                 onSubmit = {
                     onFocusChanged(false)
                     callbacks.onAnalyzeClicked()
@@ -343,8 +340,9 @@ private fun InputStep(
 
             // ── Secondary Tools (collapsible) ──
             AnimatedVisibility(
-                visible = inputFlowStep >= InputFlowStep.CHOOSE_MODE,
-                enter = expandVertically() + fadeIn()
+                visible = uiState.homeStage >= HomeStage.WritingThought,
+                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
             ) {
                 SecondaryToolsSection(
                     expanded = uiState.showSecondaryTools,
@@ -653,11 +651,11 @@ private fun AkathisiaToggle(
 
 @Composable
 private fun TemplatePickerSection(
-    selectedTemplate: ThinkingTemplate,
+    selectedTemplate: ThinkingTemplate?,
     suggestedTemplate: ThinkingTemplate?,
     onTemplateSelected: (ThinkingTemplate) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             "思考模板",
             style = MaterialTheme.typography.titleSmall,
@@ -665,46 +663,65 @@ private fun TemplatePickerSection(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(ThinkingTemplate.entries.toList()) { template ->
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ThinkingTemplate.entries.forEach { template ->
                 val isSelected = template == selectedTemplate
                 val isSuggested = template == suggestedTemplate
-                val (label, desc) = templateDisplayInfo(template)
+                val (label, _) = templateDisplayInfo(template)
+                val icon = when (template) {
+                    ThinkingTemplate.cbt -> Icons.Default.Edit
+                    ThinkingTemplate.socratic -> Icons.Default.Search
+                    ThinkingTemplate.behavioral -> Icons.Default.PlayArrow
+                }
 
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { onTemplateSelected(template) },
-                    label = {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    label,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                )
-                                if (isSuggested) {
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        "推荐",
-                                        fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                }
-                            }
-                            Text(
-                                desc,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
+                val gradientColors = if (isSelected) {
+                    listOf(Color(0xFF6B4EE6), Color(0xFF9B6FE6))
+                } else {
+                    listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant)
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f).clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onTemplateSelected(template) }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.linearGradient(gradientColors),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (isSuggested) {
+                        Text(
+                            "推荐",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
             }
         }
     }
@@ -792,57 +809,32 @@ private fun ThoughtInputCard(
 
 @Composable
 private fun DynamicAnalyzeButton(
-    inputFlowStep: InputFlowStep,
-    canAdvanceFromThought: Boolean,
-    canSubmitAnalysis: Boolean,
-    onAdvanceStep: (InputFlowStep) -> Unit,
+    homeStage: HomeStage,
     onSubmit: () -> Unit,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "gradient")
-    val gradientOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "gradientOffset"
-    )
+    val isEnabled = homeStage is HomeStage.ReviewReady
 
-    val buttonText = when (inputFlowStep) {
-        InputFlowStep.WRITE_THOUGHT -> "下一步：选最省力的方式"
-        InputFlowStep.CHOOSE_MODE -> "下一步：点当前心情"
-        InputFlowStep.CHOOSE_MOOD -> "开始分析"
-    }
-
-    val isEnabled = when (inputFlowStep) {
-        InputFlowStep.WRITE_THOUGHT, InputFlowStep.CHOOSE_MODE -> canAdvanceFromThought
-        InputFlowStep.CHOOSE_MOOD -> canSubmitAnalysis
-    }
-
-    val onClick = {
-        if (inputFlowStep == InputFlowStep.WRITE_THOUGHT) {
-            onAdvanceStep(InputFlowStep.CHOOSE_MODE)
-        } else if (inputFlowStep == InputFlowStep.CHOOSE_MODE) {
-            onAdvanceStep(InputFlowStep.CHOOSE_MOOD)
-        } else {
-            onSubmit()
-        }
+    val buttonText = when (homeStage) {
+        is HomeStage.QuickStart -> "输入想法以继续"
+        is HomeStage.WritingThought -> "选择模板以继续"
+        is HomeStage.ChoosingMood -> "选择心情以继续"
+        is HomeStage.ReviewReady -> "开始分析"
+        else -> "开始分析"
     }
 
     Button(
-        onClick = onClick,
+        onClick = { if (isEnabled) onSubmit() },
         enabled = isEnabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
         shape = RoundedCornerShape(18.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent, // Managed by background modifier
+            containerColor = Color.Transparent, 
             disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         ),
-        contentPadding = PaddingValues(0.dp) // Ensure background fills exactly
+        contentPadding = PaddingValues(0.dp) 
     ) {
         Box(
             modifier = Modifier
@@ -851,8 +843,8 @@ private fun DynamicAnalyzeButton(
                     if (isEnabled) {
                         androidx.compose.ui.graphics.Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFF6B4EE6), // Gradient Start
-                                Color(0xFF9B6FE6)  // Gradient End
+                                Color(0xFF6B4EE6), 
+                                Color(0xFF9B6FE6)  
                             )
                         )
                     } else {
@@ -865,7 +857,7 @@ private fun DynamicAnalyzeButton(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    if (inputFlowStep == InputFlowStep.CHOOSE_MOOD) Icons.Default.AutoAwesome else Icons.Default.ArrowForward,
+                    if (isEnabled) Icons.Default.AutoAwesome else Icons.Default.ArrowForward,
                     contentDescription = null,
                     tint = if (isEnabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f)
                 )
@@ -1117,63 +1109,33 @@ private fun AtmosphericGreeting(uiState: HomeUiState) {
 @Composable
 private fun AsymmetricDashboard(uiState: HomeUiState) {
     Row(
-        modifier = Modifier.fillMaxWidth(0.6f),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // ── Streak card (larger) ──
-        Card(
-            modifier = Modifier.weight(1.2f),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            ),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("🔥", fontSize = 24.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "连续打卡",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    "${uiState.currentStreak} 天",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    "最长 ${uiState.longestStreak} 天",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                )
-            }
-        }
+        StatItem("🔥 连续打卡", "${uiState.currentStreak} 天")
+        StatItem("📊 今日分析", "${uiState.todayAnalysisCount} 次")
+        StatItem("👑 最长连续", "${uiState.longestStreak} 天")
+    }
+}
 
-        // ── Today count card (smaller) ──
-        Card(
-            modifier = Modifier.weight(0.8f),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            ),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("📊", fontSize = 24.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "今日分析",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    "${uiState.todayAnalysisCount} 次",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
+@Composable
+private fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

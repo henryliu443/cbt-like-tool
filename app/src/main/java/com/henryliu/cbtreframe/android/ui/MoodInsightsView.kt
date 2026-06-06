@@ -15,6 +15,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoodInsightsView(viewModel: MoodInsightsViewModel = koinInject<MoodInsightsViewModel>()) {
+    DisposableEffect(Unit) { onDispose { viewModel.clear() } }
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(

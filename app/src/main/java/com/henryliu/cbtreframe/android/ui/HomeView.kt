@@ -1532,27 +1532,6 @@ private fun relativeTime(epochMillis: Long): String {
 
 @Composable
 private fun StreamingView(text: String) {
-    var visibleCount by remember(text) { mutableIntStateOf(1) }
-    var isPaused by remember { mutableStateOf(false) }
-    var showAll by remember { mutableStateOf(false) }
-
-    val chunks = remember(text) {
-        val lines = text.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-        if (lines.isNotEmpty()) lines
-        else text.split(Regex("[。！？]")).map { it.trim() }.filter { it.isNotEmpty() }
-    }
-
-    LaunchedEffect(text, isPaused, showAll) {
-        if (showAll) {
-            visibleCount = chunks.size
-            return@LaunchedEffect
-        }
-        while (!isPaused && !showAll && visibleCount < chunks.size) {
-            kotlinx.coroutines.delay(900)
-            visibleCount++
-        }
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -1561,7 +1540,7 @@ private fun StreamingView(text: String) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "分段生成中",
+                "正在生成",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1569,49 +1548,19 @@ private fun StreamingView(text: String) {
 
             if (text.isEmpty()) {
                 Text(
-                    "正在生成…",
+                    "思考中…",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                chunks.take(if (showAll) chunks.size else visibleCount.coerceIn(1, chunks.size))
-                    .forEach { chunk ->
-                        val highlighted = chunk.contains("替代想法") ||
-                            chunk.contains("下一步行动") ||
-                            chunk.contains("积极视角")
-                        Text(
-                            text = chunk,
-                            modifier = if (highlighted)
-                                Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                        RoundedCornerShape(10.dp),
-                                    )
-                                    .padding(10.dp)
-                            else Modifier.padding(vertical = 4.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (highlighted) FontWeight.Medium else FontWeight.Normal,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = { isPaused = !isPaused },
-                    shape = RoundedCornerShape(10.dp),
-                ) {
-                    Text(if (isPaused) "继续" else "暂停", fontSize = 13.sp)
-                }
-                Button(
-                    onClick = { showAll = !showAll },
-                    shape = RoundedCornerShape(10.dp),
-                ) {
-                    Text(if (showAll) "分段查看" else "显示全部", fontSize = 13.sp)
-                }
-            }
         }
     }
 }

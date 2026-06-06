@@ -45,6 +45,36 @@ object ReframeOrchestrator {
     }
 
     /**
+     * Streaming version of runReframe.
+     * Returns a Flow<String> of raw character deltas.
+     */
+    fun streamRunReframe(
+        thought: String,
+        mood: String,
+        hasAkathisia: Boolean,
+        model: AIModel,
+        settings: GlobalSettings,
+        strategy: ResponseStrategy,
+        httpClient: HttpClient,
+        apiKeyProvider: suspend (String) -> String?,
+    ): kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.flow {
+        val provider = model.provider
+        val service = ProviderRegistry.resolve(provider, httpClient, apiKeyProvider)
+        // Bypass ValidatedReframeClient for streaming as it expects the full AnalysisResult
+        val flow = service.streamReframe(
+            thought = thought,
+            mood = mood,
+            hasAkathisia = hasAkathisia,
+            model = model,
+            depth = settings.analysisDepth,
+            style = settings.responseStyle,
+            template = settings.thinkingTemplate,
+            strategy = strategy,
+        )
+        flow.collect { emit(it) }
+    }
+
+    /**
      * Run pattern analysis for a list of thought entries.
      */
     suspend fun runPatternAnalysis(

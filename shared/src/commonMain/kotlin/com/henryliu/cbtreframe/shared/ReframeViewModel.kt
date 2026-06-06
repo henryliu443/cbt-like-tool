@@ -28,6 +28,7 @@ data class ReframeUiState(
     val suggestedThinkingTemplate: ThinkingTemplate? = null,
     val selectedProvider: AIProvider = AIProvider.LOCAL,
     val selectedModelName: String = "",
+    val selectedTemplate: ThinkingTemplate? = null,
 ) {
     val greeting: String
         get() {
@@ -73,6 +74,14 @@ data class ReframeUiState(
             isDeepReasoningModel -> LoadingBannerStyle.DEEP_REASONING
             isGeminiProModel -> LoadingBannerStyle.GEMINI_PRO
             else -> LoadingBannerStyle.NONE
+        }
+
+    val homeStage: HomeStage
+        get() = when {
+            inputText.isBlank() -> HomeStage.QuickStart
+            selectedTemplate == null -> HomeStage.WritingThought
+            selectedMood.isBlank() -> HomeStage.ChoosingMood
+            else -> HomeStage.ReviewReady
         }
 }
 
@@ -156,6 +165,10 @@ class ReframeViewModel(
         _uiState.value = _uiState.value.copy(isAkathisia = value)
     }
 
+    fun setSelectedTemplate(template: ThinkingTemplate) {
+        _uiState.value = _uiState.value.copy(selectedTemplate = template)
+    }
+
     fun refreshProviderAndModel() {
         val provider = settingsManager.getSelectedProvider()
         val modelName = settingsManager.getSelectedModelId().ifEmpty {
@@ -198,7 +211,7 @@ class ReframeViewModel(
 
         scope.launch {
             try {
-                val output = useCase.analyze(
+                val output = useCase.streamAnalyze(
                     thought = thought,
                     mood = mood,
                     hasAkathisia = isAkathisia,
@@ -211,33 +224,45 @@ class ReframeViewModel(
                     _uiState.value = _uiState.value.copy(showCrisisBanner = true)
                 }
 
-                val result = output.result
+                var currentText = ""
+                output.stream.collect { chunk ->
+                    currentText += chunk
+                    
+                    // Simple hack to hide JSON structure from the raw stream 
+                    // until we properly implement markdown-streaming prompt
+                    val cleaned = currentText
+                        .replace(Regex("\"?[a-zA-Z_]+\"\\s*:\\s*\"?"), "")
+                        .replace(Regex("[{}\\[\\]]"), "")
+                        .replace("\\n", "\n")
+                        .replace("\\\"", "\"")
+                        .trim()
 
-                // Play streaming text character by character (simulates SSE typing)
-                val full = buildString {
-                    appendLine("认知扭曲：${result.distortion}")
-                    appendLine("替代想法：${result.alternative}")
-                    appendLine("建议行动：${result.action}")
+                    _uiState.value = _uiState.value.copy(streamingText = cleaned)
                 }
 
-                // Stream character by character with delay (10ms per char)
-                var current = ""
-                for (ch in full) {
-                    current += ch
-                    _uiState.value = _uiState.value.copy(streamingText = current)
-                    delay(10)
+                // Wait, parseReframeOutput is already used inside the use case 
+                // so we can just parse it here again or we could have returned it 
+                // from the use case. But we don't have the final parsed result easily
+                // returned from streamAnalyze unless we change the signature again.
+                // For MVP: parse the full collected JSON here again to display the final result.
+                val finalParsed = try {
+                    parseReframeOutput(currentText, output.strategy).normalized(globalSettings.thinkingTemplate)
+                } catch(e: Exception) {
+                    AnalysisResult(
+                        distortion = "分析结束",
+                        alternative = _uiState.value.streamingText,
+                        action = ""
+                    )
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    result = result,
+                    result = finalParsed,
                     isStreamingResult = false,
                     latestHistoryEntryID = output.historyEntryID,
                 )
 
-                if (output.recoveredByRetry) {
-                    showRetryRecoveryNotice()
-                }
-
+                // No need to check recoveredByRetry since streaming bypasses Validation client
+                
                 markStreakToday()
                 incrementTodayCount()
 

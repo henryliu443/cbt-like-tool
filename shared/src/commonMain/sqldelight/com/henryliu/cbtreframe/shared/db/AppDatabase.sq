@@ -2,12 +2,36 @@ CREATE TABLE HistoryEntity (
     id TEXT NOT NULL PRIMARY KEY,
     inputText TEXT NOT NULL,
     aiResponse TEXT,
-    timestamp INTEGER NOT NULL
+    timestamp INTEGER NOT NULL,
+    distortion TEXT NOT NULL DEFAULT '',
+    alternative TEXT NOT NULL DEFAULT '',
+    action TEXT NOT NULL DEFAULT '',
+    isFavorite INTEGER NOT NULL DEFAULT 0,
+    providerName TEXT NOT NULL DEFAULT '',
+    modelName TEXT NOT NULL DEFAULT '',
+    moodTag TEXT NOT NULL DEFAULT '',
+    therapyTemplateRaw TEXT NOT NULL DEFAULT '',
+    analysisDepthRaw TEXT NOT NULL DEFAULT '',
+    responseStyleRaw TEXT NOT NULL DEFAULT '',
+    resultExtrasJSON TEXT NOT NULL DEFAULT '',
+    followUpMessagesJSON TEXT NOT NULL DEFAULT ''
 );
 
 insertHistory:
-INSERT OR REPLACE INTO HistoryEntity(id, inputText, aiResponse, timestamp)
-VALUES (?, ?, ?, ?);
+INSERT OR REPLACE INTO HistoryEntity(
+    id, inputText, aiResponse, timestamp,
+    distortion, alternative, action, isFavorite,
+    providerName, modelName, moodTag,
+    therapyTemplateRaw, analysisDepthRaw, responseStyleRaw, resultExtrasJSON, followUpMessagesJSON
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateFavorite:
+UPDATE HistoryEntity SET isFavorite = ? WHERE id = ?;
+
+updateFollowUpMessages:
+UPDATE HistoryEntity SET followUpMessagesJSON = ? WHERE id = ?;
+
 
 selectAllHistory:
 SELECT * FROM HistoryEntity ORDER BY timestamp DESC;
@@ -41,3 +65,41 @@ FROM MoodCheckInEntity
 WHERE timestamp >= :sinceTimestamp
 GROUP BY dateLabel
 ORDER BY dateLabel ASC;
+
+deleteAllMoodCheckIns:
+DELETE FROM MoodCheckInEntity;
+
+CREATE TABLE ThoughtEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    content TEXT NOT NULL,
+    situation TEXT NOT NULL DEFAULT '',
+    emotion TEXT NOT NULL DEFAULT '',
+    intensity INTEGER NOT NULL DEFAULT 5,
+    beliefBefore INTEGER NOT NULL DEFAULT 50,
+    beliefAfter INTEGER NOT NULL DEFAULT 50,
+    evidenceFor TEXT NOT NULL DEFAULT '',
+    evidenceAgainst TEXT NOT NULL DEFAULT '',
+    balancedThought TEXT NOT NULL DEFAULT '',
+    distortionTag TEXT NOT NULL DEFAULT '',
+    isProcessed INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL DEFAULT 0
+);
+
+insertThought:
+INSERT OR REPLACE INTO ThoughtEntity(
+    id, content, situation, emotion, intensity, beliefBefore, beliefAfter,
+    evidenceFor, evidenceAgainst, balancedThought, distortionTag, isProcessed, createdAt
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllThoughts:
+SELECT * FROM ThoughtEntity ORDER BY createdAt DESC;
+
+deleteThoughtById:
+DELETE FROM ThoughtEntity WHERE id = ?;
+
+updateThought:
+UPDATE ThoughtEntity
+SET content = ?, situation = ?, emotion = ?, intensity = ?, beliefBefore = ?,
+    beliefAfter = ?, evidenceFor = ?, evidenceAgainst = ?, balancedThought = ?,
+    distortionTag = ?, isProcessed = ?
+WHERE id = ?;

@@ -5,6 +5,8 @@ struct OnboardingView: View {
     @Binding var hasCompletedOnboarding: Bool
     @State private var currentPage = 0
     @State private var showDisclaimerSheet = false
+    @State private var isInitializing = false
+    @State private var initializationError: String? = nil
 
     var body: some View {
         ZStack {
@@ -23,9 +25,119 @@ struct OnboardingView: View {
                 pageIndicator
                 bottomButtons
             }
+
+            if isInitializing {
+                initializationOverlay
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
+        .animation(.default, value: isInitializing)
         .sheet(isPresented: $showDisclaimerSheet) {
             DisclaimerDetailView(isSheet: true)
+        }
+    }
+
+    private var initializationOverlay: some View {
+        ZStack {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 28) {
+                Spacer()
+                
+                if let errorMsg = initializationError {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.orange)
+                    
+                    Text("初始化未完成")
+                        .font(.title2.bold())
+                        .foregroundStyle(Color("TextPrimary"))
+                    
+                    Text(errorMsg)
+                        .font(.body)
+                        .foregroundStyle(Color("TextSecondary"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                    
+                    VStack(spacing: 12) {
+                        Button {
+                            runInitialization()
+                        } label: {
+                            Text("重试同步")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color("AccentColor"))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        
+                        Button {
+                            // Switch to local mode and complete
+                            settingsViewModel.selectedProvider = .local
+                            settingsViewModel.selectedModelId = AIProvider.local.defaultModel.id
+                            settingsViewModel.hasAcceptedDisclaimer = true
+                            hasCompletedOnboarding = true
+                        } label: {
+                            Text("切换为本地离线模式")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color("AccentColor"))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color("AccentColor").opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        
+                        Button {
+                            // Go back to config
+                            isInitializing = false
+                            currentPage = 1
+                        } label: {
+                            Text("返回修改 API Key")
+                                .font(.subheadline)
+                                .foregroundStyle(Color("TextSecondary"))
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 36)
+                } else {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(Color("AccentColor"))
+                    
+                    Text("正在初始化应用环境...")
+                        .font(.title3.bold())
+                        .foregroundStyle(Color("TextPrimary"))
+                    
+                    VStack(spacing: 8) {
+                        Text("正在保存服务商与 API Key 配置")
+                            .font(.subheadline)
+                            .foregroundStyle(Color("TextSecondary"))
+                        
+                        Text("正在从服务商同步模型列表")
+                            .font(.subheadline)
+                            .foregroundStyle(Color("TextSecondary"))
+                    }
+                }
+                
+                Spacer()
+            }
+        }
+    }
+
+    private func runInitialization() {
+        isInitializing = true
+        initializationError = nil
+        
+        Task {
+            do {
+                try await settingsViewModel.initializeOnboarding()
+                // On success, complete onboarding
+                hasCompletedOnboarding = true
+            } catch {
+                initializationError = error.localizedDescription
+            }
         }
     }
 
@@ -125,18 +237,11 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
 
             if settingsViewModel.selectedProvider.requiresAPIKey {
-                VStack(spacing: 8) {
-                    SecureField("粘贴你的 API Key", text: $settingsViewModel.apiKeyInput)
-                        .font(.system(.body, design: .monospaced))
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal, 24)
-
-                    Button("保存") {
-                        settingsViewModel.saveAPIKey()
-                    }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color("AccentColor"))
-                }
+                SecureField("粘贴你的 API Key", text: $settingsViewModel.apiKeyInput)
+                    .font(.system(.body, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 4)
             }
 
             Spacer()
@@ -229,7 +334,7 @@ struct OnboardingView: View {
                 }
             } else {
                 Button {
-                    hasCompletedOnboarding = true
+                    runInitialization()
                 } label: {
                     HStack(spacing: 4) {
                         Text("开始使用")

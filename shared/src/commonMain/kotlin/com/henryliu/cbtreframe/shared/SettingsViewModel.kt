@@ -23,7 +23,7 @@ data class SettingsUiState(
     val selectedModel: AIModel
         get() = resolvedModels.firstOrNull { it.modelName == selectedModelId }
             ?: resolvedModels.firstOrNull()
-            ?: AIModel.GEMINI_FLASH_LATEST
+            ?: FallbackModels.GEMINI_FLASH_LATEST
 }
 
 interface KeychainProvider {
@@ -140,6 +140,72 @@ class SettingsViewModel(
                 hasAPIKey = computeHasAPIKey(provider),
             )
             refreshModels()
+        }
+    }
+
+    suspend fun initializeOnboarding(provider: AIProvider, apiKey: String): Result<Unit> {
+        return try {
+            // 1. Save provider and API key
+            settingsManager.setSelectedProvider(provider)
+            val providerKey = provider.name
+            if (provider.requiresApiKey()) {
+                if (apiKey.isBlank()) {
+                    return Result.failure(Exception("API Key 不能为空"))
+                }
+                withContext(Dispatchers.Default) {
+                    keychainProvider.save(providerKey, apiKey.trim())
+                }
+            } else {
+                withContext(Dispatchers.Default) {
+                    keychainProvider.delete(providerKey)
+                }
+            }
+
+            // Sync ViewModel UI State locally
+            _uiState.value = _uiState.value.copy(
+                selectedProvider = provider,
+                apiKeyInput = apiKey,
+                hasAPIKey = computeHasAPIKey(provider)
+            )
+
+            // 2. Fetch models & cache
+            if (provider.requiresApiKey()) {
+                val models = modelFetcher.fetchModels(provider, apiKey.trim())
+                if (models.isEmpty()) {
+                    return Result.failure(Exception("未能获取到任何可用模型，请检查配置"))
+                }
+                settingsManager.setCachedModels(provider, models)
+                val currentModelId = _uiState.value.selectedModelId
+                val newModelId = if (models.any { it.modelName == currentModelId }) currentModelId
+                    else provider.defaultModelId()
+                settingsManager.setSelectedModelId(newModelId)
+
+                _uiState.value = _uiState.value.copy(
+                    resolvedModels = models,
+                    selectedModelId = newModelId,
+                    modelsListError = null
+                )
+            } else {
+                val fallback = provider.fallbackModels()
+                val newModelId = provider.defaultModelId()
+                settingsManager.setSelectedModelId(newModelId)
+                _uiState.value = _uiState.value.copy(
+                    resolvedModels = fallback,
+                    selectedModelId = newModelId,
+                    modelsListError = null
+                )
+            }
+
+            // 3. Set accepted disclaimer
+            settingsManager.setHasAcceptedDisclaimer(true)
+            _uiState.value = _uiState.value.copy(hasAcceptedDisclaimer = true)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                modelsListError = e.message ?: "Unknown error"
+            )
+            Result.failure(e)
         }
     }
 
@@ -279,25 +345,11 @@ class SettingsViewModel(
 fun AIProvider.requiresApiKey(): Boolean = this != AIProvider.LOCAL
 
 fun AIProvider.defaultModelId(): String {
-    return when (this) {
-        AIProvider.DEEPSEEK -> AIModel.DEEPSEEK_CHAT.modelName
-        AIProvider.OPENAI -> AIModel.GPT_4O.modelName
-        AIProvider.ANTHROPIC -> AIModel.CLAUDE_SONNET_4.modelName
-        AIProvider.GEMINI -> AIModel.GEMINI_FLASH_LATEST.modelName
-        AIProvider.KIMI -> AIModel.MOONSHOT_V1_8K.modelName
-        AIProvider.LOCAL -> AIModel.LOCAL_BUILTIN.modelName
-    }
+    return FallbackModels.get(this).first().modelName
 }
 
 fun AIProvider.fallbackModels(): List<AIModel> {
-    return when (this) {
-        AIProvider.DEEPSEEK -> listOf(AIModel.DEEPSEEK_CHAT, AIModel.DEEPSEEK_REASONER)
-        AIProvider.OPENAI -> listOf(AIModel.GPT_4O)
-        AIProvider.ANTHROPIC -> listOf(AIModel.CLAUDE_SONNET_4, AIModel.CLAUDE_3_5_HAIKU)
-        AIProvider.GEMINI -> listOf(AIModel.GEMINI_FLASH_LATEST, AIModel.GEMINI_2_5_FLASH, AIModel.GEMINI_2_0_FLASH, AIModel.GEMINI_1_5_PRO)
-        AIProvider.KIMI -> listOf(AIModel.MOONSHOT_V1_8K, AIModel.MOONSHOT_V1_32K, AIModel.KIMI_K2_TURBO, AIModel.KIMI_K2_THINKING)
-        AIProvider.LOCAL -> listOf(AIModel.LOCAL_BUILTIN)
-    }
+    return FallbackModels.get(this)
 }
 
 // ── Model fetching interface ───────────────────────────────────────────────
