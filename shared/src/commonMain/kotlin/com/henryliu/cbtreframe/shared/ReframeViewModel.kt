@@ -230,13 +230,7 @@ class ReframeViewModel(
                     
                     // Simple hack to hide JSON structure from the raw stream 
                     // until we properly implement markdown-streaming prompt
-                    val cleaned = currentText
-                        .replace(Regex("\"?[a-zA-Z_]+\"\\s*:\\s*\"?"), "")
-                        .replace(Regex("[{}\\[\\]]"), "")
-                        .replace("\\n", "\n")
-                        .replace("\\\"", "\"")
-                        .trim()
-
+                    val cleaned = cleanStreamContent(currentText)
                     _uiState.value = _uiState.value.copy(streamingText = cleaned)
                 }
 
@@ -400,4 +394,15 @@ fun ThinkingTemplate.Companion.suggest(text: String): ThinkingTemplate? {
             -> ThinkingTemplate.cbt
         else -> null
     }
+}
+
+// ── Stream Content Cleaner ──────────────────────────────────────────────────
+
+fun cleanStreamContent(currentText: String): String {
+    return currentText
+        .replace(Regex("\"?[a-zA-Z_]+\"\\s*:\\s*\"?"), "")
+        .replace(Regex("[{}\\[\\]]"), "")
+        .replace("\\n", "\n")
+        .replace("\\\"", "\"")
+        .trim()
 }
