@@ -115,7 +115,8 @@ class ReframeUseCase(
         val historyEntryID: String,
         val providerNameForHistory: String,
         val modelNameForHistory: String,
-        val strategy: ResponseStrategy
+        val strategy: ResponseStrategy,
+        val finalResult: kotlinx.coroutines.CompletableDeferred<AnalysisResult>
     )
 
     fun streamAnalyze(
@@ -162,6 +163,8 @@ class ReframeUseCase(
             )
         }
 
+        val finalResultDeferred = kotlinx.coroutines.CompletableDeferred<AnalysisResult>()
+
         // We wrap the stream to intercept and build the final string,
         // then save to history DB when it finishes.
         val hookedFlow = kotlinx.coroutines.flow.flow {
@@ -185,6 +188,8 @@ class ReframeUseCase(
                     }
                     val template = settings.thinkingTemplate
                     val normalizedResult = parsedResult.normalized(template)
+                    
+                    finalResultDeferred.complete(normalizedResult)
                     
                     val extras = HistoryResultExtras(
                         questions = normalizedResult.questions,
@@ -212,6 +217,8 @@ class ReframeUseCase(
                         resultExtrasJSON = resultExtrasJSON,
                         followUpMessagesJSON = ""
                     )
+                } else {
+                    finalResultDeferred.completeExceptionally(IllegalStateException("Empty stream"))
                 }
             }
         }
@@ -222,7 +229,8 @@ class ReframeUseCase(
             historyEntryID = id,
             providerNameForHistory = providerNameForHistory,
             modelNameForHistory = modelNameForHistory,
-            strategy = strategy
+            strategy = strategy,
+            finalResult = finalResultDeferred
         )
     }
 

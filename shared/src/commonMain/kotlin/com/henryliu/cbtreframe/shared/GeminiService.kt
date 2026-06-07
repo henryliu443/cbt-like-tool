@@ -190,8 +190,7 @@ class GeminiService(
 
     private fun parseGeminiGenerateResponse(data: String, strategy: ResponseStrategy): AnalysisResult {
         val text = extractGeminiText(data)
-        val sanitized = LLMJSONSanitizer.sanitizeForJSONObject(text)
-        return parseReframeOutput(sanitized, strategy)
+        return parseReframeOutput(text, strategy)
     }
 
     private fun extractGeminiText(data: String): String {

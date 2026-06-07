@@ -240,13 +240,8 @@ class ReframeViewModel(
                     _uiState.value = _uiState.value.copy(streamingText = cleaned)
                 }
 
-                // Wait, parseReframeOutput is already used inside the use case 
-                // so we can just parse it here again or we could have returned it 
-                // from the use case. But we don't have the final parsed result easily
-                // returned from streamAnalyze unless we change the signature again.
-                // For MVP: parse the full collected JSON here again to display the final result.
                 val finalParsed = try {
-                    parseReframeOutput(currentText, output.strategy).normalized(globalSettings.thinkingTemplate)
+                    output.finalResult.await()
                 } catch(e: Exception) {
                     AnalysisResult(
                         distortion = "分析结束",
