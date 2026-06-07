@@ -29,6 +29,8 @@ data class ReframeUiState(
     val selectedProvider: AIProvider = AIProvider.LOCAL,
     val selectedModelName: String = "",
     val selectedTemplate: ThinkingTemplate? = null,
+    val isReasoningActive: Boolean = false,
+    val isPremiumModel: Boolean = false,
 ) {
     val greeting: String
         get() {
@@ -54,25 +56,10 @@ data class ReframeUiState(
     val currentThinkingPhrase: String
         get() = ReframeViewModel.thinkingPhrases[thinkingPhraseIndex % ReframeViewModel.thinkingPhrases.size]
 
-    val isDeepReasoningModel: Boolean
-        get() {
-            val id = selectedModelName.lowercase()
-            return id.contains("reasoner")
-                || id.startsWith("o1") || id.startsWith("o3") || id.startsWith("o4")
-                || id.contains("reason")
-                || id.contains("thinking")
-        }
-
-    val isGeminiProModel: Boolean
-        get() {
-            val id = selectedModelName.lowercase()
-            return id.contains("gemini") && id.contains("pro")
-        }
-
     val loadingBannerStyle: LoadingBannerStyle
         get() = when {
-            isDeepReasoningModel -> LoadingBannerStyle.DEEP_REASONING
-            isGeminiProModel -> LoadingBannerStyle.GEMINI_PRO
+            isReasoningActive -> LoadingBannerStyle.DEEP_REASONING
+            isPremiumModel -> LoadingBannerStyle.GEMINI_PRO
             else -> LoadingBannerStyle.NONE
         }
 
@@ -198,16 +185,21 @@ class ReframeViewModel(
         val provider = _uiState.value.selectedProvider
         val modelName = _uiState.value.selectedModelName
 
+        val initialModel = FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+        val isPremium = initialModel?.isPremium ?: false
+        val initialIsReasoning = initialModel?.isReasoning ?: false
+
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
             isStreamingResult = true,
             streamingText = "",
             showCrisisBanner = false,
+            isReasoningActive = initialIsReasoning,
+            isPremiumModel = isPremium,
         )
 
-        val isDeepReasoning = _uiState.value.isDeepReasoningModel
-        if (isDeepReasoning) startThinkingProgress()
+        if (initialIsReasoning) startThinkingProgress()
 
         scope.launch {
             try {
@@ -227,6 +219,15 @@ class ReframeViewModel(
                 var currentText = ""
                 output.stream.collect { chunk ->
                     currentText += chunk
+                    
+                    // Detect reasoning dynamically from stream if not already active
+                    if (!_uiState.value.isReasoningActive) {
+                        // Some APIs might send <think> tags or reasoning_content indicators
+                        if (currentText.contains("<think>") || currentText.contains("reasoning_content")) {
+                            _uiState.value = _uiState.value.copy(isReasoningActive = true)
+                            startThinkingProgress()
+                        }
+                    }
                     
                     // Simple hack to hide JSON structure from the raw stream 
                     // until we properly implement markdown-streaming prompt
@@ -286,6 +287,8 @@ class ReframeViewModel(
             isStreamingResult = false,
             streamingText = "",
             latestHistoryEntryID = null,
+            isReasoningActive = false,
+            isPremiumModel = false,
         )
     }
 

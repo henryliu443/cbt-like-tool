@@ -15,7 +15,9 @@ enum class AIProvider {
 data class AIModel(
     val provider: AIProvider,
     val modelName: String,
-    val displayName: String
+    val displayName: String,
+    val isReasoning: Boolean = false,
+    val isPremium: Boolean = false,
 ) {
     companion object {
         // Models will be loaded dynamically, these are just fallbacks if none are found.
@@ -24,7 +26,7 @@ data class AIModel(
 
 object FallbackModels {
     val DEEPSEEK_CHAT = AIModel(AIProvider.DEEPSEEK, "deepseek-chat", "DeepSeek Chat")
-    val DEEPSEEK_REASONER = AIModel(AIProvider.DEEPSEEK, "deepseek-reasoner", "DeepSeek Reasoner")
+    val DEEPSEEK_REASONER = AIModel(AIProvider.DEEPSEEK, "deepseek-reasoner", "DeepSeek Reasoner", isReasoning = true)
     val GPT_4O = AIModel(AIProvider.OPENAI, "gpt-4o", "GPT-4o")
     val GPT_4O_MINI = AIModel(AIProvider.OPENAI, "gpt-4o-mini", "GPT-4o Mini")
     val GPT_4_1 = AIModel(AIProvider.OPENAI, "gpt-4.1", "GPT-4.1")
@@ -36,12 +38,12 @@ object FallbackModels {
     val GEMINI_2_5_FLASH = AIModel(AIProvider.GEMINI, "gemini-2.5-flash", "Gemini 2.5 Flash")
     val GEMINI_2_0_FLASH = AIModel(AIProvider.GEMINI, "gemini-2.0-flash", "Gemini 2.0 Flash")
     val GEMINI_2_0_FLASH_LITE = AIModel(AIProvider.GEMINI, "gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite")
-    val GEMINI_1_5_PRO = AIModel(AIProvider.GEMINI, "gemini-1.5-pro", "Gemini 1.5 Pro")
+    val GEMINI_1_5_PRO = AIModel(AIProvider.GEMINI, "gemini-1.5-pro", "Gemini 1.5 Pro", isPremium = true)
     val GEMINI_1_5_FLASH = AIModel(AIProvider.GEMINI, "gemini-1.5-flash", "Gemini 1.5 Flash")
     val MOONSHOT_V1_8K = AIModel(AIProvider.KIMI, "moonshot-v1-8k", "Moonshot v1 8K")
     val MOONSHOT_V1_32K = AIModel(AIProvider.KIMI, "moonshot-v1-32k", "Moonshot v1 32K")
     val KIMI_K2_TURBO = AIModel(AIProvider.KIMI, "kimi-k2-turbo-preview", "Kimi K2 Turbo")
-    val KIMI_K2_THINKING = AIModel(AIProvider.KIMI, "kimi-k2-thinking-preview", "Kimi K2 Thinking")
+    val KIMI_K2_THINKING = AIModel(AIProvider.KIMI, "kimi-k2-thinking-preview", "Kimi K2 Thinking", isReasoning = true)
     val LOCAL_BUILTIN = AIModel(AIProvider.LOCAL, "local", "内置分析")
 
     val entries = listOf(
@@ -77,4 +79,3 @@ fun prettyGenericName(id: String): String {
         part.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }
-
