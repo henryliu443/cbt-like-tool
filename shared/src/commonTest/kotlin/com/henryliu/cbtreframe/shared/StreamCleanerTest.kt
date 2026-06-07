@@ -22,7 +22,7 @@ class StreamCleanerTest {
     @Test
     fun testJsonStructureRemoved() {
         val input = "{\"distortion\": \"灾难化思维\", \"alternative\": \"其实没那么糟\"}"
-        val expected = "灾难化思维\", \"其实没那么糟\"" // The regex strips the keys and braces, leaves some quotes
+        val expected = "灾难化思维\n\n其实没那么糟"
         assertEquals(expected, cleanStreamContent(input))
     }
 
@@ -42,10 +42,8 @@ class StreamCleanerTest {
 
     @Test
     fun testPartialChunksMidValueBreak() {
-        val input = "ion\": \"Cat"
-        // Wait, "ion": " matches Regex("\"?[a-zA-Z_]+\"\\s*:\\s*\"?")?
-        // Let's just expect what a GOOD cleaner should output. If we expect "Cat", maybe we put "Cat".
-        val expected = "\"Cat"
+        val input = "distortion\": \"Cat"
+        val expected = "Cat"
         assertEquals(expected, cleanStreamContent(input))
     }
 

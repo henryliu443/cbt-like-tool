@@ -394,10 +394,40 @@ fun ThinkingTemplate.Companion.suggest(text: String): ThinkingTemplate? {
 // ── Stream Content Cleaner ──────────────────────────────────────────────────
 
 fun cleanStreamContent(currentText: String): String {
-    return currentText
-        .replace(Regex("\"?[a-zA-Z_]+\"\\s*:\\s*\"?"), "")
-        .replace(Regex("[{}\\[\\]]"), "")
-        .replace("\\n", "\n")
-        .replace("\\\"", "\"")
-        .trim()
+    var text = currentText
+
+    text = text.replace("\\n", "\n")
+
+    text = text.trim()
+    if (text.startsWith("```json")) {
+        text = text.removePrefix("```json").trimStart()
+    } else if (text.startsWith("```")) {
+        text = text.removePrefix("```").trimStart()
+    }
+
+    if (text.startsWith("{")) {
+        text = text.removePrefix("{").trimStart()
+    }
+
+    if (text.endsWith("```")) {
+        text = text.removeSuffix("```").trimEnd()
+    }
+    if (text.endsWith("}")) {
+        text = text.removeSuffix("}").trimEnd()
+    }
+
+    val keysPattern = Regex("\"?(distortion|alternative|action|questions)\"?\\s*:\\s*\"?", RegexOption.IGNORE_CASE)
+    text = text.replace(keysPattern, "")
+
+    val separatorPattern = Regex("(?<!\\\\)\",\\s*")
+    text = text.replace(separatorPattern, "\n\n")
+
+    text = text.trim()
+    if (text.endsWith("\"") && !text.endsWith("\\\"")) {
+        text = text.removeSuffix("\"")
+    }
+
+    text = text.replace("\\\"", "\"")
+
+    return text.trim()
 }
