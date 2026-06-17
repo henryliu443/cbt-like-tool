@@ -1,7 +1,5 @@
 package com.henryliu.cbtreframe.shared.di
 
-import com.henryliu.cbtreframe.shared.AIService
-import com.henryliu.cbtreframe.shared.AIServiceImpl
 import com.henryliu.cbtreframe.shared.HistoryRepository
 import com.henryliu.cbtreframe.shared.viewmodels.HistoryViewModel
 import com.henryliu.cbtreframe.shared.viewmodels.MoodInsightsViewModel
@@ -53,7 +51,6 @@ fun commonModule() = module {
             }
         }
     }
-    single<AIService> { AIServiceImpl(get(), get()) }
     single { HistoryRepository(get()) }
     single { SettingsManager(get()) }
     single { StreakService(get()) }

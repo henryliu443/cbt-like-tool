@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Build
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +55,7 @@ class MainActivity : FragmentActivity() {
 @Composable
 fun AppNavigation() {
     val settingsViewModel: SettingsViewModel = koinInject()
-    val uiState by settingsViewModel.uiState.collectAsState()
+    val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     // ── Global onboarding / disclaimer gate ──
     // Blocks the entire app until the user completes onboarding and accepts
@@ -148,8 +149,8 @@ fun AppNavigation() {
                         }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Build, contentDescription = "Practice") },
-                        label = { Text("Practice") },
+                        icon = { Icon(Icons.Default.Build, contentDescription = "练习") },
+                        label = { Text("练习") },
                         selected = currentRoute == "practice",
                         onClick = {
                             if (currentRoute != "practice") {
@@ -187,7 +188,7 @@ fun AppNavigation() {
             composable("home") {
                 val reframeViewModel: ReframeViewModel = koinInject()
                 val historyViewModel: HistoryViewModel = koinInject()
-                val history by historyViewModel.history.collectAsState()
+                val history by historyViewModel.history.collectAsStateWithLifecycle()
                 HomeView(
                     viewModel = reframeViewModel,
                     globalSettings = globalSettings,
@@ -226,6 +227,19 @@ fun AppNavigation() {
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
+        }
+        
+        if (uiState.modelInvalidated) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { settingsViewModel.dismissModelInvalidationBanner() },
+                title = { Text("模型已更新") },
+                text = { Text("你之前选择的模型 (${uiState.invalidatedModelName}) 已下线或不可用，已自动为你切换到默认模型。") },
+                confirmButton = {
+                    TextButton(onClick = { settingsViewModel.dismissModelInvalidationBanner() }) {
+                        Text("知道了")
+                    }
+                }
+            )
         }
     }
 }

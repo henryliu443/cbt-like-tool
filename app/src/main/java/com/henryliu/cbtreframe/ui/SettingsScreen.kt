@@ -34,6 +34,7 @@ import com.henryliu.cbtreframe.shared.ThinkingTemplate.AnalysisDepth
 import com.henryliu.cbtreframe.shared.ThinkingTemplate.AppResponseStyle
 import com.henryliu.cbtreframe.shared.requiresApiKey
 import com.henryliu.cbtreframe.shared.defaultModelId
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +45,7 @@ fun SettingsScreen(
     onReadDisclaimerClick: () -> Unit,
     onClearDatabase: suspend () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDisableDisclaimerConfirm by remember { mutableStateOf(false) }
     var showFaceIDDisableBlockedAlert by remember { mutableStateOf(false) }
@@ -110,7 +111,10 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { viewModel.selectProvider(provider) }
+                            .clickable { 
+                                println("UI_CLICK: SettingsScreen Provider clicked: ${provider.name}")
+                                viewModel.selectProvider(provider) 
+                            }
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

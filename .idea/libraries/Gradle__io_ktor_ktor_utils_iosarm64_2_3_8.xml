@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: io.ktor:ktor-utils-iosarm64:2.3.8" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="io.ktor" artifactId="ktor-utils-iosarm64" version="2.3.8" baseVersion="2.3.8" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-utils-iosarm64/2.3.8/5783876917c1d9bb142e6d04e98aabddd58affb1/ktor-utils.klib!/" />
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-utils-iosarm64/2.3.8/5fa5a6c0a10e13368de80014178a14bcf4003a4a/ktor-utils-cinterop-threadUtils.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-utils-iosarm64/2.3.8/2873b29da379d1bfe56af7103331ee953cacc637/ktor-utils-iosarm64-2.3.8-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

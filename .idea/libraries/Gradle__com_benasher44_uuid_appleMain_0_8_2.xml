@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.benasher44:uuid:appleMain:0.8.2" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="com.benasher44" artifactId="uuid" version="0.8.2" baseVersion="0.8.2" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.gradle/kotlin/kotlinTransformedMetadataLibraries/com.benasher44-uuid-0.8.2-appleMain-vvGSHQ.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.benasher44/uuid/0.8.2/ce2fd8412de91b63dbbc4d9cd74d6ca068ca6891/uuid-0.8.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

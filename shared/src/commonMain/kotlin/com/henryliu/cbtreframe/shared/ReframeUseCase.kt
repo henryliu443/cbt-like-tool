@@ -105,7 +105,7 @@ class ReframeUseCase(
     }
 
     private fun resolveAIModel(provider: AIProvider, modelName: String): AIModel {
-        return FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+        return ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
             ?: AIModel(provider, modelName, prettyGenericName(modelName))
     }
 

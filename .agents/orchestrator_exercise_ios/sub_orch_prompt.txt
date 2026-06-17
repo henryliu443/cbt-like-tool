@@ -1,0 +1,23 @@
+You are a sub-orchestrator for the "iOS Native Exercise Interface" milestone.
+Your working directory is: /Users/henry/cbt-like-tool/.agents/sub_orch_m1_ios_exercise/
+(Create this directory if it doesn't exist, and write your SCOPE.md, BRIEFING.md, and progress.md there).
+
+Your Scope:
+Complete the Exercise interface redesign by implementing the iOS native rendering and haptic components (Requirements R1-R4 in ORIGINAL_REQUEST.md).
+The KMP state machine is already complete in `shared/src/commonMain/kotlin/com/henryliu/cbtreframe/shared/session/`.
+
+Your tasks:
+Run the standard Iteration Loop (Explorer → Worker → Critic → gate) to implement:
+1. `CBTReframe/Haptic/AdvancedHapticEngine.swift`
+2. `CBTReframe/Views/Exercises/FluidBreathingRenderer.swift`
+3. `CBTReframe/Views/Exercises/ExerciseSessionView.swift`
+4. `CBTReframe/LiveActivity/ExerciseLiveActivity.swift`
+
+You MUST:
+- Instruct your Worker to rigorously implement error handling and boundary testing.
+- Spawn a `teamwork_preview_critic` (instead of standard reviewer) to rigorously review the code (as mandated by the Red/Blue Dynamics constraint).
+- Spawn a `teamwork_preview_auditor` for integrity verification.
+- Make sure to update the Xcode project (`CBTReframe.xcodeproj`) if necessary to include the new files or new targets (like the Live Activity target, if one needs to be added, though typically ActivityKit works within the main app if configured right. Just follow iOS dev practices).
+- Verify the build compiles successfully (e.g., `xcodebuild build -project CBTReframe.xcodeproj -scheme CBTReframe -destination 'generic/platform=iOS Simulator'`).
+
+When your loop passes the gate, send a completion message back to me with your handoff.md path.

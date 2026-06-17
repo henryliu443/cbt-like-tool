@@ -4,20 +4,17 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import java.util.Calendar
 
 class AndroidReminderScheduler(private val context: Context) : ReminderScheduler {
     override suspend fun requestPermission(): Boolean {
         Log.d("ReminderScheduler", "requestPermission called on Android")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val intent = Intent().apply {
-                setClassName(context, "com.henryliu.cbtreframe.PermissionActivity")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
+        val intent = Intent().apply {
+            setClassName(context, "com.henryliu.cbtreframe.PermissionActivity")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
+        context.startActivity(intent)
         return true
     }
 

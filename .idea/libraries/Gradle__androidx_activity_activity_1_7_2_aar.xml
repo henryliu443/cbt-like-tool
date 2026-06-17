@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: androidx.activity:activity:1.7.2@aar" external-system-id="GRADLE">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/1ea6618e1c4981b2b4532461b40431d1/transformed/jetified-activity-1.7.2/AndroidManifest.xml" />
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/1ea6618e1c4981b2b4532461b40431d1/transformed/jetified-activity-1.7.2/res" />
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/1ea6618e1c4981b2b4532461b40431d1/transformed/jetified-activity-1.7.2/jars/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/androidx.activity/activity/1.7.2/2f5e8ceeb74490d8c6d12bdd94dcca61bfaf5a4/activity-1.7.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.russhwolf:multiplatform-settings-iosarm64:1.1.1" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="com.russhwolf" artifactId="multiplatform-settings-iosarm64" version="1.1.1" baseVersion="1.1.1" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.russhwolf/multiplatform-settings-iosarm64/1.1.1/1e42caa2b9596f63f14feb19ac992a50e7ae61bf/multiplatform-settings.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.russhwolf/multiplatform-settings-iosarm64/1.1.1/786dba4d34a8fc9a5c5a8cc2ea82c27e2b8faff5/multiplatform-settings-iosarm64-1.1.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

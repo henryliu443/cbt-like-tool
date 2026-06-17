@@ -28,6 +28,7 @@ import com.henryliu.cbtreframe.shared.AIProvider
 import com.henryliu.cbtreframe.shared.SettingsViewModel
 import com.henryliu.cbtreframe.shared.requiresApiKey
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 // ── Onboarding flow ──────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ fun OnboardingScreen(
     viewModel: SettingsViewModel,
     onOnboardingComplete: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
 
     var currentStep by remember { mutableIntStateOf(0) }
@@ -64,8 +65,9 @@ fun OnboardingScreen(
         isInitializing = true
         initializationError = null
         coroutineScope.launch {
-            val result = viewModel.initializeOnboarding(selectedProvider, apiKey)
+            val result = viewModel.validateAndFetchModels(selectedProvider, apiKey)
             if (result.isSuccess) {
+                viewModel.completeOnboarding(viewModel.uiState.value.selectedModelId)
                 onOnboardingComplete()
             } else {
                 initializationError = result.exceptionOrNull()?.message ?: "Unknown error"
@@ -81,8 +83,9 @@ fun OnboardingScreen(
                     isInitializing = true
                     initializationError = null
                     coroutineScope.launch {
-                        val result = viewModel.initializeOnboarding(selectedProvider, apiKey)
+                        val result = viewModel.validateAndFetchModels(selectedProvider, apiKey)
                         if (result.isSuccess) {
+                            viewModel.completeOnboarding(viewModel.uiState.value.selectedModelId)
                             onOnboardingComplete()
                         } else {
                             initializationError = result.exceptionOrNull()?.message ?: "Unknown error"
@@ -91,7 +94,8 @@ fun OnboardingScreen(
                 },
                 onSwitchToLocal = {
                     coroutineScope.launch {
-                        viewModel.initializeOnboarding(AIProvider.LOCAL, "")
+                        viewModel.validateAndFetchModels(AIProvider.LOCAL, "")
+                        viewModel.completeOnboarding(viewModel.uiState.value.selectedModelId)
                         onOnboardingComplete()
                     }
                 },
@@ -171,6 +175,7 @@ fun OnboardingScreen(
                         1 -> StepProviderAndKey(
                             selectedProvider = selectedProvider,
                             onProviderChanged = { provider ->
+                                println("UI_CLICK: OnboardingScreen Provider clicked: ${provider.name}")
                                 selectedProvider = provider
                                 if (!provider.requiresApiKey()) {
                                     apiKey = ""

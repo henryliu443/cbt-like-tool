@@ -23,10 +23,13 @@ class SettingsManager(private val settings: Settings) {
 
     fun getSelectedProvider(): AIProvider {
         val raw = settings.getString(KEY_SELECTED_PROVIDER, AIProvider.GEMINI.name)
-        return try { AIProvider.valueOf(raw) } catch (_: Exception) { AIProvider.LOCAL }
+        val provider = try { AIProvider.valueOf(raw) } catch (_: Exception) { AIProvider.LOCAL }
+        println("SettingsManager.getSelectedProvider: returning $provider (raw=$raw)")
+        return provider
     }
 
     fun setSelectedProvider(provider: AIProvider) {
+        println("SettingsManager.setSelectedProvider: saving $provider")
         settings.putString(KEY_SELECTED_PROVIDER, provider.name)
     }
 
@@ -93,7 +96,7 @@ class SettingsManager(private val settings: Settings) {
         val raw = settings.getStringOrNull(key) ?: return null
         return try {
             json.decodeFromString<List<AIModelInfo>>(raw).map { info ->
-                FallbackModels.entries.firstOrNull { it.modelName == info.modelName }
+                ModelDisplayDictionary.entries.firstOrNull { it.modelName == info.modelName }
                     ?: info.toAIModel(provider)
             }
         } catch (_: Exception) { null }
@@ -144,7 +147,7 @@ private data class AIModelInfo(
     val modelName: String,
 ) {
     fun toAIModel(provider: AIProvider): AIModel {
-        return FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+        return ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
             ?: AIModel(provider, modelName, prettyGenericName(modelName))
     }
 }

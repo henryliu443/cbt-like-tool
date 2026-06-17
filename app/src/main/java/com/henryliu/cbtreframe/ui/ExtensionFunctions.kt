@@ -3,6 +3,26 @@ package com.henryliu.cbtreframe.ui
 import com.henryliu.cbtreframe.shared.ThinkingTemplate
 import com.henryliu.cbtreframe.shared.AIProvider
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.QuestionAnswer
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.ui.graphics.vector.ImageVector
+
+val ThinkingTemplate.icon: ImageVector
+    get() = when (this) {
+        ThinkingTemplate.cbt -> Icons.Default.Lightbulb
+        ThinkingTemplate.socratic -> Icons.Default.QuestionAnswer
+        ThinkingTemplate.behavioral -> Icons.Default.DirectionsRun
+    }
+
+val ThinkingTemplate.label: String
+    get() = when (this) {
+        ThinkingTemplate.cbt -> "CBT\n标准"
+        ThinkingTemplate.socratic -> "苏格拉底\n提问"
+        ThinkingTemplate.behavioral -> "行为\n激活"
+    }
+
 fun ThinkingTemplate.AnalysisDepth.displayName(): String = when (this) {
     ThinkingTemplate.AnalysisDepth.fast -> "快速"
     ThinkingTemplate.AnalysisDepth.balanced -> "平衡"

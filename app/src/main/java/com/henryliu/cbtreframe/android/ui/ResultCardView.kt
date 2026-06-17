@@ -36,6 +36,8 @@ fun ResultCardView(
     analysisDepthLabel: String = "",
     historyEntryID: String? = null,
     followUpMessagesJSON: String = "",
+    providerRaw: String = "",
+    modelRaw: String = "",
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -372,8 +374,8 @@ fun ResultCardView(
                             originalThought = inputThought,
                             lastConclusion = result.alternative,
                             templateRaw = template.name,
-                            providerRaw = "",
-                            modelRaw = "",
+                            providerRaw = providerRaw,
+                            modelRaw = modelRaw,
                             existingMessagesJSON = followUpMessagesJSON,
                             viewModel = vm,
                             onDismiss = { showFollowUp = false }
@@ -435,7 +437,7 @@ private fun ResultSection(
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(iconColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
@@ -444,13 +446,13 @@ private fun ResultSection(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconColor,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(Modifier.width(8.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -496,7 +498,7 @@ private fun SocraticQuestionsSection(
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
@@ -505,13 +507,13 @@ private fun SocraticQuestionsSection(
                     imageVector = Icons.Default.QuestionMark,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "引导问题",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

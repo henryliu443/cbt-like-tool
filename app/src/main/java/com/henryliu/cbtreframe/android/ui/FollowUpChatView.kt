@@ -145,6 +145,9 @@ fun FollowUpChatView(
                                             modelRaw = modelRaw
                                         )
                                         messages = messages + aiMsg
+                                    } catch (e: Exception) {
+                                        val errorMsg = (e as? com.henryliu.cbtreframe.shared.AIServiceError)?.userFacingMessage ?: e.message ?: "Unknown error"
+                                        messages = messages + FollowUpMessage(role = "assistant", text = errorMsg)
                                     } finally {
                                         isSending = false
                                     }

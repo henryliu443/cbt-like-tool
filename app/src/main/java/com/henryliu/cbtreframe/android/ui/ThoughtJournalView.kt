@@ -21,12 +21,13 @@ import com.henryliu.cbtreframe.shared.ThoughtEntry
 import com.henryliu.cbtreframe.shared.ThoughtJournalViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThoughtJournalView(viewModel: ThoughtJournalViewModel = koinInject()) {
     DisposableEffect(Unit) { onDispose { viewModel.clear() } }
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     if (uiState.showAddSheet) {
@@ -223,7 +224,7 @@ fun AddThoughtSheetContent(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val emotions = listOf("😔 低落", "😰 焦虑", "😤 愤怒", "😟 担忧", "😞 失望", "🫠 疲惫", "😶 麻木", "😨 恐惧")
 
     Column(

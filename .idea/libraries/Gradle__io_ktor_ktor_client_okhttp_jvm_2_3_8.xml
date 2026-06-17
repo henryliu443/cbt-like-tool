@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="Gradle: io.ktor:ktor-client-okhttp-jvm:2.3.8" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="io.ktor" artifactId="ktor-client-okhttp-jvm" version="2.3.8" baseVersion="2.3.8" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-client-okhttp-jvm/2.3.8/3d8985e57fe96e47990dac31e160a402783d3cde/ktor-client-okhttp-jvm-2.3.8.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-client-okhttp-jvm/2.3.8/ee203fd661fc772c607e503558c4fdce05f4467c/ktor-client-okhttp-jvm-2.3.8-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-client-okhttp-jvm/2.3.8/69197f0c47fadc453725386c7098f9057923a3bf/ktor-client-okhttp-jvm-2.3.8-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

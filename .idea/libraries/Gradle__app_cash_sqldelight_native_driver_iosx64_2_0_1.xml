@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: app.cash.sqldelight:native-driver-iosx64:2.0.1" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="app.cash.sqldelight" artifactId="native-driver-iosx64" version="2.0.1" baseVersion="2.0.1" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/app.cash.sqldelight/native-driver-iosx64/2.0.1/ea60cb240d13b6521bbd3ccafed52d7d2430ad7b/native-driver.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/app.cash.sqldelight/native-driver-iosx64/2.0.1/d9965540fb59ee17abf8cbd311fdc7b90f85baa4/native-driver-iosx64-2.0.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

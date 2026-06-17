@@ -94,10 +94,27 @@ class HistoryViewModel(
             }
         }
 
-        val provider = com.henryliu.cbtreframe.shared.AIProvider.entries.firstOrNull { it.name == providerRaw }
-            ?: com.henryliu.cbtreframe.shared.AIProvider.OPENAI
-        val model = com.henryliu.cbtreframe.shared.FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName == modelRaw }
-            ?: com.henryliu.cbtreframe.shared.AIModel(provider, modelRaw, com.henryliu.cbtreframe.shared.prettyGenericName(modelRaw))
+        val cachedEntry = history.value.firstOrNull { it.id == entryId }
+        val resolvedProviderRaw = providerRaw.ifBlank { cachedEntry?.providerName.orEmpty() }
+        val provider = com.henryliu.cbtreframe.shared.AIProvider.entries.firstOrNull { it.name.equals(resolvedProviderRaw, ignoreCase = true) }
+            ?: settingsManager.getSelectedProvider()
+
+        val resolvedModelRaw = modelRaw.ifBlank { cachedEntry?.modelName.orEmpty() }
+        val finalModelName = resolvedModelRaw.ifBlank {
+            val id = settingsManager.getSelectedModelId()
+            if (id.isBlank()) {
+                when (provider) {
+                    com.henryliu.cbtreframe.shared.AIProvider.DEEPSEEK -> "deepseek-chat"
+                    com.henryliu.cbtreframe.shared.AIProvider.OPENAI -> "gpt-4o-mini"
+                    com.henryliu.cbtreframe.shared.AIProvider.ANTHROPIC -> "claude-3-5-haiku-20241022"
+                    com.henryliu.cbtreframe.shared.AIProvider.GEMINI -> "gemini-flash-latest"
+                    com.henryliu.cbtreframe.shared.AIProvider.KIMI -> "kimi-k2-turbo-preview"
+                    else -> "local"
+                }
+            } else id
+        }
+        val model = com.henryliu.cbtreframe.shared.ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == finalModelName }
+            ?: com.henryliu.cbtreframe.shared.AIModel(provider, finalModelName, com.henryliu.cbtreframe.shared.prettyGenericName(finalModelName))
 
         val settings = settingsManager.loadSettings()
         

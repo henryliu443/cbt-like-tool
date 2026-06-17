@@ -14,9 +14,16 @@ kotlin {
         }
     }
     
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -42,6 +49,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
                 implementation("io.ktor:ktor-client-mock:2.3.8")
             }
         }
@@ -76,7 +84,7 @@ android {
     namespace = "com.henryliu.cbtreframe.shared"
     compileSdk = 34
     defaultConfig {
-        minSdk = 26
+        minSdk = 34
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

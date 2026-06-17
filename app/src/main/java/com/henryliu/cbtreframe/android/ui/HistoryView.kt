@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -36,6 +35,7 @@ import com.henryliu.cbtreframe.shared.db.HistoryEntity
 import com.henryliu.cbtreframe.shared.viewmodels.HistoryViewModel
 import com.henryliu.cbtreframe.ui.displayName
 import org.koin.compose.koinInject
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private val ThinkingTemplate.historyTag: String
     get() = when (this) {
@@ -53,10 +53,10 @@ fun HistoryView(
     DisposableEffect(Unit) { onDispose { viewModel.clear() } }
 
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
-    val allEntries by viewModel.history.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val allEntries by viewModel.history.collectAsStateWithLifecycle()
 
-    val settingsState by settingsViewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val useFaceID = settingsState.useFaceID
 
     val biometricManager = remember(context) { BiometricManager.from(context) }
@@ -73,7 +73,7 @@ fun HistoryView(
 
     val authenticateIfNeeded = {
         if (canAuthenticate && !isUnlocked) {
-            val executor = ContextCompat.getMainExecutor(context)
+            val executor = context.mainExecutor
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
                 .setTitle("解锁历史记录")
                 .setSubtitle("请进行身份验证以查看历史记录")
@@ -140,12 +140,7 @@ fun HistoryView(
     if (needsAuth) {
         LockedState(
             authErrorMessage = authErrorMessage,
-            onRetry = { authenticateIfNeeded() },
-            onDisableLock = {
-                settingsViewModel.setUseFaceID(false)
-                isUnlocked = true
-                authErrorMessage = null
-            }
+            onRetry = { authenticateIfNeeded() }
         )
         return
     }
@@ -514,7 +509,9 @@ private fun HistoryEntryCard(
                         moodTag = entry.moodTag,
                         analysisDepthLabel = depthLabel,
                         historyEntryID = entry.id,
-                        followUpMessagesJSON = entry.followUpMessagesJSON
+                        followUpMessagesJSON = entry.followUpMessagesJSON,
+                        providerRaw = entry.providerName,
+                        modelRaw = entry.modelName
                     )
                 }
             }
@@ -587,8 +584,7 @@ private fun CapsuleLabel(
 @Composable
 private fun LockedState(
     authErrorMessage: String?,
-    onRetry: () -> Unit,
-    onDisableLock: () -> Unit
+    onRetry: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -645,14 +641,6 @@ private fun LockedState(
                     )
                     Text("身份验证解锁", fontWeight = FontWeight.Bold)
                 }
-            }
-
-            TextButton(onClick = onDisableLock) {
-                Text(
-                    text = "禁用锁定并进入",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

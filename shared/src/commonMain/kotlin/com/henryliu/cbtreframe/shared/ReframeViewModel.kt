@@ -64,11 +64,20 @@ data class ReframeUiState(
         }
 
     val homeStage: HomeStage
-        get() = when {
-            inputText.isBlank() -> HomeStage.QuickStart
-            selectedTemplate == null -> HomeStage.WritingThought
-            selectedMood.isBlank() -> HomeStage.ChoosingMood
-            else -> HomeStage.ReviewReady
+        get() {
+            val stage = when {
+                inputText.isBlank() && result == null -> HomeStage.QuickStart
+                inputText.isBlank() -> HomeStage.WritingThought
+                selectedTemplate == null -> HomeStage.ChoosingMode
+                selectedMood.isBlank() -> HomeStage.ChoosingMood
+                else -> HomeStage.ReviewReady
+            }
+
+            println(
+                "HOME_STAGE inputBlank=${inputText.isBlank()} resultNull=${result == null} template=$selectedTemplate mood='$selectedMood' stage=$stage"
+            )
+
+            return stage
         }
 }
 
@@ -153,6 +162,7 @@ class ReframeViewModel(
     }
 
     fun setSelectedTemplate(template: ThinkingTemplate) {
+        println("SET_TEMPLATE $template")
         _uiState.value = _uiState.value.copy(selectedTemplate = template)
     }
 
@@ -170,6 +180,7 @@ class ReframeViewModel(
     // ── Analyze ────────────────────────────────────────────────────────
 
     fun analyzeThought(globalSettings: GlobalSettings = GlobalSettings.Default) {
+        refreshProviderAndModel()
         val thought = _uiState.value.inputText.trim()
         if (thought.isEmpty()) return
 
@@ -185,7 +196,7 @@ class ReframeViewModel(
         val provider = _uiState.value.selectedProvider
         val modelName = _uiState.value.selectedModelName
 
-        val initialModel = FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+        val initialModel = ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
         val isPremium = initialModel?.isPremium ?: false
         val initialIsReasoning = initialModel?.isReasoning ?: false
 

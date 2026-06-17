@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.benasher44:uuid-iosx64:0.8.2" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="com.benasher44" artifactId="uuid-iosx64" version="0.8.2" baseVersion="0.8.2" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.benasher44/uuid-iosx64/0.8.2/2ee8d931c85d9fc6a4e7dca108b467a71af25888/uuid.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.benasher44/uuid-iosx64/0.8.2/c5ede5eed4c92e3252c20611b0f864b69ba124fc/uuid-iosx64-0.8.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

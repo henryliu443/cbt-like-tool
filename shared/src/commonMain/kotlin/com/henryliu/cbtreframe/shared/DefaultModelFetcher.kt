@@ -10,11 +10,13 @@ import kotlinx.serialization.Serializable
 class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
 
     override suspend fun fetchModels(provider: AIProvider, apiKey: String): List<AIModel> {
+        println("MODEL_FETCH ENTER provider=$provider")
         val trimmed = apiKey.trim()
+        println("MODEL_FETCH APIKEY_EMPTY=${trimmed.isEmpty()}")
         if (trimmed.isEmpty()) return emptyList()
 
-        return when (provider) {
-            AIProvider.LOCAL -> provider.fallbackModels()
+        val result = when (provider) {
+            AIProvider.LOCAL -> listOf(ModelDisplayDictionary.LOCAL_BUILTIN)
             AIProvider.OPENAI -> fetchOpenAICompatible(
                 baseURL = "https://api.openai.com/v1",
                 apiKey = trimmed,
@@ -39,6 +41,9 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
             AIProvider.ANTHROPIC -> fetchAnthropic(trimmed)
             AIProvider.GEMINI -> fetchGemini(trimmed)
         }
+
+        println("MODEL_FETCH EXIT provider=$provider count=${result.size}")
+        return result
     }
 
     @Serializable
@@ -63,6 +68,7 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
         provider: AIProvider,
         filter: (String) -> Boolean
     ): List<AIModel> {
+        println("OPENAI_FETCH START baseURL=$baseURL")
         val response = httpClient.get("$baseURL/models") {
             header("Authorization", "Bearer $apiKey")
         }
@@ -70,17 +76,19 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
             throw AIServiceError.HttpStatus(response.status.value)
         }
         val decoded = response.body<OpenAIModelsResponse>()
+        println("OPENAI_FETCH RESPONSE status=${response.status.value} models=${decoded.data.size}")
         return decoded.data
             .map { it.id }
             .filter(filter)
             .map { id ->
-                FallbackModels.entries.firstOrNull { it.provider == provider && it.modelName.equals(id, ignoreCase = true) }
-                    ?: AIModel(provider, id, prettyGenericName(id))
+                val displayName = ModelDisplayDictionary.getDisplayName(provider, id)
+                AIModel(provider, id, displayName ?: prettyGenericName(id))
             }
             .sortedBy { it.modelName }
     }
 
     private suspend fun fetchAnthropic(apiKey: String): List<AIModel> {
+        println("ANTHROPIC_FETCH START")
         val response = httpClient.get("https://api.anthropic.com/v1/models") {
             header("x-api-key", apiKey)
             header("anthropic-version", "2023-06-01")
@@ -92,17 +100,19 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
             throw AIServiceError.HttpStatus(response.status.value)
         }
         val decoded = response.body<OpenAIModelsResponse>()
+        println("ANTHROPIC_FETCH RESPONSE status=${response.status.value} models=${decoded.data.size}")
         return decoded.data
             .map { it.id }
             .filter { it.lowercase().contains("claude") }
             .map { id ->
-                FallbackModels.entries.firstOrNull { it.provider == AIProvider.ANTHROPIC && it.modelName.equals(id, ignoreCase = true) }
-                    ?: AIModel(AIProvider.ANTHROPIC, id, prettyGenericName(id))
+                val displayName = ModelDisplayDictionary.getDisplayName(AIProvider.ANTHROPIC, id)
+                AIModel(AIProvider.ANTHROPIC, id, displayName ?: prettyGenericName(id))
             }
             .sortedBy { it.modelName }
     }
 
     private suspend fun fetchGemini(apiKey: String): List<AIModel> {
+        println("GEMINI_FETCH START")
         val response = httpClient.get("https://generativelanguage.googleapis.com/v1beta/models") {
             parameter("key", apiKey)
         }
@@ -110,6 +120,7 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
             throw AIServiceError.HttpStatus(response.status.value)
         }
         val decoded = response.body<GeminiModelsResponse>()
+        println("GEMINI_FETCH RESPONSE status=${response.status.value} models=${decoded.models?.size ?: 0}")
         val items = decoded.models ?: emptyList()
         return items.filter { m ->
             m.name.lowercase().contains("gemini") &&
@@ -123,8 +134,8 @@ class DefaultModelFetcher(private val httpClient: HttpClient) : ModelFetcher {
             } else {
                 prettyGenericName(id)
             }
-            FallbackModels.entries.firstOrNull { it.provider == AIProvider.GEMINI && it.modelName.equals(id, ignoreCase = true) }
-                ?: AIModel(AIProvider.GEMINI, id, label)
+            val displayName = ModelDisplayDictionary.getDisplayName(AIProvider.GEMINI, id)
+            AIModel(AIProvider.GEMINI, id, displayName ?: label)
         }.sortedBy { it.displayName }
     }
 

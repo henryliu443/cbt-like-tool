@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Kotlin/Native: CoreText | ios_arm64" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="org.jetbrains.kotlin.native" artifactId="CoreText" version="1.9.22" baseVersion="1.9.22" />
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/klib/platform/ios_arm64/org.jetbrains.kotlin.native.platform.CoreText" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
