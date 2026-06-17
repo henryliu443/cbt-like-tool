@@ -2,7 +2,6 @@ package com.henryliu.cbtreframe
 
 import android.os.Bundle
 import androidx.biometric.BiometricPrompt
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.henryliu.cbtreframe.shared.BiometricResultReceiver
 
@@ -20,7 +19,7 @@ class BiometricActivity : FragmentActivity() {
         val promptTitle = intent.getStringExtra("promptTitle") ?: "Authenticate"
         val promptSubtitle = intent.getStringExtra("promptSubtitle") ?: ""
 
-        val executor = ContextCompat.getMainExecutor(this)
+        val executor = mainExecutor
         val biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {

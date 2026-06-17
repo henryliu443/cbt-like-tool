@@ -25,23 +25,23 @@ object ProviderRegistry {
         return when (provider) {
             AIProvider.DEEPSEEK -> DeepSeekService(
                 httpClient = httpClient,
-                apiKeyProvider = { apiKeyProvider("DeepSeek") },
+                apiKeyProvider = { apiKeyProvider(provider.name) },
             )
             AIProvider.OPENAI -> OpenAIService(
                 httpClient = httpClient,
-                apiKeyProvider = { apiKeyProvider("OpenAI") },
+                apiKeyProvider = { apiKeyProvider(provider.name) },
             )
             AIProvider.ANTHROPIC -> AnthropicService(
                 httpClient = httpClient,
-                apiKeyProvider = { apiKeyProvider("Anthropic") },
+                apiKeyProvider = { apiKeyProvider(provider.name) },
             )
             AIProvider.GEMINI -> GeminiService(
                 httpClient = httpClient,
-                apiKeyProvider = { apiKeyProvider("Google Gemini") },
+                apiKeyProvider = { apiKeyProvider(provider.name) },
             )
             AIProvider.KIMI -> MoonshotService(
                 httpClient = httpClient,
-                apiKeyProvider = { apiKeyProvider("Kimi (Moonshot)") },
+                apiKeyProvider = { apiKeyProvider(provider.name) },
             )
             AIProvider.LOCAL -> LocalAnalysisService()
         }

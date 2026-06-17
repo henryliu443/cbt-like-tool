@@ -1,0 +1,127 @@
+{
+  "allowed_new_paths": [
+    ".agents/",
+    ".settings/",
+    "dist/",
+    "docs/",
+    "docs/development/",
+    "docs/dir_manager/",
+    "docs/dir_manager/history_dir_manager/",
+    "docs/experience/",
+    "docs/git_manager/",
+    "docs/handoff/",
+    "docs/install_configuration/",
+    "engineering/cbt-like-tool/",
+    "ref/",
+    "reports/",
+    "runs/",
+    "smoke/",
+    "tests/"
+  ],
+  "allowed_root_files": [
+    ".editorconfig",
+    ".gitattributes",
+    ".gitignore",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md"
+  ],
+  "allowed_top_level_roots": [
+    ".agents/",
+    ".settings/",
+    "dist/",
+    "docs/",
+    "engineering/",
+    "ref/",
+    "reports/",
+    "runs/",
+    "smoke/",
+    "tests/"
+  ],
+  "block_on_failed_review": true,
+  "enforce_primary_project_root": true,
+  "force_override_archive": "docs/dir_manager/history_dir_manager/YYYYMMDD-HHMMSS",
+  "force_override_requires_user_confirmation": true,
+  "generated_at": "2026-06-04T12:25:02",
+  "primary_project_root": "engineering/cbt-like-tool/",
+  "protected_paths": [
+    ".agents",
+    "docs/dir_manager",
+    "docs/git_manager",
+    "docs/handoff"
+  ],
+  "remote_deployment": {
+    "block_on_failed_review": true,
+    "conda_environment": {
+      "manager": "conda-prefix",
+      "path_template": "",
+      "required_when_remote_configured": true,
+      "scope": "remote-only",
+      "status": "disabled"
+    },
+    "force_override_requires_user_confirmation": true,
+    "planned_structure": [],
+    "protected_path_classes": [
+      "workspace-root",
+      "conda-environment-root",
+      "conda-environment",
+      "active-run-root",
+      "active-run",
+      "backup-run-root",
+      "backup-run"
+    ],
+    "protected_paths": [],
+    "require_review_for_all_mutations": true,
+    "review_required_for": [
+      "create",
+      "move",
+      "delete",
+      "rename"
+    ],
+    "runtime_artifacts": {
+      "active_path_template": "",
+      "archive_after_verification": false,
+      "archive_trigger": "",
+      "backup_path_template": "",
+      "run_id_required": true,
+      "status": "disabled"
+    },
+    "workspace_root": "not configured",
+    "workspace_settings": {
+      "folder": ".settings",
+      "local_default_file": ".settings/project.local.json",
+      "local_file_pattern": ".settings/<name>.local.json",
+      "local_files_remote_blocked": true,
+      "local_suffix": ".local.json",
+      "remote_default_file": ".settings/project.remote.json",
+      "remote_file_pattern": ".settings/<name>.remote.json",
+      "remote_suffix": ".remote.json"
+    }
+  },
+  "review_required_for": [
+    "create",
+    "move",
+    "delete",
+    "rename"
+  ],
+  "root_optional_work_dir_prefixes": [
+    "smoke-"
+  ],
+  "root_optional_work_dirs": [
+    "tests",
+    "reports",
+    "runs",
+    "smoke"
+  ],
+  "schema_version": 1,
+  "workspace_settings": {
+    "folder": ".settings",
+    "local_default_file": ".settings/project.local.json",
+    "local_file_pattern": ".settings/<name>.local.json",
+    "local_files_remote_blocked": true,
+    "local_suffix": ".local.json",
+    "remote_default_file": ".settings/project.remote.json",
+    "remote_file_pattern": ".settings/<name>.remote.json",
+    "remote_suffix": ".remote.json"
+  }
+}

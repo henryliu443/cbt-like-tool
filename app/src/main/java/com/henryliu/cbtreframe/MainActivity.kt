@@ -21,16 +21,19 @@ import com.henryliu.cbtreframe.shared.ReframeViewModel
 import com.henryliu.cbtreframe.shared.viewmodels.HistoryViewModel
 import com.henryliu.cbtreframe.shared.SettingsViewModel
 import com.henryliu.cbtreframe.shared.GlobalSettings
-import com.henryliu.cbtreframe.ui.HomeScreen
-import com.henryliu.cbtreframe.ui.HistoryScreen
+import com.henryliu.cbtreframe.android.ui.HomeView
 import com.henryliu.cbtreframe.ui.SettingsScreen
 import com.henryliu.cbtreframe.ui.OnboardingScreen
-import com.henryliu.cbtreframe.ui.ThoughtJournalScreen
-import com.henryliu.cbtreframe.ui.MoodInsightsScreen
+import com.henryliu.cbtreframe.android.ui.HistoryView
+import com.henryliu.cbtreframe.android.ui.ThoughtJournalView
+import com.henryliu.cbtreframe.android.ui.MoodInsightsView
+import com.henryliu.cbtreframe.android.ui.ExercisesView
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Build
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +55,7 @@ class MainActivity : FragmentActivity() {
 @Composable
 fun AppNavigation() {
     val settingsViewModel: SettingsViewModel = koinInject()
-    val uiState by settingsViewModel.uiState.collectAsState()
+    val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     // ── Global onboarding / disclaimer gate ──
     // Blocks the entire app until the user completes onboarding and accepts
@@ -72,82 +75,108 @@ fun AppNavigation() {
     // ── Normal app (disclaimer accepted) ──
     val navController = rememberNavController()
 
-    val reframeViewModel: ReframeViewModel = koinInject()
-    val historyViewModel: HistoryViewModel = koinInject()
+    val globalSettingsSaver = androidx.compose.runtime.saveable.Saver<GlobalSettings, String>(
+        save = { kotlinx.serialization.json.Json.encodeToString(GlobalSettings.serializer(), it) },
+        restore = { kotlinx.serialization.json.Json.decodeFromString(GlobalSettings.serializer(), it) }
+    )
+    var globalSettings by androidx.compose.runtime.saveable.rememberSaveable(stateSaver = globalSettingsSaver) { mutableStateOf(GlobalSettings.Default) }
 
-    var globalSettings by remember { mutableStateOf(GlobalSettings.Default) }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute != "disclaimer_detail"
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text("首页") },
-                    selected = currentRoute == "home",
-                    onClick = {
-                        if (currentRoute != "home") {
-                            navController.navigate("home") {
-                                popUpTo("home") { inclusive = false }
-                                launchSingleTop = true
+            if (showBottomBar) {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text("首页") },
+                        selected = currentRoute == "home",
+                        onClick = {
+                            if (currentRoute != "home") {
+                                navController.navigate("home") {
+                                    popUpTo(navController.graph.startDestinationId) { 
+                                        saveState = true
+                                        inclusive = false 
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Create, contentDescription = "Records") },
-                    label = { Text("记录") },
-                    selected = currentRoute == "records",
-                    onClick = {
-                        if (currentRoute != "records") {
-                            navController.navigate("records") { 
-                                popUpTo("home") 
-                                launchSingleTop = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Create, contentDescription = "Records") },
+                        label = { Text("记录") },
+                        selected = currentRoute == "records",
+                        onClick = {
+                            if (currentRoute != "records") {
+                                navController.navigate("records") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.DateRange, contentDescription = "History") },
-                    label = { Text("历史") },
-                    selected = currentRoute == "history",
-                    onClick = {
-                        if (currentRoute != "history") {
-                            navController.navigate("history") { 
-                                popUpTo("home") 
-                                launchSingleTop = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.DateRange, contentDescription = "History") },
+                        label = { Text("历史") },
+                        selected = currentRoute == "history",
+                        onClick = {
+                            if (currentRoute != "history") {
+                                navController.navigate("history") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Trends") },
-                    label = { Text("趋势") },
-                    selected = currentRoute == "trends",
-                    onClick = {
-                        if (currentRoute != "trends") {
-                            navController.navigate("trends") { 
-                                popUpTo("home") 
-                                launchSingleTop = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Star, contentDescription = "Trends") },
+                        label = { Text("趋势") },
+                        selected = currentRoute == "trends",
+                        onClick = {
+                            if (currentRoute != "trends") {
+                                navController.navigate("trends") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.MoreVert, contentDescription = "More") },
-                    label = { Text("更多") },
-                    selected = currentRoute == "settings",
-                    onClick = {
-                        if (currentRoute != "settings") {
-                            navController.navigate("settings") { 
-                                popUpTo("home") 
-                                launchSingleTop = true
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Build, contentDescription = "练习") },
+                        label = { Text("练习") },
+                        selected = currentRoute == "practice",
+                        onClick = {
+                            if (currentRoute != "practice") {
+                                navController.navigate("practice") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.MoreVert, contentDescription = "More") },
+                        label = { Text("更多") },
+                        selected = currentRoute == "settings",
+                        onClick = {
+                            if (currentRoute != "settings") {
+                                navController.navigate("settings") { 
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -157,32 +186,60 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") {
-                HomeScreen(
+                val reframeViewModel: ReframeViewModel = koinInject()
+                val historyViewModel: HistoryViewModel = koinInject()
+                val history by historyViewModel.history.collectAsStateWithLifecycle()
+                HomeView(
                     viewModel = reframeViewModel,
                     globalSettings = globalSettings,
-                    onGlobalSettingsChange = { globalSettings = it }
+                    recentHistory = history.sortedByDescending { it.timestamp },
+                    onTemplateChanged = { newTemplate -> globalSettings = globalSettings.copy(thinkingTemplate = newTemplate) }
                 )
             }
             composable("records") {
-                ThoughtJournalScreen()
+                ThoughtJournalView()
             }
             composable("history") {
-                HistoryScreen(
-                    viewModel = historyViewModel,
-                    settingsViewModel = settingsViewModel,
-                    globalSettings = globalSettings
-                )
+                HistoryView()
             }
             composable("trends") {
-                MoodInsightsScreen()
+                MoodInsightsView()
+            }
+            composable("practice") {
+                ExercisesView()
             }
             composable("settings") {
+                val historyRepository: com.henryliu.cbtreframe.shared.HistoryRepository = koinInject()
                 SettingsScreen(
                     viewModel = settingsViewModel,
                     globalSettings = globalSettings,
-                    onGlobalSettingsChange = { globalSettings = it }
+                    onGlobalSettingsChange = { globalSettings = it },
+                    onReadDisclaimerClick = { navController.navigate("disclaimer_detail") },
+                    onClearDatabase = {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            historyRepository.deleteAllHistory()
+                        }
+                    }
                 )
             }
+            composable("disclaimer_detail") {
+                com.henryliu.cbtreframe.ui.DisclaimerDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
+        
+        if (uiState.modelInvalidated) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { settingsViewModel.dismissModelInvalidationBanner() },
+                title = { Text("模型已更新") },
+                text = { Text("你之前选择的模型 (${uiState.invalidatedModelName}) 已下线或不可用，已自动为你切换到默认模型。") },
+                confirmButton = {
+                    TextButton(onClick = { settingsViewModel.dismissModelInvalidationBanner() }) {
+                        Text("知道了")
+                    }
+                }
+            )
         }
     }
 }

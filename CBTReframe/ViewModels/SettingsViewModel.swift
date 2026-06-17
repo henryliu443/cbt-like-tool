@@ -141,6 +141,35 @@ final class SettingsViewModel {
         }
     }
 
+    func initializeOnboarding() async throws {
+        let provider = selectedProvider
+        let key = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if provider.requiresAPIKey {
+            if key.isEmpty {
+                throw NSError(domain: "Settings", code: 1, userInfo: [NSLocalizedDescriptionKey: "API Key 不能为空"])
+            }
+            // 保存 key 到 Keychain
+            KeychainManager.shared.save(key: provider.rawValue, value: key)
+        } else {
+            KeychainManager.shared.delete(key: provider.rawValue)
+        }
+        
+        // 拉取模型并验证
+        if provider.requiresAPIKey {
+            let models = try await AIModelListService.fetchModels(provider: provider, apiKey: key)
+            if models.isEmpty {
+                throw NSError(domain: "Settings", code: 2, userInfo: [NSLocalizedDescriptionKey: "未能获取到任何可用模型，请检查配置"])
+            }
+            persistModelCache(models, for: provider)
+            if !models.contains(where: { $0.id == selectedModelId }) {
+                selectedModelId = provider.resolveDefaultModelId(from: models)
+            }
+        }
+        
+        hasAcceptedDisclaimer = true
+    }
+
     func loadAPIKey() {
         apiKeyInput = KeychainManager.shared.load(key: selectedProvider.rawValue) ?? ""
     }

@@ -19,11 +19,13 @@ data class SettingsUiState(
     val hasAcceptedDisclaimer: Boolean = false,
     val resolvedModels: List<AIModel> = emptyList(),
     val hasAPIKey: Boolean = false,
+    val modelInvalidated: Boolean = false,
+    val invalidatedModelName: String? = null,
 ) {
     val selectedModel: AIModel
         get() = resolvedModels.firstOrNull { it.modelName == selectedModelId }
             ?: resolvedModels.firstOrNull()
-            ?: AIModel.GEMINI_FLASH_LATEST
+            ?: AIModel(AIProvider.GEMINI, "gemini-flash-latest", "Gemini Flash Latest")
 }
 
 interface KeychainProvider {
@@ -87,6 +89,7 @@ class SettingsViewModel(
     // ── Provider selection ─────────────────────────────────────────────
 
     fun selectProvider(provider: AIProvider) {
+        println("SELECT_PROVIDER provider=$provider")
         val models = loadResolvedModels(provider)
         val modelId = if (models.any { it.modelName == _uiState.value.selectedModelId })
             _uiState.value.selectedModelId
@@ -104,6 +107,7 @@ class SettingsViewModel(
             hasAPIKey = computeHasAPIKey(provider),
         )
 
+        println("SELECT_PROVIDER launching refreshModels")
         scope.launch { refreshModels() }
     }
 
@@ -143,10 +147,97 @@ class SettingsViewModel(
         }
     }
 
+    suspend fun validateAndFetchModels(provider: AIProvider, apiKey: String): Result<Unit> {
+        return try {
+            println("INIT-1 start")
+            // 1. Save provider and API key
+            println("INIT: saving provider")
+            settingsManager.setSelectedProvider(provider)
+            println("INIT-2 provider saved")
+            val providerKey = provider.name
+            if (provider.requiresApiKey()) {
+                if (apiKey.isBlank()) {
+                    return Result.failure(Exception("API Key 不能为空"))
+                }
+                println("INIT: saving api key")
+                withContext(Dispatchers.Default) {
+                    keychainProvider.save(providerKey, apiKey.trim())
+                }
+            } else {
+                println("INIT: saving api key")
+                withContext(Dispatchers.Default) {
+                    keychainProvider.delete(providerKey)
+                }
+            }
+            println("INIT-3 key saved")
+
+            // Sync ViewModel UI State locally
+            _uiState.value = _uiState.value.copy(
+                selectedProvider = provider,
+                apiKeyInput = apiKey,
+                hasAPIKey = computeHasAPIKey(provider)
+            )
+            println("INIT-4 ui updated")
+
+            // 2. Fetch models & cache
+            if (provider.requiresApiKey()) {
+                println("INIT-5 before fetchModels")
+                val models = withTimeout(15000) {
+                    modelFetcher.fetchModels(provider, apiKey.trim())
+                }
+                println("INIT-6 after fetchModels")
+                if (models.isEmpty()) {
+                    return Result.failure(Exception("未能获取到任何可用模型，请检查配置"))
+                }
+                println("INIT: caching models")
+                settingsManager.setCachedModels(provider, models)
+                val currentModelId = _uiState.value.selectedModelId
+                val newModelId = if (models.any { it.modelName == currentModelId }) currentModelId
+                    else provider.resolveDefaultModelId(models)
+
+                _uiState.value = _uiState.value.copy(
+                    resolvedModels = models,
+                    selectedModelId = newModelId,
+                    modelsListError = null
+                )
+            } else {
+                val fallback = provider.fallbackModels()
+                val newModelId = provider.resolveDefaultModelId(fallback)
+                _uiState.value = _uiState.value.copy(
+                    resolvedModels = fallback,
+                    selectedModelId = newModelId,
+                    modelsListError = null
+                )
+            }
+
+            println("INIT-7 success")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("INIT: validateAndFetchModels failed: ${e::class.simpleName}: ${e.message}")
+            e.printStackTrace()
+            _uiState.value = _uiState.value.copy(
+                modelsListError = e.message ?: "Unknown error"
+            )
+            Result.failure(e)
+        }
+    }
+
+    fun completeOnboarding(selectedModelId: String) {
+        settingsManager.setSelectedModelId(selectedModelId)
+        settingsManager.setHasAcceptedDisclaimer(true)
+        _uiState.value = _uiState.value.copy(
+            selectedModelId = selectedModelId,
+            hasAcceptedDisclaimer = true
+        )
+    }
+
     // ── Model refresh ──────────────────────────────────────────────────
 
     suspend fun refreshModels() {
+        println("REFRESH: enter")
         val provider = _uiState.value.selectedProvider
+        println("REFRESH: provider=$provider")
+        println("REFRESH: requiresApiKey=${provider.requiresApiKey()}")
         if (!provider.requiresApiKey()) {
             val fallback = provider.fallbackModels()
             _uiState.value = _uiState.value.copy(
@@ -157,6 +248,7 @@ class SettingsViewModel(
         }
 
         val key = (keychainProvider.load(provider.name) ?: "").trim()
+        println("REFRESH: keyLoaded length=${key.length}")
         if (key.isEmpty()) {
             _uiState.value = _uiState.value.copy(modelsListError = null)
             return
@@ -168,26 +260,44 @@ class SettingsViewModel(
         )
 
         try {
+            println("REFRESH: before fetchModels")
             val models = modelFetcher.fetchModels(provider, key)
+            println("REFRESH: after fetchModels count=${models.size}")
             if (models.isNotEmpty()) {
                 settingsManager.setCachedModels(provider, models)
                 val currentModelId = _uiState.value.selectedModelId
-                val newModelId = if (models.any { it.modelName == currentModelId }) currentModelId
-                    else provider.defaultModelId()
+                val wasInvalidated = currentModelId.isNotEmpty() && models.none { it.modelName == currentModelId }
+
+                val newModelId = if (!wasInvalidated && models.any { it.modelName == currentModelId }) {
+                    currentModelId
+                } else {
+                    provider.resolveDefaultModelId(models)
+                }
+
                 settingsManager.setSelectedModelId(newModelId)
 
                 _uiState.value = _uiState.value.copy(
                     resolvedModels = models,
                     selectedModelId = newModelId,
+                    modelInvalidated = wasInvalidated,
+                    invalidatedModelName = if (wasInvalidated) currentModelId else null
                 )
             }
+            println("REFRESH: success path finished")
         } catch (e: Exception) {
+            println("REFRESH: exception=${e::class.simpleName}: ${e.message}")
+            e.printStackTrace()
             _uiState.value = _uiState.value.copy(
                 modelsListError = e.message ?: "Unknown error",
             )
         } finally {
+            println("REFRESH: finally")
             _uiState.value = _uiState.value.copy(isRefreshingModels = false)
         }
+    }
+
+    fun dismissModelInvalidationBanner() {
+        _uiState.value = _uiState.value.copy(modelInvalidated = false, invalidatedModelName = null)
     }
 
     // ── Toggles ────────────────────────────────────────────────────────
@@ -279,24 +389,61 @@ class SettingsViewModel(
 fun AIProvider.requiresApiKey(): Boolean = this != AIProvider.LOCAL
 
 fun AIProvider.defaultModelId(): String {
-    return when (this) {
-        AIProvider.DEEPSEEK -> AIModel.DEEPSEEK_CHAT.modelName
-        AIProvider.OPENAI -> AIModel.GPT_4O.modelName
-        AIProvider.ANTHROPIC -> AIModel.CLAUDE_SONNET_4.modelName
-        AIProvider.GEMINI -> AIModel.GEMINI_FLASH_LATEST.modelName
-        AIProvider.KIMI -> AIModel.MOONSHOT_V1_8K.modelName
-        AIProvider.LOCAL -> AIModel.LOCAL_BUILTIN.modelName
+    return fallbackModels().first().modelName
+}
+
+fun AIProvider.resolveDefaultModelId(models: List<AIModel>): String {
+    val firstId = models.firstOrNull()?.modelName ?: defaultModelId()
+    if (this != AIProvider.GEMINI) return firstId
+    
+    val priority = listOf(
+        "gemini-flash-latest",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash"
+    )
+    val idSet = models.map { it.modelName }.toSet()
+    for (id in priority) {
+        if (idSet.contains(id)) return id
     }
+    return firstId
 }
 
 fun AIProvider.fallbackModels(): List<AIModel> {
     return when (this) {
-        AIProvider.DEEPSEEK -> listOf(AIModel.DEEPSEEK_CHAT, AIModel.DEEPSEEK_REASONER)
-        AIProvider.OPENAI -> listOf(AIModel.GPT_4O)
-        AIProvider.ANTHROPIC -> listOf(AIModel.CLAUDE_SONNET_4, AIModel.CLAUDE_3_5_HAIKU)
-        AIProvider.GEMINI -> listOf(AIModel.GEMINI_FLASH_LATEST, AIModel.GEMINI_2_5_FLASH, AIModel.GEMINI_2_0_FLASH, AIModel.GEMINI_1_5_PRO)
-        AIProvider.KIMI -> listOf(AIModel.MOONSHOT_V1_8K, AIModel.MOONSHOT_V1_32K, AIModel.KIMI_K2_TURBO, AIModel.KIMI_K2_THINKING)
-        AIProvider.LOCAL -> listOf(AIModel.LOCAL_BUILTIN)
+        AIProvider.OPENAI -> listOf(
+            AIModel(this, "gpt-4.1", "GPT-4.1"),
+            AIModel(this, "gpt-4.1-mini", "GPT-4.1 Mini"),
+            AIModel(this, "gpt-4.1-nano", "GPT-4.1 Nano"),
+            AIModel(this, "gpt-4o", "GPT-4o"),
+            AIModel(this, "gpt-4o-mini", "GPT-4o Mini")
+        )
+        AIProvider.ANTHROPIC -> listOf(
+            AIModel(this, "claude-sonnet-4-20250514", "Claude Sonnet 4"),
+            AIModel(this, "claude-3-5-haiku-20241022", "Claude 3.5 Haiku")
+        )
+        AIProvider.DEEPSEEK -> listOf(
+            AIModel(this, "deepseek-chat", "DeepSeek Chat"),
+            AIModel(this, "deepseek-reasoner", "DeepSeek Reasoner")
+        )
+        AIProvider.GEMINI -> listOf(
+            AIModel(this, "gemini-flash-latest", "Gemini Flash Latest"),
+            AIModel(this, "gemini-2.5-flash", "Gemini 2.5 Flash"),
+            AIModel(this, "gemini-2.0-flash", "Gemini 2.0 Flash"),
+            AIModel(this, "gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite"),
+            AIModel(this, "gemini-1.5-flash", "Gemini 1.5 Flash"),
+            AIModel(this, "gemini-1.5-pro", "Gemini 1.5 Pro")
+        )
+        AIProvider.KIMI -> listOf(
+            AIModel(this, "moonshot-v1-8k", "Moonshot v1 8K"),
+            AIModel(this, "moonshot-v1-32k", "Moonshot v1 32K"),
+            AIModel(this, "kimi-k2-turbo-preview", "Kimi K2 Turbo"),
+            AIModel(this, "kimi-k2-thinking-preview", "Kimi K2 Thinking")
+        )
+        AIProvider.LOCAL -> listOf(
+            AIModel(this, "local", "内置分析")
+        )
     }
 }
 

@@ -1,0 +1,45 @@
+--- shared/src/commonMain/kotlin/com/henryliu/cbtreframe/shared/SettingsViewModel.kt
++++ shared/src/commonMain/kotlin/com/henryliu/cbtreframe/shared/SettingsViewModel.kt
+@@ -143,7 +143,7 @@
+         }
+     }
+ 
+-    suspend fun initializeOnboarding(provider: AIProvider, apiKey: String): Result<Unit> {
++    suspend fun validateAndFetchModels(provider: AIProvider, apiKey: String): Result<Unit> {
+         return try {
+             // 1. Save provider and API key
+             settingsManager.setSelectedProvider(provider)
+@@ -188,14 +188,15 @@
+             } else {
+                 val fallback = provider.fallbackModels()
+                 val newModelId = provider.defaultModelId()
+-                settingsManager.setSelectedModelId(newModelId)
+                 _uiState.value = _uiState.value.copy(
+                     resolvedModels = fallback,
+                     selectedModelId = newModelId,
+                     modelsListError = null
+                 )
+             }
++            Result.success(Unit)
++        } catch (e: Exception) {
++            _uiState.value = _uiState.value.copy(
++                modelsListError = e.message ?: "Unknown error"
++            )
++            Result.failure(e)
++        }
++    }
+ 
++    fun completeOnboarding(selectedModelId: String) {
++        settingsManager.setSelectedModelId(selectedModelId)
+         // 3. Set accepted disclaimer
+         settingsManager.setHasAcceptedDisclaimer(true)
+         _uiState.value = _uiState.value.copy(hasAcceptedDisclaimer = true)
+-
+-            Result.success(Unit)
+-        } catch (e: Exception) {
+-            _uiState.value = _uiState.value.copy(
+-                modelsListError = e.message ?: "Unknown error"
+-            )
+-            Result.failure(e)
+-        }
+     }

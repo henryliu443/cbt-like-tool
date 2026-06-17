@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="Gradle: com.russhwolf:multiplatform-settings-android-debug:1.1.1@aar" external-system-id="GRADLE">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/54101fbc17940e2c088fe7c0d243f4e4/transformed/jetified-multiplatform-settings-debug/jars/classes.jar!/" />
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/54101fbc17940e2c088fe7c0d243f4e4/transformed/jetified-multiplatform-settings-debug/AndroidManifest.xml" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.russhwolf/multiplatform-settings-android-debug/1.1.1/9dd30ccbd325e11d209d56cd15c774c74c30d22c/multiplatform-settings-android-debug-1.1.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/com.russhwolf/multiplatform-settings-android-debug/1.1.1/b0249f2d5512abac24a3cdeaa7a46a3f35b33eac/multiplatform-settings-android-debug-1.1.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

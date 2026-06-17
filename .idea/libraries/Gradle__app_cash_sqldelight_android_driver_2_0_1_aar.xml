@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="Gradle: app.cash.sqldelight:android-driver:2.0.1@aar" external-system-id="GRADLE">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/ee9cac519880e28792c240d090413af8/transformed/jetified-android-driver-2.0.1-debug/jars/classes.jar!/" />
+      <root url="file://$PROJECT_DIR$/../.gradle/caches/8.13/transforms/ee9cac519880e28792c240d090413af8/transformed/jetified-android-driver-2.0.1-debug/AndroidManifest.xml" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/app.cash.sqldelight/android-driver/2.0.1/d3381cf4f2648c8740d1b5e0d8d49d1437dc1708/android-driver-2.0.1-debug-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/app.cash.sqldelight/android-driver/2.0.1/a7b234185142230c15340cff127bd7c7137ef5b6/android-driver-2.0.1-debug-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

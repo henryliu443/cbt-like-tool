@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: io.insert-koin:koin-core-iossimulatorarm64:3.5.3" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="io.insert-koin" artifactId="koin-core-iossimulatorarm64" version="3.5.3" baseVersion="3.5.3" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.insert-koin/koin-core-iossimulatorarm64/3.5.3/e86f3d75d650ac12b51f0a135cb815c6f71e985f/koin-core.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.insert-koin/koin-core-iossimulatorarm64/3.5.3/3495ae7ae620ebb3c0d220c42770f4d7c3d72e35/koin-core-iossimulatorarm64-3.5.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

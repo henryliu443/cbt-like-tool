@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import Darwin
 
 struct SettingsView: View {
@@ -387,7 +388,7 @@ struct SettingsView: View {
         } header: {
             Label("提醒", systemImage: "bell")
         } footer: {
-            Text("每日提醒通过系统 Push 通知发送（本地通知）。请在系统设置里允许通知。")
+            Text("每日提醒通过系统本地通知发送。请在系统设置里允许通知。")
                 .font(.caption)
         }
     }

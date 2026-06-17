@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Kotlin/Native: EventKit | [(ios_arm64, ios_simulator_arm64, ios_x64)]" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="org.jetbrains.kotlin.native" artifactId="EventKit" version="1.9.22" baseVersion="1.9.22" />
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/klib/commonized/1.9.22/(ios_arm64, ios_simulator_arm64, ios_x64)/org.jetbrains.kotlin.native.platform.EventKit" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -28,6 +28,9 @@ data class ReframeUiState(
     val suggestedThinkingTemplate: ThinkingTemplate? = null,
     val selectedProvider: AIProvider = AIProvider.LOCAL,
     val selectedModelName: String = "",
+    val selectedTemplate: ThinkingTemplate? = null,
+    val isReasoningActive: Boolean = false,
+    val isPremiumModel: Boolean = false,
 ) {
     val greeting: String
         get() {
@@ -53,26 +56,28 @@ data class ReframeUiState(
     val currentThinkingPhrase: String
         get() = ReframeViewModel.thinkingPhrases[thinkingPhraseIndex % ReframeViewModel.thinkingPhrases.size]
 
-    val isDeepReasoningModel: Boolean
-        get() {
-            val id = selectedModelName.lowercase()
-            return id.contains("reasoner")
-                || id.startsWith("o1") || id.startsWith("o3") || id.startsWith("o4")
-                || id.contains("reason")
-                || id.contains("thinking")
-        }
-
-    val isGeminiProModel: Boolean
-        get() {
-            val id = selectedModelName.lowercase()
-            return id.contains("gemini") && id.contains("pro")
-        }
-
     val loadingBannerStyle: LoadingBannerStyle
         get() = when {
-            isDeepReasoningModel -> LoadingBannerStyle.DEEP_REASONING
-            isGeminiProModel -> LoadingBannerStyle.GEMINI_PRO
+            isReasoningActive -> LoadingBannerStyle.DEEP_REASONING
+            isPremiumModel -> LoadingBannerStyle.GEMINI_PRO
             else -> LoadingBannerStyle.NONE
+        }
+
+    val homeStage: HomeStage
+        get() {
+            val stage = when {
+                inputText.isBlank() && result == null -> HomeStage.QuickStart
+                inputText.isBlank() -> HomeStage.WritingThought
+                selectedTemplate == null -> HomeStage.ChoosingMode
+                selectedMood.isBlank() -> HomeStage.ChoosingMood
+                else -> HomeStage.ReviewReady
+            }
+
+            println(
+                "HOME_STAGE inputBlank=${inputText.isBlank()} resultNull=${result == null} template=$selectedTemplate mood='$selectedMood' stage=$stage"
+            )
+
+            return stage
         }
 }
 
@@ -156,6 +161,11 @@ class ReframeViewModel(
         _uiState.value = _uiState.value.copy(isAkathisia = value)
     }
 
+    fun setSelectedTemplate(template: ThinkingTemplate) {
+        println("SET_TEMPLATE $template")
+        _uiState.value = _uiState.value.copy(selectedTemplate = template)
+    }
+
     fun refreshProviderAndModel() {
         val provider = settingsManager.getSelectedProvider()
         val modelName = settingsManager.getSelectedModelId().ifEmpty {
@@ -170,6 +180,7 @@ class ReframeViewModel(
     // ── Analyze ────────────────────────────────────────────────────────
 
     fun analyzeThought(globalSettings: GlobalSettings = GlobalSettings.Default) {
+        refreshProviderAndModel()
         val thought = _uiState.value.inputText.trim()
         if (thought.isEmpty()) return
 
@@ -185,20 +196,25 @@ class ReframeViewModel(
         val provider = _uiState.value.selectedProvider
         val modelName = _uiState.value.selectedModelName
 
+        val initialModel = ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+        val isPremium = initialModel?.isPremium ?: false
+        val initialIsReasoning = initialModel?.isReasoning ?: false
+
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
             isStreamingResult = true,
             streamingText = "",
             showCrisisBanner = false,
+            isReasoningActive = initialIsReasoning,
+            isPremiumModel = isPremium,
         )
 
-        val isDeepReasoning = _uiState.value.isDeepReasoningModel
-        if (isDeepReasoning) startThinkingProgress()
+        if (initialIsReasoning) startThinkingProgress()
 
         scope.launch {
             try {
-                val output = useCase.analyze(
+                val output = useCase.streamAnalyze(
                     thought = thought,
                     mood = mood,
                     hasAkathisia = isAkathisia,
@@ -211,33 +227,43 @@ class ReframeViewModel(
                     _uiState.value = _uiState.value.copy(showCrisisBanner = true)
                 }
 
-                val result = output.result
-
-                // Play streaming text character by character (simulates SSE typing)
-                val full = buildString {
-                    appendLine("认知扭曲：${result.distortion}")
-                    appendLine("替代想法：${result.alternative}")
-                    appendLine("建议行动：${result.action}")
+                var currentText = ""
+                output.stream.collect { chunk ->
+                    currentText += chunk
+                    
+                    // Detect reasoning dynamically from stream if not already active
+                    if (!_uiState.value.isReasoningActive) {
+                        // Some APIs might send <think> tags or reasoning_content indicators
+                        if (currentText.contains("<think>") || currentText.contains("reasoning_content")) {
+                            _uiState.value = _uiState.value.copy(isReasoningActive = true)
+                            startThinkingProgress()
+                        }
+                    }
+                    
+                    // Simple hack to hide JSON structure from the raw stream 
+                    // until we properly implement markdown-streaming prompt
+                    val cleaned = cleanStreamContent(currentText)
+                    _uiState.value = _uiState.value.copy(streamingText = cleaned)
                 }
 
-                // Stream character by character with delay (10ms per char)
-                var current = ""
-                for (ch in full) {
-                    current += ch
-                    _uiState.value = _uiState.value.copy(streamingText = current)
-                    delay(10)
+                val finalParsed = try {
+                    output.finalResult.await()
+                } catch(e: Exception) {
+                    AnalysisResult(
+                        distortion = "分析结束",
+                        alternative = _uiState.value.streamingText,
+                        action = ""
+                    )
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    result = result,
+                    result = finalParsed,
                     isStreamingResult = false,
                     latestHistoryEntryID = output.historyEntryID,
                 )
 
-                if (output.recoveredByRetry) {
-                    showRetryRecoveryNotice()
-                }
-
+                // No need to check recoveredByRetry since streaming bypasses Validation client
+                
                 markStreakToday()
                 incrementTodayCount()
 
@@ -272,6 +298,8 @@ class ReframeViewModel(
             isStreamingResult = false,
             streamingText = "",
             latestHistoryEntryID = null,
+            isReasoningActive = false,
+            isPremiumModel = false,
         )
     }
 
@@ -375,4 +403,45 @@ fun ThinkingTemplate.Companion.suggest(text: String): ThinkingTemplate? {
             -> ThinkingTemplate.cbt
         else -> null
     }
+}
+
+// ── Stream Content Cleaner ──────────────────────────────────────────────────
+
+fun cleanStreamContent(currentText: String): String {
+    var text = currentText
+
+    text = text.replace("\\n", "\n")
+
+    text = text.trim()
+    if (text.startsWith("```json")) {
+        text = text.removePrefix("```json").trimStart()
+    } else if (text.startsWith("```")) {
+        text = text.removePrefix("```").trimStart()
+    }
+
+    if (text.startsWith("{")) {
+        text = text.removePrefix("{").trimStart()
+    }
+
+    if (text.endsWith("```")) {
+        text = text.removeSuffix("```").trimEnd()
+    }
+    if (text.endsWith("}")) {
+        text = text.removeSuffix("}").trimEnd()
+    }
+
+    val keysPattern = Regex("\"?(distortion|alternative|action|questions)\"?\\s*:\\s*\"?", RegexOption.IGNORE_CASE)
+    text = text.replace(keysPattern, "")
+
+    val separatorPattern = Regex("(?<!\\\\)\",\\s*")
+    text = text.replace(separatorPattern, "\n\n")
+
+    text = text.trim()
+    if (text.endsWith("\"") && !text.endsWith("\\\"")) {
+        text = text.removeSuffix("\"")
+    }
+
+    text = text.replace("\\\"", "\"")
+
+    return text.trim()
 }

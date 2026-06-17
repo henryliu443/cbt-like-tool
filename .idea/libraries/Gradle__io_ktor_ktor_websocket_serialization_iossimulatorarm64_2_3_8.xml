@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: io.ktor:ktor-websocket-serialization-iossimulatorarm64:2.3.8" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="io.ktor" artifactId="ktor-websocket-serialization-iossimulatorarm64" version="2.3.8" baseVersion="2.3.8" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-websocket-serialization-iossimulatorarm64/2.3.8/527e302b33703dbb23b39bab1e61862f00188001/ktor-websocket-serialization.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.ktor/ktor-websocket-serialization-iossimulatorarm64/2.3.8/cbef7bd8f02f3ab747e6cb3904e33a42ed743b36/ktor-websocket-serialization-iossimulatorarm64-2.3.8-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

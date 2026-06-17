@@ -11,11 +11,13 @@ import com.henryliu.cbtreframe.shared.viewmodels.MoodInsightsViewModel
 import com.henryliu.cbtreframe.shared.viewmodels.TimeFilter
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoodInsightsView(viewModel: MoodInsightsViewModel = koinInject<MoodInsightsViewModel>()) {
-    val uiState by viewModel.uiState.collectAsState()
+    DisposableEffect(Unit) { onDispose { viewModel.clear() } }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

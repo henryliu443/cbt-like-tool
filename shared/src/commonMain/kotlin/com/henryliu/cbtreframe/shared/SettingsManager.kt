@@ -23,10 +23,13 @@ class SettingsManager(private val settings: Settings) {
 
     fun getSelectedProvider(): AIProvider {
         val raw = settings.getString(KEY_SELECTED_PROVIDER, AIProvider.GEMINI.name)
-        return try { AIProvider.valueOf(raw) } catch (_: Exception) { AIProvider.LOCAL }
+        val provider = try { AIProvider.valueOf(raw) } catch (_: Exception) { AIProvider.LOCAL }
+        println("SettingsManager.getSelectedProvider: returning $provider (raw=$raw)")
+        return provider
     }
 
     fun setSelectedProvider(provider: AIProvider) {
+        println("SettingsManager.setSelectedProvider: saving $provider")
         settings.putString(KEY_SELECTED_PROVIDER, provider.name)
     }
 
@@ -93,7 +96,7 @@ class SettingsManager(private val settings: Settings) {
         val raw = settings.getStringOrNull(key) ?: return null
         return try {
             json.decodeFromString<List<AIModelInfo>>(raw).map { info ->
-                AIModel.entries.firstOrNull { it.modelName == info.modelName }
+                ModelDisplayDictionary.entries.firstOrNull { it.modelName == info.modelName }
                     ?: info.toAIModel(provider)
             }
         } catch (_: Exception) { null }
@@ -120,6 +123,23 @@ class SettingsManager(private val settings: Settings) {
     fun putString(key: String, value: String) {
         settings.putString(key, value)
     }
+
+    fun loadSettings(): GlobalSettings {
+        val templateRaw = settings.getString("thinkingTemplate", ThinkingTemplate.cbt.name)
+        val template = ThinkingTemplate.entries.firstOrNull { it.name == templateRaw } ?: ThinkingTemplate.cbt
+
+        val depthRaw = settings.getString("analysisDepth", ThinkingTemplate.AnalysisDepth.balanced.name)
+        val depth = ThinkingTemplate.AnalysisDepth.entries.firstOrNull { it.name == depthRaw } ?: ThinkingTemplate.AnalysisDepth.balanced
+
+        val styleRaw = settings.getString("responseStyle", ThinkingTemplate.AppResponseStyle.supportive.name)
+        val style = ThinkingTemplate.AppResponseStyle.entries.firstOrNull { it.name == styleRaw } ?: ThinkingTemplate.AppResponseStyle.supportive
+
+        return GlobalSettings(
+            thinkingTemplate = template,
+            analysisDepth = depth,
+            responseStyle = style
+        )
+    }
 }
 
 @kotlinx.serialization.Serializable
@@ -127,7 +147,7 @@ private data class AIModelInfo(
     val modelName: String,
 ) {
     fun toAIModel(provider: AIProvider): AIModel {
-        return AIModel.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
-            ?: error("Unknown model: provider=${provider.name}, modelName=$modelName")
+        return ModelDisplayDictionary.entries.firstOrNull { it.provider == provider && it.modelName == modelName }
+            ?: AIModel(provider, modelName, prettyGenericName(modelName))
     }
 }

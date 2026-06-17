@@ -1,9 +1,8 @@
 package com.henryliu.cbtreframe.android.ui
 
-import android.os.Build
-import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.os.VibrationEffect
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -68,13 +67,8 @@ fun BreathingGuidance() {
     var instruction by remember { mutableStateOf("Ready to start") }
 
     val vibrator = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
+        val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+        vibratorManager.defaultVibrator
     }
 
     DisposableEffect(Unit) {
@@ -87,28 +81,18 @@ fun BreathingGuidance() {
         if (isPlaying) {
             while (true) {
                 instruction = "Inhale..."
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(1000)
-                }
-                delay(4000)
+                vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
+                delay(4000) //TODO：这里我就觉得很不合适 可以参考applewatch正念的逻辑
                 
                 instruction = "Hold..."
-                delay(4000)
+                delay(4000) //TODO：这里我就觉得很不合适 可以参考applewatch正念的逻辑
                 
                 instruction = "Exhale..."
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(1000)
-                }
-                delay(4000)
+                vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
+                delay(4000) //TODO：这里我就觉得很不合适 可以参考applewatch正念的逻辑
                 
                 instruction = "Hold..."
-                delay(4000)
+                delay(4000) //TODO：这里我就觉得很不合适 可以参考applewatch正念的逻辑
             }
         } else {
             instruction = "Ready to start"

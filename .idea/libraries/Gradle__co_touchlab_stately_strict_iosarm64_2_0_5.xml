@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: co.touchlab:stately-strict-iosarm64:2.0.5" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="co.touchlab" artifactId="stately-strict-iosarm64" version="2.0.5" baseVersion="2.0.5" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/co.touchlab/stately-strict-iosarm64/2.0.5/551337802728ca2bed8766beac52361440bbe1c6/stately-strict.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/co.touchlab/stately-strict-iosarm64/2.0.5/fb7af91dc1b6043be45323ca99ca281aea67b211/stately-strict-iosarm64-2.0.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

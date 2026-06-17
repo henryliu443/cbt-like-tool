@@ -12,6 +12,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import io.ktor.client.request.preparePost
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class DeepSeekService(
     private val httpClient: HttpClient,
@@ -106,6 +109,69 @@ class DeepSeekService(
         return parseDeepSeekResponse(data, strategy)
     }
 
+    override fun streamReframe(
+        thought: String,
+        mood: String,
+        hasAkathisia: Boolean,
+        model: AIModel,
+        depth: ThinkingTemplate.AnalysisDepth,
+        style: ThinkingTemplate.AppResponseStyle,
+        template: ThinkingTemplate,
+        strategy: ResponseStrategy,
+    ): Flow<String> = flow {
+        val apiKey = apiKeyProvider() ?: throw AIServiceError.NoAPIKey()
+
+        val isReasoner = model.modelName.contains("reasoner")
+        val useJSON = isJsonMode(strategy)
+
+        val systemPrompt = PromptBuilder.buildSystemPrompt(
+            template = template,
+            strategy = strategy,
+            depth = depth,
+            style = style,
+            mood = mood,
+            hasAkathisia = hasAkathisia,
+        )
+        val userPrompt = PromptBuilder.buildUserPrompt(thought, mood, hasAkathisia)
+
+        val messages: List<ChatCompletionMessage>
+        if (isReasoner) {
+            val combined = if (useJSON) {
+                "$systemPrompt\n\n${PromptBuilder.reasonerAdditionalInstructions()}\n\n$userPrompt"
+            } else {
+                "$systemPrompt\n\n$userPrompt"
+            }
+            messages = listOf(
+                ChatCompletionMessage(role = "user", content = combined),
+            )
+        } else {
+            messages = listOf(
+                ChatCompletionMessage(role = "system", content = systemPrompt),
+                ChatCompletionMessage(role = "user", content = userPrompt),
+            )
+        }
+
+        val body = ChatCompletionBody(
+            model = model.modelName,
+            messages = messages,
+            temperature = if (isReasoner) 0.0 else 0.7,
+            maxTokens = when {
+                isReasoner -> 8192
+                strategy == ResponseStrategy.crisis -> 512
+                else -> 2048
+            },
+            stream = true,
+        )
+
+        httpClient.preparePost(baseUrl) {
+            header("Authorization", "Bearer $apiKey")
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(ChatCompletionBody.serializer(), body))
+        }.execute { response ->
+            response.streamSSE().collect { emit(it) }
+        }
+    }
+
     override suspend fun analyzeThoughtPatterns(
         thoughts: List<ThoughtEntry>,
         model: AIModel,
@@ -156,7 +222,6 @@ class DeepSeekService(
 
         val content = message.content
         if (content.isNullOrBlank()) {
-            val hasReasoning = !message.content.isNullOrEmpty() // always false here since content is blank
             println("DeepSeek empty content. finish=$finish")
             throw AIServiceError.ParseError(
                 "DeepSeek Reasoner 未返回最终正文（推理可能占满 token）。请重试，或改用「DeepSeek Chat」；若仍失败请检查账户额度与 API 文档。"

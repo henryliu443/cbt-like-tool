@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: io.insert-koin:koin-core:commonMain:3.5.3" type="kotlin.common" external-system-id="GRADLE">
+    <properties groupId="io.insert-koin" artifactId="koin-core" version="3.5.3" baseVersion="3.5.3" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.gradle/kotlin/kotlinTransformedMetadataLibraries/io.insert-koin-koin-core-3.5.3-commonMain-CRvD8w.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/io.insert-koin/koin-core/3.5.3/342d965253f1912c4b70525d2453c956f8a61948/koin-core-3.5.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

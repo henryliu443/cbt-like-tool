@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: org.jetbrains.kotlinx:kotlinx-serialization-json-iossimulatorarm64:1.5.1" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="org.jetbrains.kotlinx" artifactId="kotlinx-serialization-json-iossimulatorarm64" version="1.5.1" baseVersion="1.5.1" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-iossimulatorarm64/1.5.1/26dfd4cd5be21ba48a270748eb01a0a64b87a67d/kotlinx-serialization-json.klib!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-iossimulatorarm64/1.5.1/4f0e4e33613d1d01b2f9fb8c30cb858a4a5b0e9e/kotlinx-serialization-json-iossimulatorarm64-1.5.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

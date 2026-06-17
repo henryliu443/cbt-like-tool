@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 import kotlinx.datetime.*
 
 data class MoodInsightsUiState(
@@ -75,5 +76,9 @@ class MoodInsightsViewModel(
         val hStr = kotlin.math.abs(hours).toString().padStart(2, '0')
         val mStr = minutes.toString().padStart(2, '0')
         return "$sign$hStr:$mStr"
+    }
+
+    fun clear() {
+        scope.cancel()
     }
 }

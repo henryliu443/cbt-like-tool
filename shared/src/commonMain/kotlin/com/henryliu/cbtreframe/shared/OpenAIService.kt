@@ -15,14 +15,26 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-
+import io.ktor.client.request.preparePost
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.currentCoroutineContext
 @Serializable
 data class ChatCompletionBody(
     val model: String,
     val messages: List<ChatCompletionMessage>,
-    val temperature: Double = 0.7,
+    val temperature: Double? = null,
     @SerialName("max_tokens")
-    val maxTokens: Int = 1024,
+    val maxTokens: Int? = null,
+    @SerialName("max_completion_tokens")
+    val maxCompletionTokens: Int? = null,
+    @SerialName("reasoning_effort")
+    val reasoningEffort: String? = null,
+    val stream: Boolean = false,
 )
 
 @Serializable
@@ -39,8 +51,16 @@ data class ChatCompletionResponse(
 @Serializable
 data class ChatCompletionChoice(
     val message: ChatCompletionMessage? = null,
+    val delta: ChatCompletionDelta? = null,
     @SerialName("finish_reason")
     val finishReason: String? = null,
+)
+
+@Serializable
+data class ChatCompletionDelta(
+    val content: String? = null,
+    @SerialName("reasoning_content")
+    val reasoningContent: String? = null,
 )
 
 // ── OpenAI-compatible Chat Completions implementation ─────────────────────
@@ -51,6 +71,8 @@ class OpenAIService(
 ) : AIServiceProtocol {
     override val provider: AIProvider = AIProvider.OPENAI
     private val baseUrl = "https://api.openai.com/v1/chat/completions"
+
+    private fun supportsReasoningEffort(modelName: String) = modelName.startsWith("o1") || modelName.startsWith("o3")
 
     override suspend fun reframe(
         thought: String,
@@ -74,14 +96,26 @@ class OpenAIService(
         )
         val userPrompt = PromptBuilder.buildUserPrompt(thought, mood, hasAkathisia)
 
+        val isO1OrO3 = supportsReasoningEffort(model.modelName)
+        val maxTokensVal = if (strategy == ResponseStrategy.crisis) 512 else 1024
+
         val body = ChatCompletionBody(
             model = model.modelName,
             messages = listOf(
                 ChatCompletionMessage(role = "system", content = systemPrompt),
                 ChatCompletionMessage(role = "user", content = userPrompt),
             ),
-            temperature = 0.7,
-            maxTokens = if (strategy == ResponseStrategy.crisis) 512 else 1024,
+            temperature = if (isO1OrO3) null else 0.7,
+            maxTokens = if (isO1OrO3) null else maxTokensVal,
+            maxCompletionTokens = if (isO1OrO3) maxTokensVal else null,
+            reasoningEffort = if (isO1OrO3) {
+                when (depth) {
+                    ThinkingTemplate.AnalysisDepth.fast -> "low"
+                    ThinkingTemplate.AnalysisDepth.balanced -> "medium"
+                    ThinkingTemplate.AnalysisDepth.deep -> "high"
+                }
+            } else null,
+            stream = false,
         )
 
         val response = httpClient.post(baseUrl) {
@@ -93,11 +127,66 @@ class OpenAIService(
         return handleResponseAndParse(response, strategy)
     }
 
+    override fun streamReframe(
+        thought: String,
+        mood: String,
+        hasAkathisia: Boolean,
+        model: AIModel,
+        depth: ThinkingTemplate.AnalysisDepth,
+        style: ThinkingTemplate.AppResponseStyle,
+        template: ThinkingTemplate,
+        strategy: ResponseStrategy,
+    ): Flow<String> = flow {
+        val apiKey = apiKeyProvider() ?: throw AIServiceError.NoAPIKey()
+
+        val systemPrompt = PromptBuilder.buildSystemPrompt(
+            template = template,
+            strategy = strategy,
+            depth = depth,
+            style = style,
+            mood = mood,
+            hasAkathisia = hasAkathisia,
+        )
+        val userPrompt = PromptBuilder.buildUserPrompt(thought, mood, hasAkathisia)
+
+        val isO1OrO3 = supportsReasoningEffort(model.modelName)
+        val maxTokensVal = if (strategy == ResponseStrategy.crisis) 512 else 1024
+
+        val body = ChatCompletionBody(
+            model = model.modelName,
+            messages = listOf(
+                ChatCompletionMessage(role = "system", content = systemPrompt),
+                ChatCompletionMessage(role = "user", content = userPrompt),
+            ),
+            temperature = if (isO1OrO3) null else 0.7,
+            maxTokens = if (isO1OrO3) null else maxTokensVal,
+            maxCompletionTokens = if (isO1OrO3) maxTokensVal else null,
+            reasoningEffort = if (isO1OrO3) {
+                when (depth) {
+                    ThinkingTemplate.AnalysisDepth.fast -> "low"
+                    ThinkingTemplate.AnalysisDepth.balanced -> "medium"
+                    ThinkingTemplate.AnalysisDepth.deep -> "high"
+                }
+            } else null,
+            stream = true,
+        )
+
+        httpClient.preparePost(baseUrl) {
+            header("Authorization", "Bearer $apiKey")
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(ChatCompletionBody.serializer(), body))
+        }.execute { response ->
+            response.streamSSE().collect { emit(it) }
+        }
+    }
+
     override suspend fun analyzeThoughtPatterns(
         thoughts: List<ThoughtEntry>,
         model: AIModel,
     ): ThoughtPatternReport {
         val apiKey = apiKeyProvider() ?: throw AIServiceError.NoAPIKey()
+
+        val isO1OrO3 = supportsReasoningEffort(model.modelName)
 
         val body = ChatCompletionBody(
             model = model.modelName,
@@ -108,8 +197,11 @@ class OpenAIService(
                     content = PromptBuilder.buildThoughtPatternUserPrompt(thoughts)
                 ),
             ),
-            temperature = 0.3,
-            maxTokens = 1400,
+            temperature = if (isO1OrO3) null else 0.3,
+            maxTokens = if (isO1OrO3) null else 1400,
+            maxCompletionTokens = if (isO1OrO3) 1400 else null,
+            reasoningEffort = if (isO1OrO3) "high" else null,
+            stream = false,
         )
 
         val response = httpClient.post(baseUrl) {
@@ -164,13 +256,46 @@ class OpenAIService(
 
 // ── Shared parse helpers ────────────────────────────────────────────────
 
-internal val json = Json { ignoreUnknownKeys = true; isLenient = true }
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+internal val json = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false }
 
 internal fun parseChatCompletionResponse(data: String): ChatCompletionResponse? {
     return try {
         json.decodeFromString(ChatCompletionResponse.serializer(), data)
     } catch (_: Exception) {
         null
+    }
+}
+
+internal fun io.ktor.client.statement.HttpResponse.streamSSE(): Flow<String> = flow {
+    val statusCode = this@streamSSE.status.value
+    if (statusCode !in 200..299) {
+        val bodyStr = this@streamSSE.bodyAsText()
+        if (bodyStr.contains("Insufficient Balance", ignoreCase = true) ||
+            bodyStr.contains("insufficient", ignoreCase = true)
+        ) {
+            throw AIServiceError.ParseError("账户余额不足，请充值后重试")
+        }
+        throw AIServiceError.HttpStatus(statusCode)
+    }
+
+    val channel: ByteReadChannel = this@streamSSE.bodyAsChannel()
+    while (currentCoroutineContext().isActive && !channel.isClosedForRead) {
+        val line = channel.readUTF8Line() ?: break
+        if (line.isBlank()) continue
+        if (line.startsWith("data: ")) {
+            val data = line.removePrefix("data: ").trim()
+            if (data == "[DONE]") break
+            if (data.isEmpty()) continue
+            try {
+                val chunk = json.decodeFromString<ChatCompletionResponse>(data)
+                val choice = chunk.choices.firstOrNull()
+                val content = choice?.delta?.content
+                if (!content.isNullOrEmpty()) {
+                    emit(content)
+                }
+            } catch (_: Exception) {}
+        }
     }
 }
 

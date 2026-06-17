@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="Kotlin/Native: stdlib" type="kotlin.native" external-system-id="GRADLE">
+    <properties groupId="org.jetbrains.kotlin.native" artifactId="stdlib" version="1.9.22" baseVersion="1.9.22" />
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/klib/common/stdlib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/sources/kotlin-test-annotations-common-sources.zip!/" />
+      <root url="jar://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/sources/kotlin-stdlib-native-sources.zip!/" />
+      <root url="jar://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/sources/kotlin-test-common-sources.zip!/" />
+      <root url="jar://$PROJECT_DIR$/../.konan/kotlin-native-prebuilt-macos-aarch64-1.9.22/sources/kotlin-stdlib-common-sources.zip!/" />
+    </SOURCES>
+  </library>
+</component>
